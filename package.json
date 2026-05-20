@@ -1,0 +1,26 @@
+{
+  "name": "campusbite-system",
+  "version": "1.0.0",
+  "description": "CampusBite Food Ordering System - Complete Startup Package",
+  "main": "start-campusbite.js",
+  "scripts": {
+    "start": "node start-campusbite.js",
+    "start:windows": "start-campusbite.bat",
+    "start:powershell": "powershell -ExecutionPolicy Bypass -File start-campusbite.ps1",
+    "stop": "taskkill /f /im node.exe",
+    "setup": "echo 'Please ensure PostgreSQL is installed and running before starting the system'"
+  },
+  "keywords": [
+    "campusbite",
+    "food-ordering",
+    "react-native",
+    "nodejs",
+    "postgresql",
+    "expo"
+  ],
+  "author": "CampusBite Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
