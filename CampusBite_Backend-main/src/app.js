@@ -3,13 +3,15 @@ const cors       = require('cors');
 const helmet     = require('helmet');
 const morgan     = require('morgan');
 const rateLimit  = require('express-rate-limit');
+const path       = require('path');
 
 const app = express();
 
 // ─── Security & Utility Middleware ────────────────────────────────────────────
 
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors());
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
@@ -44,6 +46,7 @@ app.use('/api/reviews',          require('./routes/review.routes'));
 app.use('/api/notifications',    require('./routes/notification.routes'));
 app.use('/api/food-courier',     require('./routes/foodCourierProfile.routes'));
 app.use('/api/admin',            require('./routes/admin.routes'));
+app.use('/api/verification',     require('./routes/verification.routes'));
 
 // ─── 404 Handler ─────────────────────────────────────────────────────────────
 

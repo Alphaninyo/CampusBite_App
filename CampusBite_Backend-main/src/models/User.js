@@ -69,6 +69,22 @@ const User = sequelize.define(
       allowNull: true,
       comment:   'Expiry timestamp for the password reset OTP (10 minutes from issue).',
     },
+    verification_document: {
+      type:      DataTypes.STRING(500),
+      allowNull: true,
+      comment:   'File path to the uploaded national ID or passport image.',
+    },
+    verification_type: {
+      type:      DataTypes.ENUM('national_id', 'passport'),
+      allowNull: true,
+      comment:   'Type of verification document uploaded.',
+    },
+    verification_status: {
+      type:      DataTypes.ENUM('not_submitted', 'pending', 'approved', 'rejected'),
+      allowNull: false,
+      defaultValue: 'not_submitted',
+      comment:   'Admin review status of the uploaded verification document.',
+    },
   },
   {
     tableName: 'users',

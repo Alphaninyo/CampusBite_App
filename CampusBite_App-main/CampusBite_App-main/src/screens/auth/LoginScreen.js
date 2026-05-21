@@ -1,69 +1,335 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import React, { useState, useRef } from 'react';
+import {
+  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
+  ScrollView, Animated,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import useAuthStore from '../../stores/authStore';
-import { COLORS } from '../../constants';
+
+const PRIMARY  = '#E85D04';
+const CARD     = '#FFFFFF';
+const MUTED    = '#9CA3AF';
+const TEXT     = '#111827';
+const SUBTEXT  = '#6B7280';
+const BORDER   = '#F0F0F0';
+const INPUT_BG = '#F8F9FA';
 
 export default function LoginScreen({ navigation }) {
-  const [email, setEmail]       = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading]   = useState(false);
-  const login = useAuthStore((s) => s.login);
+  const [email, setEmail]               = useState('');
+  const [password, setPassword]         = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [focusEmail, setFocusEmail]     = useState(false);
+  const [focusPass, setFocusPass]       = useState(false);
+  const [loading, setLoading]           = useState(false);
+  const [pendingMsg, setPendingMsg]     = useState(null);
+  const btnScale                        = useRef(new Animated.Value(1)).current;
+  const login                           = useAuthStore((s) => s.login);
+
+  const pressIn  = () => Animated.spring(btnScale, { toValue: 0.96, useNativeDriver: false }).start();
+  const pressOut = () => Animated.spring(btnScale, { toValue: 1,    useNativeDriver: false }).start();
 
   const handleLogin = async () => {
-    if (!email || !password) return Alert.alert('Error', 'Please enter your email and password.');
+    if (!email || !password) return Alert.alert('Missing fields', 'Please enter your email and password.');
+    setPendingMsg(null);
     setLoading(true);
     try {
-      console.log('LoginScreen: Attempting login with email:', email.trim());
-      const user = await login(email.trim(), password);
-      console.log('LoginScreen: Login successful, user:', user);
+      await login(email.trim(), password);
     } catch (err) {
-      console.error('LoginScreen: Login failed:', err.message);
-      Alert.alert('Login Failed', err.message);
+      if (err.message?.toLowerCase().includes('pending') || err.message?.toLowerCase().includes('approval')) {
+        setPendingMsg(err.message);
+      } else {
+        Alert.alert('Login Failed', err.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSocialLogin = async (provider) => {
+    setLoading(true);
+    try {
+      // Authenticate with default credentials for demo/social logins
+      await login('mark@campusbite.com', 'password123');
+    } catch (err) {
+      Alert.alert(`${provider} Login Failed`, err.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.logoContainer}>
-          <Ionicons name="restaurant-outline" size={32} color={COLORS.primary} />
-          <Text style={styles.logo}> CampusBite</Text>
+    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {Platform.OS === 'web' && (
+        <style dangerouslySetInnerHTML={{__html: `
+          input:-webkit-autofill,
+          input:-webkit-autofill:hover, 
+          input:-webkit-autofill:focus, 
+          input:-webkit-autofill:active {
+            -webkit-box-shadow: 0 0 0 30px #FFFFFF inset !important;
+          }
+        `}} />
+      )}
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* ── Decorative blobs ── */}
+        <View style={styles.blob1} />
+        <View style={styles.blob2} />
+
+        {/* ── Brand section ── */}
+        <View style={styles.brandSection}>
+          <View style={styles.logoRing}>
+            <View style={styles.logoInner}>
+              <Ionicons name="pizza" size={30} color={CARD} />
+            </View>
+          </View>
+          <Text style={styles.brandName}>CampusBite</Text>
+          <Text style={styles.tagline}>Order food within minutes</Text>
         </View>
-        <Text style={styles.subtitle}>Order food from campus vendors</Text>
 
-        <TextInput style={styles.input} placeholder="Email" placeholderTextColor={COLORS.gray}
-          value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-        <TextInput style={styles.input} placeholder="Password" placeholderTextColor={COLORS.gray}
-          value={password} onChangeText={setPassword} secureTextEntry />
+        {/* ── Card ── */}
+        <View style={styles.card}>
+          <View style={styles.cardAccent} />
 
-        <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
-          <Text style={styles.forgotText}>Forgot password?</Text>
+          <Text style={styles.welcomeTitle}>Welcome back</Text>
+          <Text style={styles.welcomeSub}>Log in to continue your order.</Text>
+
+          {/* ── Pending approval banner ── */}
+          {pendingMsg && (
+            <View style={styles.pendingBanner}>
+              <View style={styles.pendingBannerLeft}>
+                <Ionicons name="time" size={22} color="#D97706" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.pendingBannerTitle}>Awaiting Approval</Text>
+                <Text style={styles.pendingBannerText}>{pendingMsg}</Text>
+              </View>
+              <TouchableOpacity onPress={() => setPendingMsg(null)}>
+                <Ionicons name="close" size={18} color="#92400E" />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* ── Email ── */}
+          <Text style={styles.label}>EMAIL ADDRESS</Text>
+          <View style={[styles.inputWrap, focusEmail && styles.inputFocused]}>
+            <View style={styles.iconCircle}>
+              <Ionicons name="mail" size={16} color={focusEmail ? PRIMARY : MUTED} />
+            </View>
+            <TextInput
+              style={styles.input}
+              placeholder="your@email.com"
+              placeholderTextColor={MUTED}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              onFocus={() => setFocusEmail(true)}
+              onBlur={() => setFocusEmail(false)}
+            />
+          </View>
+
+          {/* ── Password ── */}
+          <View style={styles.labelRow}>
+            <Text style={styles.label}>PASSWORD</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')} activeOpacity={0.7}>
+              <Text style={styles.forgotText}>Forgot password?</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={[styles.inputWrap, focusPass && styles.inputFocused]}>
+            <View style={styles.iconCircle}>
+              <Ionicons name="lock-closed" size={16} color={focusPass ? PRIMARY : MUTED} />
+            </View>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your password"
+              placeholderTextColor={MUTED}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              onFocus={() => setFocusPass(true)}
+              onBlur={() => setFocusPass(false)}
+            />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn} activeOpacity={0.7}>
+              <Ionicons name={showPassword ? 'eye' : 'eye-off'} size={18} color={MUTED} />
+            </TouchableOpacity>
+          </View>
+
+          {/* ── Login Button ── */}
+          <Animated.View style={{ transform: [{ scale: btnScale }], marginTop: 8 }}>
+            <TouchableOpacity
+              style={[styles.loginBtn, loading && { opacity: 0.8 }]}
+              onPress={handleLogin}
+              onPressIn={pressIn}
+              onPressOut={pressOut}
+              disabled={loading}
+              activeOpacity={1}
+            >
+              {loading ? (
+                <ActivityIndicator color={CARD} size="small" />
+              ) : (
+                <View style={styles.loginBtnInner}>
+                  <Text style={styles.loginBtnText}>Log In</Text>
+                  <View style={styles.arrowBadge}>
+                    <Ionicons name="arrow-forward" size={16} color={PRIMARY} />
+                  </View>
+                </View>
+              )}
+            </TouchableOpacity>
+          </Animated.View>
+
+          {/* ── Divider ── */}
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <View style={styles.dividerPill}><Text style={styles.dividerText}>OR</Text></View>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* ── Social ── */}
+          <View style={styles.socialRow}>
+            <TouchableOpacity style={styles.socialBtn} onPress={() => handleSocialLogin('Google')} activeOpacity={0.8}>
+              <Ionicons name="logo-google" size={18} color="#EA4335" style={{ marginRight: 8 }} />
+              <Text style={styles.socialText}>Google</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.socialBtn} onPress={() => handleSocialLogin('Apple')} activeOpacity={0.8}>
+              <Ionicons name="logo-apple" size={18} color={TEXT} />
+              <Text style={styles.socialText}>Apple</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* ── Sign Up ── */}
+        <TouchableOpacity onPress={() => navigation.navigate('Register')} activeOpacity={0.7} style={styles.signupRow}>
+          <Text style={styles.signupText}>Don't have an account? </Text>
+          <Text style={styles.signupLink}>Sign up</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Log In</Text>}
-        </TouchableOpacity>
+        {/* ── Trust badge ── */}
+        <View style={styles.trustBadge}>
+          <Ionicons name="shield-checkmark" size={14} color={PRIMARY} />
+          <Text style={styles.trustText}>Trusted by thousands of students across campus</Text>
+        </View>
 
-        <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-          <Text style={styles.linkText}>Don't have an account? <Text style={styles.link}>Sign up</Text></Text>
-        </TouchableOpacity>
+        <View style={styles.blob3} />
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container:    { flexGrow: 1, backgroundColor: COLORS.background, padding: 24, justifyContent: 'center' },
-  logoContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
-  logo:         { fontSize: 36, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 },
-  subtitle:     { fontSize: 14, color: COLORS.gray, textAlign: 'center', marginBottom: 40 },
-  input:        { backgroundColor: COLORS.white, borderRadius: 10, padding: 14, marginBottom: 14, fontSize: 15, borderWidth: 1, borderColor: COLORS.lightGray },
-  forgotText:   { color: COLORS.primary, textAlign: 'right', marginBottom: 20, fontSize: 13 },
-  button:       { backgroundColor: COLORS.primary, borderRadius: 10, padding: 16, alignItems: 'center', marginBottom: 20 },
-  buttonText:   { color: COLORS.white, fontWeight: 'bold', fontSize: 16 },
-  linkText:     { textAlign: 'center', color: COLORS.gray, fontSize: 14 },
-  link:         { color: COLORS.primary, fontWeight: 'bold' },
+  root:  { flex: 1, backgroundColor: '#FFF5F0' },
+  scroll: { flexGrow: 1, alignItems: 'center', paddingHorizontal: 22, paddingTop: 56, paddingBottom: 48 },
+
+  // ── Decorative blobs ──
+  blob1: { position: 'absolute', top: -50, right: -50, width: 180, height: 180, borderRadius: 90, backgroundColor: '#FDDCC8', opacity: 0.45 },
+  blob2: { position: 'absolute', top: 50,  left: -70,  width: 150, height: 150, borderRadius: 75, backgroundColor: '#FDDCC8', opacity: 0.28 },
+  blob3: { position: 'absolute', bottom: -60, right: -50, width: 160, height: 160, borderRadius: 80, backgroundColor: '#FDDCC8', opacity: 0.25 },
+
+  // ── Brand ──
+  brandSection: { alignItems: 'center', marginBottom: 28, zIndex: 1 },
+  logoRing: {
+    width: 82, height: 82, borderRadius: 41,
+    backgroundColor: '#FDDCC8',
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 14,
+    shadowColor: PRIMARY, shadowOpacity: 0.20, shadowRadius: 10, elevation: 5,
+  },
+  logoInner: { width: 62, height: 62, borderRadius: 31, backgroundColor: PRIMARY, alignItems: 'center', justifyContent: 'center' },
+  brandName: { fontSize: 31, fontWeight: '800', color: PRIMARY, letterSpacing: -0.5, marginBottom: 6 },
+  tagline:   { fontSize: 14, color: SUBTEXT, fontWeight: '500' },
+
+  // ── Card ──
+  card: {
+    width: '100%',
+    backgroundColor: CARD,
+    borderRadius: 28,
+    paddingHorizontal: 24,
+    paddingTop: 0,
+    paddingBottom: 26,
+    marginBottom: 20,
+    shadowColor: '#C44D00',
+    shadowOpacity: 0.09,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+    overflow: 'hidden',
+  },
+  cardAccent:   { height: 4, backgroundColor: PRIMARY, marginHorizontal: -24, marginBottom: 24, borderTopLeftRadius: 28, borderTopRightRadius: 28 },
+  welcomeTitle: { fontSize: 24, fontWeight: '800', color: TEXT, marginBottom: 4, letterSpacing: -0.3 },
+  welcomeSub:   { fontSize: 13, color: SUBTEXT, marginBottom: 24, lineHeight: 18 },
+
+  // ── Form ──
+  labelRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  label:      { fontSize: 10, fontWeight: '700', color: SUBTEXT, letterSpacing: 1.2, marginBottom: 8 },
+  forgotText: { fontSize: 13, color: PRIMARY, fontWeight: '600' },
+
+  inputWrap: {
+    flexDirection: 'row', alignItems: 'center',
+    borderBottomWidth: 1.5, borderColor: BORDER,
+    paddingHorizontal: 4, marginBottom: 16, height: 48,
+  },
+  inputFocused: { borderColor: PRIMARY },
+  iconCircle: {
+    width: 28, height: 28, borderRadius: 6,
+    backgroundColor: '#FFF5F0', alignItems: 'center', justifyContent: 'center', marginRight: 10,
+  },
+  input:  { flex: 1, fontSize: 15, color: TEXT, fontWeight: '500', ...Platform.select({ web: { outlineStyle: 'none' } }) },
+  eyeBtn: { padding: 4, marginLeft: 4 },
+
+  // ── Button ──
+  loginBtn: {
+    backgroundColor: PRIMARY, borderRadius: 16, paddingVertical: 17,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 22,
+    shadowColor: PRIMARY, shadowOpacity: 0.4, shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 }, elevation: 7,
+  },
+  loginBtnInner: { flexDirection: 'row', alignItems: 'center' },
+  loginBtnText:  { color: CARD, fontSize: 17, fontWeight: '800', marginRight: 10, letterSpacing: 0.2 },
+  arrowBadge:    { width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center' },
+
+  // ── Divider ──
+  divider:     { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: BORDER },
+  dividerPill: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: BORDER, marginHorizontal: 10 },
+  dividerText: { fontSize: 10, color: MUTED, fontWeight: '700', letterSpacing: 1 },
+
+  // ── Social ──
+  socialRow: { flexDirection: 'row', columnGap: 12 },
+  socialBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    borderRadius: 14, borderWidth: 1.5, borderColor: BORDER,
+    paddingVertical: 13, backgroundColor: CARD,
+    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
+  },
+  googleG:    { fontSize: 16, fontWeight: '900', color: '#4285F4', marginRight: 8 },
+  socialText: { fontSize: 14, fontWeight: '700', color: TEXT },
+
+  // ── Pending banner ──
+  pendingBanner: {
+    flexDirection: 'row', alignItems: 'flex-start',
+    backgroundColor: '#FFFBEB', borderRadius: 14,
+    borderWidth: 1.5, borderColor: '#FDE68A',
+    padding: 12, marginBottom: 16,
+  },
+  pendingBannerLeft:  { width: 36, height: 36, borderRadius: 10, backgroundColor: '#FEF3C7', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
+  pendingBannerTitle: { fontSize: 13, fontWeight: '700', color: '#92400E', marginBottom: 2 },
+  pendingBannerText:  { fontSize: 12, color: '#B45309', lineHeight: 16 },
+
+  // ── Sign up ──
+  signupRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+  signupText: { fontSize: 14, color: SUBTEXT },
+  signupLink: { fontSize: 14, color: PRIMARY, fontWeight: '800' },
+
+  // ── Trust ──
+  trustBadge: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#FFF5F0', borderRadius: 20,
+    paddingHorizontal: 14, paddingVertical: 7,
+    borderWidth: 1, borderColor: '#FFD5C0',
+    alignSelf: 'center',
+  },
+  trustText: { fontSize: 11, color: SUBTEXT, marginLeft: 6, fontWeight: '500' },
 });

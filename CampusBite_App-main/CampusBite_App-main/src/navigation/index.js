@@ -4,11 +4,12 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, View } from 'react-native';
 
 import useAuthStore from '../stores/authStore';
-import AuthNavigator    from './AuthNavigator';
-import ConsumerNavigator from './ConsumerNavigator';
-import VendorNavigator  from './VendorNavigator';
-import FoodCourierNavigator   from './FoodCourierNavigator';
-import AdminNavigator   from './AdminNavigator';
+import AuthNavigator        from './AuthNavigator';
+import ConsumerNavigator     from './ConsumerNavigator';
+import VendorNavigator       from './VendorNavigator';
+import FoodCourierNavigator  from './FoodCourierNavigator';
+import AdminNavigator        from './AdminNavigator';
+import PendingNavigator      from './PendingNavigator';
 import { COLORS } from '../constants';
 
 const Stack = createNativeStackNavigator();
@@ -56,10 +57,14 @@ export default function RootNavigator() {
   console.log('RootNavigator: Rendering', user.role, 'Navigator');
   const getNavigator = () => {
     switch (user.role) {
-      case 'vendor':   return <VendorNavigator />;
-      case 'food_courier':    return <FoodCourierNavigator />;
-      case 'admin':    return <AdminNavigator />;
-      default:         return <ConsumerNavigator />;
+      case 'vendor':
+        return user.is_approved ? <VendorNavigator /> : <PendingNavigator />;
+      case 'food_courier':
+        return user.is_approved ? <FoodCourierNavigator /> : <PendingNavigator />;
+      case 'admin':
+        return <AdminNavigator />;
+      default:
+        return <ConsumerNavigator />;
     }
   };
 

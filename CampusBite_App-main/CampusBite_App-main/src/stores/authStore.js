@@ -80,6 +80,12 @@ const useAuthStore = create((set, get) => ({
     }
   },
 
+  setSession: async (token, user) => {
+    await AsyncStorage.setItem('token', token);
+    await AsyncStorage.setItem('user', JSON.stringify(user));
+    set({ token, user });
+  },
+
   updateUser: (updates) =>
     set((state) => {
       const updated = { ...state.user, ...updates };

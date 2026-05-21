@@ -71,6 +71,12 @@ export const api = {
     markAllAsRead:  ()         => client.patch('/notifications/mark-all-read'),
   },
 
+  // ─── Verification ───────────────────────────────────────────────────────────
+  verification: {
+    upload:    (formData) => client.post('/verification/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+    getStatus: ()         => client.get('/verification/status'),
+  },
+
   // ─── Admin ──────────────────────────────────────────────────────────────────
   admin: {
     getStats:      ()       => client.get('/admin/stats'),
