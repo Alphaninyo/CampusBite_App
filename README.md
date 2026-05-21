@@ -209,7 +209,24 @@ FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour_Private_Key_Here\n-----E
 
 **Note:** Vendor and Food Courier accounts require admin approval before they can access their dashboards. Use the admin account to approve them.
 
-## 📞 Support
+## � Multi-Step Registration & Admin Verification Gating
+
+CampusBite implements a robust trust-gating system for **Vendors** and **Food Couriers (Riders)** to ensure campus safety and vendor legitimacy:
+
+1. **Step 1 (Basic Details):** Accounts are registered on the backend with basic details. Consumers are auto-approved, while Vendors/Riders are created in a `pending` state.
+2. **Step 2 (Identity Verification):** For Vendors and Riders, the registration form transitions seamlessly to Step 2. Users select a document type (**National ID** or **Passport**) and upload a photo/scanned copy via Camera or Gallery.
+3. **Admin Gating on Login:** Unapproved Vendors or Riders attempting to log in will see a dedicated, polite inline status banner explaining that their account is awaiting review, rather than being let into the app prematurely.
+4. **Pending Navigator:** Once logged in, unapproved users are directed to a clean `PendingNavigator` showing their review status, guidelines, and document details, ensuring they cannot bypass verification.
+
+## 🎨 User Interface Theme Refresh
+
+The CampusBite auth screens have been modernized with a polished, lightweight visual signature:
+- **Background Palette:** A very soft, welcoming warm peach `#FFF5F0` backdrop with transparent decorative circles.
+- **Form Card:** A floating pure white `#FFFFFF` card with soft elevation shadows, detailed with a bold brand accent bar (`#E85D04`) on top.
+- **Minimalist Underlined Input Fields:** Fully customized, transparent-background inputs using a sleek bottom-line border instead of rigid rectangular boxes. Focused fields trigger a smooth brand accent highlight.
+- **No Clutter:** Browser-native black highlights and autocomplete blue background fills are completely disabled on Web, and validation checkmark icons have been removed for a premium, clean layout.
+
+## �📞 Support
 
 For issues and questions:
 1. Check the troubleshooting section
@@ -218,17 +235,19 @@ For issues and questions:
 
 ## 🗄️ Database Migrations
 
-After updating the backend with new features (Food Courier Profile, Notifications), run the database migrations:
+After updating the backend with new features (Food Courier Profile, Notifications, Identity Verification), run the database migrations:
 
 ```bash
 cd CampusBite_Backend-main
 node migrations/003-create-food-courier-profile-table.js
 node migrations/004-create-notifications-table.js
+node migrations/005-add-verification-fields-to-users.js
 ```
 
-This will create the necessary tables:
+This will create/update the necessary tables:
 - `food_courier_profiles` - Stores courier-specific data (vehicle type, availability, earnings, rating)
 - `notifications` - Stores in-app notifications for all users
+- `users` (updates) - Appends verification document, document type, and admin review status columns to authorize securely.
 
 ## 📄 License
 MIT License - CampusBite Team
