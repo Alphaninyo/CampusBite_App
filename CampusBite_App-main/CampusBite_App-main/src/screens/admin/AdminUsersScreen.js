@@ -3,8 +3,8 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, 
 import { api } from '../../api';
 import { COLORS } from '../../constants';
 
-const ROLES = ['All', 'consumer', 'vendor', 'rider', 'admin'];
-const ROLE_COLORS = { consumer: '#6366F1', vendor: COLORS.primary, rider: '#F59E0B', admin: '#EF4444' };
+const ROLES = ['All', 'consumer', 'vendor', 'food_courier', 'admin'];
+const ROLE_COLORS = { consumer: '#6366F1', vendor: COLORS.primary, food_courier: '#F59E0B', admin: '#EF4444' };
 
 export default function AdminUsersScreen() {
   const [users, setUsers]       = useState([]);
@@ -53,7 +53,7 @@ export default function AdminUsersScreen() {
       <View style={styles.filterRow}>
         {ROLES.map((r) => (
           <TouchableOpacity key={r} style={[styles.chip, filter === r && styles.chipActive]} onPress={() => setFilter(r)}>
-            <Text style={[styles.chipText, filter === r && styles.chipTextActive]}>{r}</Text>
+            <Text style={[styles.chipText, filter === r && styles.chipTextActive]}>{r === 'food_courier' ? 'Food Courier' : r}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -70,7 +70,7 @@ export default function AdminUsersScreen() {
             <View style={styles.row}>
               <Text style={styles.name}>{item.name}</Text>
               <View style={[styles.badge, { backgroundColor: ROLE_COLORS[item.role] || COLORS.gray }]}>
-                <Text style={styles.badgeText}>{item.role}</Text>
+                <Text style={styles.badgeText}>{item.role === 'food_courier' ? 'Food Courier' : item.role}</Text>
               </View>
             </View>
             <Text style={styles.email}>{item.email}</Text>

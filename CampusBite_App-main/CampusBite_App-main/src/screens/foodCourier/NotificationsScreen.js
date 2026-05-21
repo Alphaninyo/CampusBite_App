@@ -1,0 +1,175 @@
+import React, { useState, useCallback, useEffect } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { api } from '../../api';
+import { COLORS } from '../../constants';
+
+export default function NotificationsScreen({ navigation }) {
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const { data } = await api.notifications.getAll();
+      setNotifications(data.notifications);
+    } catch (err) {
+      console.error(err.message);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
+
+  const markAsRead = async (id) => {
+    try {
+      await api.notifications.markAsRead(id);
+      fetchNotifications();
+    } catch (err) {
+      console.error(err.message);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      await api.notifications.markAllAsRead();
+      fetchNotifications();
+    } catch (err) {
+      console.error(err.message);
+    }
+  };
+
+  const getIconForType = (type) => {
+    switch (type) {
+      case 'order_status': return 'receipt-outline';
+      case 'payment': return 'card-outline';
+      case 'delivery': return 'bicycle-outline';
+      case 'feedback': return 'chatbox-outline';
+      default: return 'notifications-outline';
+    }
+  };
+
+  const getColorForType = (type) => {
+    switch (type) {
+      case 'order_status': return '#2563EB';
+      case 'payment': return '#7C3AED';
+      case 'delivery': return '#E85D04';
+      case 'feedback': return '#059669';
+      default: return COLORS.gray;
+    }
+  };
+
+  if (loading) return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF8F6' }}>
+      <ActivityIndicator size="large" color="#E85D04" />
+    </View>
+  );
+
+  const unreadCount = notifications.filter(n => !n.is_read).length;
+
+  return (
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={24} color={COLORS.black} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Notifications</Text>
+        {unreadCount > 0 && (
+          <TouchableOpacity onPress={markAllAsRead} style={styles.markAllBtn}>
+            <Text style={styles.markAllText}>Mark all read</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <FlatList
+        data={notifications}
+        keyExtractor={(n) => n.id}
+        contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchNotifications(); }} colors={['#E85D04']} />}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Ionicons name="notifications-off-outline" size={64} color={COLORS.gray} />
+            <Text style={styles.emptyTitle}>No notifications</Text>
+            <Text style={styles.emptySub}>You're all caught up!</Text>
+          </View>
+        }
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={[styles.notificationCard, !item.is_read && styles.unreadCard]}
+            onPress={() => { if (!item.is_read) markAsRead(item.id); }}
+          >
+            <View style={[styles.iconBox, { backgroundColor: getColorForType(item.type) }]}>
+              <Ionicons name={getIconForType(item.type)} size={22} color="#fff" />
+            </View>
+            <View style={styles.content}>
+              <Text style={[styles.title, !item.is_read && styles.unreadTitle]}>{item.title}</Text>
+              <Text style={styles.body} numberOfLines={2}>{item.body}</Text>
+              <Text style={styles.time}>
+                {new Date(item.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </Text>
+            </View>
+            {!item.is_read && <View style={styles.unreadDot} />}
+          </TouchableOpacity>
+        )}
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#FFF8F6' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0e8e4',
+  },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.black },
+  markAllBtn: { paddingHorizontal: 8 },
+  markAllText: { fontSize: 13, color: '#E85D04', fontWeight: '600' },
+  notificationCard: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#f0e8e4',
+  },
+  unreadCard: { backgroundColor: '#FFF0EB', borderColor: '#E85D04' },
+  iconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  content: { flex: 1 },
+  title: { fontSize: 15, fontWeight: '600', color: COLORS.black, marginBottom: 4 },
+  unreadTitle: { color: '#E85D04' },
+  body: { fontSize: 13, color: COLORS.gray, marginBottom: 4 },
+  time: { fontSize: 11, color: '#9CA3AF' },
+  unreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#E85D04',
+    marginLeft: 8,
+    marginTop: 4,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.black, marginTop: 16 },
+  emptySub: { fontSize: 14, color: COLORS.gray, marginTop: 4 },
+});

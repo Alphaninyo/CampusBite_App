@@ -7,7 +7,7 @@ import useAuthStore from '../stores/authStore';
 import AuthNavigator    from './AuthNavigator';
 import ConsumerNavigator from './ConsumerNavigator';
 import VendorNavigator  from './VendorNavigator';
-import RiderNavigator   from './RiderNavigator';
+import FoodCourierNavigator   from './FoodCourierNavigator';
 import AdminNavigator   from './AdminNavigator';
 import { COLORS } from '../constants';
 
@@ -57,7 +57,7 @@ export default function RootNavigator() {
   const getNavigator = () => {
     switch (user.role) {
       case 'vendor':   return <VendorNavigator />;
-      case 'rider':    return <RiderNavigator />;
+      case 'food_courier':    return <FoodCourierNavigator />;
       case 'admin':    return <AdminNavigator />;
       default:         return <ConsumerNavigator />;
     }

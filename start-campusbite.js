@@ -120,7 +120,7 @@ async function startCampusBite() {
         console.log('   Consumer: mark@campusbite.com / password123');
         console.log('   Admin: sysadmin@campusbite.com / password123');
         console.log('   Vendor: vendor2@campusbite.com / password123 (needs approval)');
-        console.log('   Rider: rider@campusbite.com / password123 (needs approval)');
+        console.log('   Food Courier: rider@campusbite.com / password123 (needs approval)');
         console.log('');
         
         // Open browser after a short delay

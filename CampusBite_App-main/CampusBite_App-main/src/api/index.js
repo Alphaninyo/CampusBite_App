@@ -3,14 +3,14 @@ import client from './client';
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 export const api = {
   auth: {
-    register:      (data) => client.post('/auth/register', data),
-    login:         (data) => client.post('/auth/login', data),
-    me:            ()     => client.get('/auth/me'),
-    updateProfile: (data) => client.put('/auth/profile', data),
-    updatePassword:(data) => client.put('/auth/password', data),
-    forgotPassword:(data) => client.post('/auth/forgot-password', data),
-    resetPassword: (data) => client.post('/auth/reset-password', data),
-    deviceToken:   (data) => client.put('/auth/device-token', data),
+    register:         (data)           => client.post('/auth/register', data),
+    login:            (data)           => client.post('/auth/login', data),
+    forgotPassword:    (data)           => client.post('/auth/forgot-password', data),
+    resetPassword:    (data)           => client.post('/auth/reset-password', data),
+    getMe:            ()               => client.get('/auth/me'),
+    updateProfile:    (data)           => client.put('/auth/profile', data),
+    updatePassword:   (data)           => client.put('/auth/password', data),
+    updateDeviceToken:(data)           => client.put('/auth/device-token', data),
   },
 
   // ─── Vendors ────────────────────────────────────────────────────────────────
@@ -20,6 +20,13 @@ export const api = {
     getProfile:    ()       => client.get('/vendors/profile/me'),
     updateProfile: (data)   => client.put('/vendors/profile/me', data),
     updateStatus:  ()       => client.patch('/vendors/profile/me/toggle'),
+  },
+
+  // ─── Food Courier Profile ────────────────────────────────────────────────────
+  foodCourier: {
+    getProfile:           ()       => client.get('/food-courier/profile'),
+    updateProfile:        (data)   => client.put('/food-courier/profile', data),
+    toggleAvailability:   ()       => client.patch('/food-courier/profile/toggle-availability'),
   },
 
   // ─── Menu ───────────────────────────────────────────────────────────────────
@@ -38,9 +45,9 @@ export const api = {
     getById:             (id)     => client.get(`/orders/${id}`),
     getVendorOrders:     ()       => client.get('/orders/vendor'),
     updateStatus:        (id, status) => client.patch(`/orders/${id}/status`, { status }),
-    getAvailableForRider:()       => client.get('/orders/rider/available'),
-    acceptDelivery:      (id)     => client.patch(`/orders/${id}/assign-rider`),
-    getRiderOrders:      ()       => client.get('/orders/rider/mine'),
+    getAvailableForFoodCourier:()       => client.get('/orders/food-courier/available'),
+    acceptDelivery:      (id)     => client.patch(`/orders/${id}/assign-food-courier`),
+    getFoodCourierOrders:      ()       => client.get('/orders/food-courier/mine'),
   },
 
   // ─── Payments ───────────────────────────────────────────────────────────────
@@ -54,6 +61,14 @@ export const api = {
     create:         (data)     => client.post('/reviews', data),
     getVendorReviews:(vendorId) => client.get(`/reviews/vendor/${vendorId}`),
     getOrderReview: (orderId)  => client.get(`/reviews/order/${orderId}`),
+  },
+
+  // ─── Notifications ─────────────────────────────────────────────────────────────
+  notifications: {
+    getAll:         ()         => client.get('/notifications'),
+    getUnreadCount: ()         => client.get('/notifications/unread-count'),
+    markAsRead:     (id)       => client.patch(`/notifications/${id}/mark-read`),
+    markAllAsRead:  ()         => client.patch('/notifications/mark-all-read'),
   },
 
   // ─── Admin ──────────────────────────────────────────────────────────────────

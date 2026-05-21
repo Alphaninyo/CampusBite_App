@@ -87,7 +87,7 @@ Write-Host "🎯 Test Accounts:" -ForegroundColor Yellow
 Write-Host "   Consumer: mark@campusbite.com / password123" -ForegroundColor White
 Write-Host "   Admin: sysadmin@campusbite.com / password123" -ForegroundColor White
 Write-Host "   Vendor: vendor2@campusbite.com / password123 (needs approval)" -ForegroundColor White
-Write-Host "   Rider: rider@campusbite.com / password123 (needs approval)" -ForegroundColor White
+Write-Host "   Food Courier: rider@campusbite.com / password123 (needs approval)" -ForegroundColor White
 Write-Host ""
 Write-Host "Press any key to open the application in your browser..." -ForegroundColor Yellow
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")

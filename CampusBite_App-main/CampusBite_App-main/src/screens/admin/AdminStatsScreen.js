@@ -46,7 +46,7 @@ export default function AdminStatsScreen() {
         <StatCard label="Revenue (KES)"   value={parseFloat(stats?.revenue?.confirmed_total || 0).toFixed(0)}  color={COLORS.success} />
         <StatCard label="Consumers"       value={stats?.users?.consumers ?? 0}                                  color="#6366F1" />
         <StatCard label="Vendors"         value={stats?.users?.vendors ?? 0}                                    color="#EC4899" />
-        <StatCard label="Riders"          value={stats?.users?.riders ?? 0}                                     color="#F59E0B" />
+        <StatCard label="Food Couriers"  value={stats?.users?.food_couriers ?? 0}                               color="#F59E0B" />
         <StatCard label="Pending Vendors" value={stats?.users?.pending_vendors ?? 0}                            color={COLORS.warning} />
         <StatCard label="Reviews"         value={stats?.reviews?.total ?? 0}                                    color="#14B8A6" />
       </View>

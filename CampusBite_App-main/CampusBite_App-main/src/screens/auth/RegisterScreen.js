@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator,
 import useAuthStore from '../../stores/authStore';
 import { COLORS } from '../../constants';
 
-const ROLES = ['consumer', 'vendor', 'rider'];
+const ROLES = ['consumer', 'vendor', 'food_courier'];
 
 export default function RegisterScreen({ navigation }) {
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', role: 'consumer', business_name: '', vendor_type: 'home_based', location: '' });
@@ -45,7 +45,7 @@ export default function RegisterScreen({ navigation }) {
         <View style={styles.roleRow}>
           {ROLES.map((r) => (
             <TouchableOpacity key={r} style={[styles.roleBtn, form.role === r && styles.roleBtnActive]} onPress={() => set('role', r)}>
-              <Text style={[styles.roleBtnText, form.role === r && styles.roleBtnTextActive]}>{r.charAt(0).toUpperCase() + r.slice(1)}</Text>
+              <Text style={[styles.roleBtnText, form.role === r && styles.roleBtnTextActive]}>{r === 'food_courier' ? 'Food Courier' : r.charAt(0).toUpperCase() + r.slice(1)}</Text>
             </TouchableOpacity>
           ))}
         </View>

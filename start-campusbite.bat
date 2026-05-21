@@ -41,7 +41,7 @@ echo [2/3] Starting Backend API Server...
 echo.
 
 REM Start Backend Server
-cd /d "%~dp0CampusBite_Backend-main\CampusBite_Backend-main"
+cd /d "%~dp0CampusBite_Backend-main"
 start "CampusBite Backend" cmd /k "echo Backend Server Starting... && npm start"
 
 REM Wait for backend to start
@@ -93,7 +93,7 @@ echo 🎯 Test Accounts:
 echo    Consumer: mark@campusbite.com / password123
 echo    Admin: sysadmin@campusbite.com / password123
 echo    Vendor: vendor2@campusbite.com / password123 (needs approval)
-echo    Rider: rider@campusbite.com / password123 (needs approval)
+echo    Food Courier: rider@campusbite.com / password123 (needs approval)
 echo.
 echo Press any key to open the application in your browser...
 pause >nul
