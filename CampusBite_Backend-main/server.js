@@ -23,6 +23,25 @@ async function startServer() {
     await sequelize.sync();
     console.log('[DB] All models synchronized with the database.');
 
+    // Safe column migrations — IF NOT EXISTS means these are no-ops on subsequent starts
+    const migrations = [
+      // Existing columns
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS special_instructions VARCHAR(500)`,
+      `ALTER TABLE vendors ADD COLUMN IF NOT EXISTS rejected_at TIMESTAMP`,
+      `ALTER TABLE food_courier_profiles ADD COLUMN IF NOT EXISTS rejected_at TIMESTAMP`,
+      `ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS category VARCHAR(50)`,
+      `ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS image VARCHAR(500)`,
+      // New: multi-payment + promo + scheduled delivery
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method VARCHAR(10) DEFAULT 'mpesa'`,
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount_amount DECIMAL(10,2) DEFAULT 0`,
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS promo_code VARCHAR(50)`,
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS scheduled_time TIMESTAMP`,
+    ];
+    for (const sql of migrations) {
+      await sequelize.query(sql).catch((e) => console.warn('[MIGRATION]', sql.slice(0, 60), e.message));
+    }
+    console.log('[DB] Column migrations applied.');
+
     app.listen(PORT, () => {
       console.log(`[SERVER] CampusBite API running on http://localhost:${PORT}`);
       console.log(`[SERVER] Environment: ${process.env.NODE_ENV}`);

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, ScrollView, Platform, Image, Switch, KeyboardAvoidingView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
 import { COLORS } from '../../constants';
@@ -16,7 +17,7 @@ export default function ProfileScreen({ navigation }) {
   const [confirmPw, setConfirmPw] = useState('');
   const [saving, setSaving]       = useState(false);
   const [profileImage, setProfileImage] = useState(null);
-  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(true);
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showHelpSupport, setShowHelpSupport] = useState(false);
@@ -283,7 +284,7 @@ export default function ProfileScreen({ navigation }) {
       Alert.alert('Success', 'Profile updated.');
       setShowEditProfile(false);
     } catch (err) {
-      Alert.alert('Error', err.message);
+      Alert.alert('Error', err?.response?.data?.message || err.message || 'Failed to update profile.');
     } finally {
       setSaving(false);
     }
@@ -316,9 +317,44 @@ export default function ProfileScreen({ navigation }) {
 
   const handleImageUpload = () => {
     Alert.alert('Profile Picture', 'Choose an option', [
-      { text: 'Take Photo', onPress: () => console.log('Take photo') },
-      { text: 'Choose from Gallery', onPress: () => console.log('Choose from gallery') },
-      { text: 'Cancel', style: 'cancel' }
+      {
+        text: 'Take Photo',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+          if (status !== 'granted') {
+            Alert.alert('Permission needed', 'Allow camera access to take a photo.');
+            return;
+          }
+          const result = await ImagePicker.launchCameraAsync({
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+          });
+          if (!result.canceled && result.assets?.[0]?.uri) {
+            setProfileImage({ uri: result.assets[0].uri });
+          }
+        },
+      },
+      {
+        text: 'Choose from Gallery',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== 'granted') {
+            Alert.alert('Permission needed', 'Allow access to your photo library to update your profile picture.');
+            return;
+          }
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+          });
+          if (!result.canceled && result.assets?.[0]?.uri) {
+            setProfileImage({ uri: result.assets[0].uri });
+          }
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
     ]);
   };
 

@@ -16,6 +16,7 @@ export default function LoginScreen({ navigation }) {
   const [focusPass, setFocusPass]       = useState(false);
   const [loading, setLoading]           = useState(false);
   const [pendingMsg, setPendingMsg]     = useState(null);
+  const [errorMsg, setErrorMsg]         = useState(null);
   const btnScale                        = useRef(new Animated.Value(1)).current;
   const login                           = useAuthStore((s) => s.login);
 
@@ -23,8 +24,12 @@ export default function LoginScreen({ navigation }) {
   const pressOut = () => Animated.spring(btnScale, { toValue: 1,    useNativeDriver: false }).start();
 
   const handleLogin = async () => {
-    if (!email || !password) return Alert.alert('Missing fields', 'Please enter your email and password.');
+    if (!email || !password) {
+      setErrorMsg('Please enter your email and password.');
+      return;
+    }
     setPendingMsg(null);
+    setErrorMsg(null);
     setLoading(true);
     try {
       await login(email.trim(), password);
@@ -32,7 +37,7 @@ export default function LoginScreen({ navigation }) {
       if (err.message?.toLowerCase().includes('pending') || err.message?.toLowerCase().includes('approval')) {
         setPendingMsg(err.message);
       } else {
-        Alert.alert('Login Failed', err.message);
+        setErrorMsg('Incorrect email or password. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -105,6 +110,19 @@ export default function LoginScreen({ navigation }) {
             </View>
           )}
 
+          {/* ── Error banner ── */}
+          {errorMsg && (
+            <View style={styles.errorBanner}>
+              <View style={styles.errorBannerLeft}>
+                <Ionicons name="alert-circle" size={20} color={COLORS.danger} />
+              </View>
+              <Text style={styles.errorBannerText}>{errorMsg}</Text>
+              <TouchableOpacity onPress={() => setErrorMsg(null)}>
+                <Ionicons name="close" size={18} color={COLORS.danger} />
+              </TouchableOpacity>
+            </View>
+          )}
+
           {/* ── Email ── */}
           <Text style={styles.label}>EMAIL ADDRESS</Text>
           <View style={[styles.inputWrap, focusEmail && styles.inputFocused]}>
@@ -116,7 +134,7 @@ export default function LoginScreen({ navigation }) {
               placeholder="your@email.com"
               placeholderTextColor={COLORS.muted}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(v) => { setEmail(v); setErrorMsg(null); }}
               keyboardType="email-address"
               autoCapitalize="none"
               onFocus={() => setFocusEmail(true)}
@@ -140,7 +158,7 @@ export default function LoginScreen({ navigation }) {
               placeholder="Enter your password"
               placeholderTextColor={COLORS.muted}
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(v) => { setPassword(v); setErrorMsg(null); }}
               secureTextEntry={!showPassword}
               onFocus={() => setFocusPass(true)}
               onBlur={() => setFocusPass(false)}
@@ -313,6 +331,19 @@ const styles = StyleSheet.create({
   signupRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
   signupText: { fontSize: 14, color: COLORS.subtext },
   signupLink: { fontSize: 14, color: COLORS.primary, fontWeight: '800' },
+
+  // ── Error banner ──
+  errorBanner: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: COLORS.dangerBg, borderRadius: 14,
+    borderWidth: 1.5, borderColor: COLORS.dangerBorder,
+    padding: 12, marginBottom: 16, gap: 10,
+  },
+  errorBannerLeft: {
+    width: 32, height: 32, borderRadius: 8,
+    backgroundColor: '#FEE2E2', alignItems: 'center', justifyContent: 'center',
+  },
+  errorBannerText: { flex: 1, fontSize: 13, color: COLORS.danger, fontWeight: '600', lineHeight: 17 },
 
   // ── Trust ──
   trustBadge: {

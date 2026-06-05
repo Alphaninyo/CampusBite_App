@@ -10,8 +10,9 @@ import VendorOrderDetailScreen from '../screens/vendor/VendorOrderDetailScreen';
 import MenuScreen            from '../screens/vendor/MenuScreen';
 import AddMenuItemScreen     from '../screens/vendor/AddMenuItemScreen';
 import EditMenuItemScreen    from '../screens/vendor/EditMenuItemScreen';
-import VendorProfileScreen   from '../screens/vendor/VendorProfileScreen';
-import { COLORS }            from '../constants';
+import VendorProfileScreen      from '../screens/vendor/VendorProfileScreen';
+import VendorPromoCodesScreen  from '../screens/vendor/VendorPromoCodesScreen';
+import { COLORS }              from '../constants';
 
 const Tab   = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -36,9 +37,10 @@ function OrdersStack() {
 function MenuStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Menu"        component={MenuScreen} />
-      <Stack.Screen name="AddMenuItem" component={AddMenuItemScreen} options={{ headerShown: true, title: 'Add Item', headerTintColor: COLORS.primary }} />
-      <Stack.Screen name="EditMenuItem" component={EditMenuItemScreen} options={{ headerShown: true, title: 'Edit Item', headerTintColor: COLORS.primary }} />
+      <Stack.Screen name="Menu"             component={MenuScreen} />
+      <Stack.Screen name="AddMenuItem"      component={AddMenuItemScreen}     options={{ headerShown: true, title: 'Add Item',    headerTintColor: COLORS.primary }} />
+      <Stack.Screen name="EditMenuItem"     component={EditMenuItemScreen}    options={{ headerShown: true, title: 'Edit Item',   headerTintColor: COLORS.primary }} />
+      <Stack.Screen name="PromoCodes"       component={VendorPromoCodesScreen} options={{ headerShown: true, title: 'Promo Codes', headerTintColor: COLORS.primary }} />
     </Stack.Navigator>
   );
 }

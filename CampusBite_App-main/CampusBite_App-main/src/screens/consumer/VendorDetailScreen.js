@@ -1,23 +1,49 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Image } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
 import { COLORS, API_BASE_URL } from '../../constants';
+import useCartStore from '../../stores/cartStore';
 
 export default function VendorDetailScreen({ route, navigation }) {
   const { vendor } = route.params;
-  const [menu, setMenu]   = useState([]);
-  const [cart, setCart]   = useState({}); // { menu_item_id: quantity }
+  const [menu, setMenu]       = useState([]);
+  const [cart, setCart]       = useState({});
   const [loading, setLoading] = useState(true);
+  const menuLoaded = useRef(false);
 
+  // Restore persisted cart for this vendor on mount
   useEffect(() => {
     api.menu.getVendorMenu(vendor.id)
-      .then(({ data }) => setMenu(data.items || data.menu_items || []))
+      .then(({ data }) => {
+        const items = data.items || data.menu_items || [];
+        setMenu(items);
+        // Restore cart from store only if it belongs to this vendor
+        const stored = useCartStore.getState().cartItems;
+        if (stored.length > 0 && stored[0]?.vendor_id === vendor.id) {
+          const map = {};
+          stored.forEach((i) => { map[i.id] = i.quantity; });
+          setCart(map);
+        }
+        menuLoaded.current = true;
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
 
-  const addToCart   = (id) => setCart((c) => ({ ...c, [id]: (c[id] || 0) + 1 }));
+  // Persist cart to store whenever it changes (after menu is loaded)
+  useEffect(() => {
+    if (!menuLoaded.current || menu.length === 0) return;
+    const items = Object.entries(cart)
+      .filter(([, qty]) => qty > 0)
+      .map(([id, quantity]) => {
+        const m = menu.find((x) => x.id === id);
+        return { id, quantity, price: parseFloat(m?.price || 0), vendor_id: vendor.id, name: m?.name || '', image: m?.image || null };
+      });
+    useCartStore.getState().saveCart(items, vendor.id, vendor.business_name);
+  }, [cart]);
+
+  const addToCart = (id) => setCart((c) => ({ ...c, [id]: (c[id] || 0) + 1 }));
   const removeFromCart = (id) => setCart((c) => {
     const updated = { ...c };
     if (updated[id] > 1) updated[id]--;
@@ -32,12 +58,13 @@ export default function VendorDetailScreen({ route, navigation }) {
     .toFixed(2);
 
   const goCheckout = () => {
-    if (cartCount === 0) return Alert.alert('Empty Cart', 'Add items before checking out.');
+    if (cartCount === 0) return;
     const items = Object.entries(cart).map(([menu_item_id, quantity]) => {
       const menuItem = menu.find((m) => m.id === menu_item_id);
       return { menu_item_id, quantity, name: menuItem?.name };
     });
-    navigation.navigate('Checkout', { vendor, items, subtotal: parseFloat(cartTotal) });
+    const subtotal = parseFloat(cartTotal);
+    navigation.navigate('Checkout', { vendor, items, subtotal });
   };
 
   if (loading) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}><ActivityIndicator size="large" color={COLORS.primary} /></View>;

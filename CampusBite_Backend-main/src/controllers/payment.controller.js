@@ -68,7 +68,7 @@ exports.handleCallback = async (req, res) => {
     console.log(`[MPESA] Payment confirmed. Order ${order.id} created. Receipt: ${mpesa_ref}`);
 
     // Fire-and-forget notifications — failures must never affect the response to Safaricom
-    const { consumer_id, vendor_id, total_amount } = cartData;
+    const { consumer_id, vendor_id, total_amount } = payment.cart_data || {};
     Promise.all([
       User.findByPk(consumer_id, { attributes: ['fcm_token'] }),
       Vendor.findByPk(vendor_id, { include: [{ model: User, as: 'owner', attributes: ['name', 'fcm_token'] }] }),

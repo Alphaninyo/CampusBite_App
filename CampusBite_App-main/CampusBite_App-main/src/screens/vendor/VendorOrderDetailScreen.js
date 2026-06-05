@@ -125,6 +125,12 @@ export default function VendorOrderDetailScreen({ route, navigation }) {
           <Text style={styles.infoLabel}>Address</Text>
           <Text style={[styles.infoValue, { flex: 1, textAlign: 'right' }]}>{order.delivery_address || 'N/A'}</Text>
         </View>
+        {order.special_instructions ? (
+          <View style={styles.instructionsBox}>
+            <Ionicons name="chatbubble-ellipses-outline" size={14} color={COLORS.primary} style={{ marginTop: 1 }} />
+            <Text style={styles.instructionsText}>{order.special_instructions}</Text>
+          </View>
+        ) : null}
       </View>
 
       {/* Items */}
@@ -264,6 +270,18 @@ const styles = StyleSheet.create({
   },
   totalLabel: { fontSize: 13, color: COLORS.gray },
   totalValue: { fontSize: 13, color: COLORS.black },
+
+  // Special instructions
+  instructionsBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    marginTop: 10,
+    backgroundColor: COLORS.backgroundAlt,
+    borderRadius: 10,
+    padding: 10,
+  },
+  instructionsText: { flex: 1, fontSize: 13, color: COLORS.black, lineHeight: 18 },
 
   // Rider
   riderRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },

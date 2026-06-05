@@ -18,6 +18,7 @@ router.get( '/vendor',                         protect, restrictTo('vendor'),   
 router.get( '/food-courier/available',                protect, restrictTo('food_courier'),           orderController.getAvailableOrders);
 router.get( '/food-courier/mine',                     protect, restrictTo('food_courier'),           orderController.getRiderOrders);
 router.patch('/:id/assign-food-courier',              protect, restrictTo('food_courier'),           orderController.assignRider);
+router.patch('/:id/collect-cash',                     protect, restrictTo('food_courier'),           orderController.collectCash);
 
 // ── Shared (access control enforced inside controller) ────────────────────────
 router.get(  '/:id',      protect, orderController.getOrderById);

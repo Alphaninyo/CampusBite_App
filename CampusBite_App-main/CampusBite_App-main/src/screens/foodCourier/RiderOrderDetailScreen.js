@@ -20,10 +20,11 @@ const ACTION_LABEL = {
 
 export default function RiderOrderDetailScreen({ route }) {
   const { orderId } = route.params;
-  const [order, setOrder]       = useState(null);
-  const [loading, setLoading]   = useState(true);
+  const [order, setOrder]           = useState(null);
+  const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [updating, setUpdating] = useState(false);
+  const [updating, setUpdating]     = useState(false);
+  const [collectingCash, setCollectingCash] = useState(false);
 
   const fetchOrder = useCallback(async () => {
     try {
@@ -61,6 +62,32 @@ export default function RiderOrderDetailScreen({ route }) {
     ]);
   };
 
+  const handleCollectCash = () => {
+    const amount = parseFloat(order.total_amount || 0).toFixed(0);
+    Alert.alert(
+      'Confirm Cash Received',
+      `Confirm that the customer has paid KES ${amount} in cash?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Yes, Cash Received',
+          onPress: async () => {
+            setCollectingCash(true);
+            try {
+              await api.orders.collectCash(orderId);
+              Alert.alert('Done', 'Cash payment confirmed.');
+              fetchOrder();
+            } catch (err) {
+              Alert.alert('Error', err?.response?.data?.message || err.message);
+            } finally {
+              setCollectingCash(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (loading) return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}>
       <ActivityIndicator size="large" color={COLORS.primary} />
@@ -72,10 +99,13 @@ export default function RiderOrderDetailScreen({ route }) {
     </View>
   );
 
-  const nextStatus   = NEXT_STATUS[order.status];
-  const isDelivered  = order.status === 'Delivered';
-  const deliveryFee  = parseFloat(order.delivery_fee || 0);
-  const currentStep  = STATUS_STEPS.indexOf(order.status);
+  const nextStatus      = NEXT_STATUS[order.status];
+  const isDelivered     = order.status === 'Delivered';
+  const deliveryFee     = parseFloat(order.delivery_fee || 0);
+  const currentStep     = STATUS_STEPS.indexOf(order.status);
+  const needsCashCollect = order.status === 'In Transit'
+    && order.payment_method !== 'mpesa'
+    && order.payment?.status !== 'confirmed';
 
   return (
     <ScrollView
@@ -172,6 +202,32 @@ export default function RiderOrderDetailScreen({ route }) {
           <Text style={styles.earningsValue}>KES {deliveryFee.toFixed(0)}</Text>
         </View>
       </View>
+
+      {/* ── Pay on Delivery: Cash Collection ── */}
+      {needsCashCollect && (
+        <View style={styles.cashCard}>
+          <View style={styles.cashCardHeader}>
+            <Ionicons name="cash-outline" size={22} color="#2e7d32" />
+            <Text style={styles.cashCardTitle}>Pay on Delivery</Text>
+          </View>
+          <Text style={styles.cashCardSub}>
+            This customer is paying in cash. Collect <Text style={styles.cashAmount}>KES {parseFloat(order.total_amount || 0).toFixed(0)}</Text> before handing over the order.
+          </Text>
+          <TouchableOpacity
+            style={[styles.cashBtn, collectingCash && { opacity: 0.6 }]}
+            onPress={handleCollectCash}
+            disabled={collectingCash}
+          >
+            {collectingCash
+              ? <ActivityIndicator color="#fff" size="small" />
+              : <>
+                  <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+                  <Text style={styles.cashBtnText}>Confirm Cash Received</Text>
+                </>
+            }
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* ── Action Button ── */}
       {nextStatus && (
@@ -287,6 +343,31 @@ const styles = StyleSheet.create({
   },
   earningsLabel: { fontSize: 13, fontWeight: '600', color: COLORS.gray },
   earningsValue: { fontSize: 15, fontWeight: 'bold', color: COLORS.primary },
+
+  // Cash collection card
+  cashCard: {
+    margin: 16,
+    marginTop: 0,
+    backgroundColor: '#f1f8e9',
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1.5,
+    borderColor: '#a5d6a7',
+  },
+  cashCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  cashCardTitle:  { fontSize: 16, fontWeight: 'bold', color: '#2e7d32' },
+  cashCardSub:    { fontSize: 13, color: '#388E3C', lineHeight: 19, marginBottom: 14 },
+  cashAmount:     { fontWeight: 'bold' },
+  cashBtn: {
+    backgroundColor: '#2e7d32',
+    borderRadius: 10,
+    paddingVertical: 13,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  cashBtnText: { color: '#fff', fontSize: 15, fontWeight: 'bold' },
 
   // Action button
   actionButton: {

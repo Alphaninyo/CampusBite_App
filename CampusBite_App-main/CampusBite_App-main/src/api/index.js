@@ -67,12 +67,22 @@ export const api = {
     getAvailableForFoodCourier:()       => client.get('/orders/food-courier/available'),
     acceptDelivery:      (id)     => client.patch(`/orders/${id}/assign-food-courier`),
     getFoodCourierOrders:      ()       => client.get('/orders/food-courier/mine'),
+    collectCash:         (id)     => client.patch(`/orders/${id}/collect-cash`),
   },
 
   // ─── Payments ───────────────────────────────────────────────────────────────
   payments: {
     getStatus: (checkoutRequestId) => client.get(`/payments/status/${checkoutRequestId}`),
     cancel:    (checkoutRequestId) => client.post(`/payments/${checkoutRequestId}/cancel`),
+  },
+
+  // ─── Promo Codes ────────────────────────────────────────────────────────────
+  promoCodes: {
+    validate:   (data)   => client.post('/promo-codes/validate', data),
+    getMy:      ()       => client.get('/promo-codes/my'),
+    create:     (data)   => client.post('/promo-codes', data),
+    toggle:     (id)     => client.patch(`/promo-codes/${id}/toggle`),
+    delete:     (id)     => client.delete(`/promo-codes/${id}`),
   },
 
   // ─── Reviews ────────────────────────────────────────────────────────────────

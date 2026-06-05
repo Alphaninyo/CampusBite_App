@@ -1,18 +1,11 @@
 const mpesaService = require('../services/mpesa.service');
 const notify       = require('../services/notification.service');
-const { sequelize, Order, OrderItem, MenuItem, Vendor, User, Payment } = require('../models');
+const { sequelize, Order, OrderItem, MenuItem, Vendor, User, Payment, PromoCode } = require('../models');
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const DELIVERY_FEE = 50.00; // Flat KES 50 per order. Phase 5 can make this dynamic.
+const DELIVERY_FEE = 50.00;
 
-/**
- * Status transition map.
- * Defines the ONLY valid next status for each current status, and which role
- * is permitted to trigger that transition. Any deviation returns a 403/400.
- *
- * Lifecycle: Received → Preparing → Ready → Collected → In Transit → Delivered
- */
 const TRANSITIONS = {
   'Received':   { next: 'Preparing',  role: 'vendor' },
   'Preparing':  { next: 'Ready',      role: 'vendor' },
@@ -21,21 +14,38 @@ const TRANSITIONS = {
   'In Transit': { next: 'Delivered',  role: 'food_courier'  },
 };
 
-// ─── Internal Helper ──────────────────────────────────────────────────────────
+// ─── Internal Helpers ─────────────────────────────────────────────────────────
+
+/**
+ * Calculates the discount amount for a given promo code.
+ * Returns { promoRecord, discount_amount } — promoRecord is null if invalid/not found.
+ */
+async function _applyPromo(code, vendor_id, food_subtotal) {
+  if (!code) return { promoRecord: null, discount_amount: 0 };
+
+  const promo = await PromoCode.findOne({
+    where: { code: code.trim().toUpperCase(), vendor_id, is_active: true },
+  });
+
+  if (!promo) return { promoRecord: null, discount_amount: 0 };
+  if (promo.expires_at && new Date() > new Date(promo.expires_at)) return { promoRecord: null, discount_amount: 0 };
+  if (promo.max_uses !== null && promo.uses_count >= promo.max_uses) return { promoRecord: null, discount_amount: 0 };
+  if (food_subtotal < parseFloat(promo.min_order_amount)) return { promoRecord: null, discount_amount: 0 };
+
+  const discountValue   = parseFloat(promo.discount_value);
+  const discount_amount = promo.discount_type === 'percent'
+    ? parseFloat(((food_subtotal * discountValue) / 100).toFixed(2))
+    : Math.min(discountValue, food_subtotal);
+
+  return { promoRecord: promo, discount_amount };
+}
 
 /**
  * createOrderFromPayment
- * ──────────────────────
  * Reads a confirmed Payment's cart_data and atomically creates:
  *   1. An Order row
- *   2. All OrderItem rows (one per cart line)
- *
- * EXPORTED so Phase 5's M-Pesa callback handler can import and call this
- * without duplicating logic.
- *
- * @param {Payment} payment - A Sequelize Payment instance with cart_data populated
- * @param {Transaction} t   - An active Sequelize transaction (caller manages commit/rollback)
- * @returns {Promise<Order>} The newly created Order instance
+ *   2. All OrderItem rows
+ * EXPORTED so the M-Pesa callback handler can call this.
  */
 exports.createOrderFromPayment = async (payment, t) => {
   const {
@@ -43,26 +53,35 @@ exports.createOrderFromPayment = async (payment, t) => {
     vendor_id,
     items,
     delivery_address,
+    special_instructions,
     food_subtotal,
     delivery_fee,
+    discount_amount,
     total_amount,
+    promo_code,
+    scheduled_time,
+    payment_method,
   } = payment.cart_data;
 
   const order = await Order.create(
     {
       consumer_id,
       vendor_id,
-      rider_id:         null, // assigned later by a food courier
-      status:           'Received',
+      rider_id:             null,
+      status:               'Received',
       food_subtotal,
       delivery_fee,
+      discount_amount:      discount_amount || 0,
       total_amount,
       delivery_address,
+      special_instructions: special_instructions || null,
+      promo_code:           promo_code || null,
+      scheduled_time:       scheduled_time || null,
+      payment_method:       payment_method || 'mpesa',
     },
     { transaction: t }
   );
 
-  // Snapshot each cart line into order_items
   const orderItems = items.map((item) => ({
     order_id:     order.id,
     menu_item_id: item.menu_item_id,
@@ -81,36 +100,37 @@ exports.createOrderFromPayment = async (payment, t) => {
  * POST /api/orders/initiate
  * Protected — consumer only.
  *
- * Step 1 of the payment-first order flow:
- *   - Validates the cart against the live DB (vendor open, items available, correct vendor)
- *   - Snapshots prices to prevent manipulation between cart and payment
- *   - Creates a pending Payment record (stores cart as JSONB for later retrieval)
- *   - Returns the checkout summary and a checkout_request_id
+ * Accepts payment_method: 'mpesa' | 'cash' | 'card'
+ *   - mpesa: runs STK Push → returns checkout_request_id for polling
+ *   - cash / card: creates order immediately → returns { immediate: true, order_id }
  *
- * Phase 5 will insert the real STK Push call between validation and Payment creation.
- *
- * Body: {
- *   vendor_id:        UUID,
- *   items:            [{ menu_item_id: UUID, quantity: number }],
- *   delivery_address: string
- * }
+ * Also accepts: promo_code, scheduled_time
  */
 exports.initiateCheckout = async (req, res) => {
   try {
-    const { vendor_id, items, delivery_address } = req.body;
+    const {
+      vendor_id,
+      items,
+      delivery_address,
+      special_instructions,
+      payment_method   = 'mpesa',
+      promo_code,
+      scheduled_time,
+      phone_number,
+    } = req.body;
 
-    // ── Basic input validation ─────────────────────────────────────────────
+    // ── Basic validation ──────────────────────────────────────────────────────
     if (!vendor_id || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide vendor_id and a non-empty items array.',
-      });
+      return res.status(400).json({ success: false, message: 'Please provide vendor_id and a non-empty items array.' });
     }
     if (!delivery_address || !delivery_address.trim()) {
       return res.status(400).json({ success: false, message: 'delivery_address is required.' });
     }
+    if (!['mpesa', 'card', 'cash'].includes(payment_method)) {
+      return res.status(400).json({ success: false, message: 'payment_method must be mpesa, card, or cash.' });
+    }
 
-    // ── Vendor validation ──────────────────────────────────────────────────
+    // ── Vendor validation ─────────────────────────────────────────────────────
     const vendor = await Vendor.findByPk(vendor_id);
     if (!vendor || !vendor.approved_at) {
       return res.status(404).json({ success: false, message: 'Vendor not found or not yet approved.' });
@@ -119,7 +139,7 @@ exports.initiateCheckout = async (req, res) => {
       return res.status(400).json({ success: false, message: `"${vendor.business_name}" is currently closed.` });
     }
 
-    // ── Validate each item and snapshot prices ─────────────────────────────
+    // ── Validate each item and snapshot prices ────────────────────────────────
     const cartItems   = [];
     let food_subtotal = 0;
 
@@ -127,88 +147,185 @@ exports.initiateCheckout = async (req, res) => {
       const { menu_item_id, quantity } = entry;
 
       if (!menu_item_id || !Number.isInteger(quantity) || quantity < 1) {
-        return res.status(400).json({
-          success: false,
-          message: 'Each cart item must have a valid menu_item_id and an integer quantity ≥ 1.',
-        });
+        return res.status(400).json({ success: false, message: 'Each item must have a valid menu_item_id and integer quantity ≥ 1.' });
       }
 
       const menuItem = await MenuItem.findByPk(menu_item_id);
       if (!menuItem || !menuItem.is_available) {
-        return res.status(400).json({
-          success: false,
-          message: `Menu item "${menu_item_id}" is unavailable or does not exist.`,
-        });
+        return res.status(400).json({ success: false, message: `Menu item "${menu_item_id}" is unavailable or does not exist.` });
       }
       if (menuItem.vendor_id !== vendor_id) {
-        return res.status(400).json({
-          success: false,
-          message: `"${menuItem.name}" does not belong to this vendor.`,
-        });
+        return res.status(400).json({ success: false, message: `"${menuItem.name}" does not belong to this vendor.` });
       }
 
       const unit_price = parseFloat(menuItem.price);
       food_subtotal   += unit_price * quantity;
-
       cartItems.push({ menu_item_id, name: menuItem.name, quantity, unit_price });
     }
 
-    food_subtotal      = parseFloat(food_subtotal.toFixed(2));
+    food_subtotal = parseFloat(food_subtotal.toFixed(2));
     const delivery_fee = DELIVERY_FEE;
-    const total_amount = parseFloat((food_subtotal + delivery_fee).toFixed(2));
 
-    // ── Initiate STK Push ──────────────────────────────────────────────────
-    // Cart validation is complete. Call Safaricom — outside any DB transaction
-    // because network calls must not hold locks.
-    let stkResponse;
-    try {
-      stkResponse = await mpesaService.initiateSTKPush({
-        phone:       req.user.phone,
-        amount:      total_amount,
-        accountRef:  vendor.business_name,
-        description: 'Food Order',
+    // ── Apply promo code ──────────────────────────────────────────────────────
+    const { promoRecord, discount_amount } = await _applyPromo(promo_code, vendor_id, food_subtotal);
+    const total_amount = parseFloat((food_subtotal + delivery_fee - discount_amount).toFixed(2));
+
+    // Cart snapshot — shared across all payment paths
+    const cartSnapshot = {
+      consumer_id:          req.user.id,
+      vendor_id,
+      items:                cartItems,
+      delivery_address:     delivery_address.trim(),
+      special_instructions: special_instructions?.trim() || null,
+      food_subtotal,
+      delivery_fee,
+      discount_amount,
+      total_amount,
+      promo_code:           promoRecord ? promoRecord.code : null,
+      scheduled_time:       scheduled_time || null,
+      payment_method,
+    };
+
+    // ─── M-Pesa flow ──────────────────────────────────────────────────────────
+    if (payment_method === 'mpesa') {
+      // Fire a real STK push whenever real credentials are present.
+      // MPESA_ENV controls sandbox vs production — keep it 'sandbox' for testing.
+      // Switch to MPESA_ENV=production only with live Daraja credentials.
+      const useLiveMpesa =
+        process.env.MPESA_CONSUMER_KEY &&
+        process.env.MPESA_CONSUMER_KEY !== 'your_consumer_key' &&
+        process.env.MPESA_CONSUMER_SECRET &&
+        process.env.MPESA_CONSUMER_SECRET !== 'your_consumer_secret' &&
+        process.env.MPESA_PASSKEY &&
+        process.env.MPESA_PASSKEY !== 'your_lipa_na_mpesa_passkey' &&
+        process.env.MPESA_CALLBACK_URL &&
+        !process.env.MPESA_CALLBACK_URL.includes('your-public-url');
+
+      let checkoutRequestId;
+      let devMode = false;
+
+      if (useLiveMpesa) {
+        let stkResponse;
+        try {
+          stkResponse = await mpesaService.initiateSTKPush({
+            phone:       phone_number || req.user.phone,
+            amount:      total_amount,
+            accountRef:  vendor.business_name,
+            description: 'Food Order',
+          });
+        } catch (mpesaError) {
+          console.error('[ORDER] STK Push failed:', mpesaError.message);
+          return res.status(503).json({ success: false, message: 'M-Pesa service is currently unavailable. Please try again shortly.' });
+        }
+        checkoutRequestId = stkResponse.CheckoutRequestID;
+      } else {
+        // Dev / sandbox fallback — no real credentials
+        checkoutRequestId = `DEV-${Date.now()}-${req.user.id.slice(0, 8)}`;
+        devMode = true;
+      }
+
+      const payment = await Payment.create({
+        checkout_request_id: checkoutRequestId,
+        amount:              total_amount,
+        status:              'pending',
+        cart_data:           cartSnapshot,
       });
-    } catch (mpesaError) {
-      console.error('[ORDER] STK Push failed:', mpesaError.message);
-      return res.status(503).json({
-        success: false,
-        message: 'M-Pesa service is currently unavailable. Please try again shortly.',
+
+      return res.status(200).json({
+        success:             true,
+        message:             devMode
+          ? 'Dev mode: tap "Simulate M-Pesa" in the app to confirm.'
+          : 'STK Push sent. Enter your M-Pesa PIN to confirm.',
+        checkout_request_id: payment.checkout_request_id,
+        payment_id:          payment.id,
+        immediate:           false,
+        dev_mode:            devMode,
+        summary: {
+          vendor:           vendor.business_name,
+          items:            cartItems,
+          food_subtotal,
+          delivery_fee,
+          discount_amount,
+          total_amount,
+          delivery_address: delivery_address.trim(),
+          scheduled_time:   scheduled_time || null,
+        },
       });
     }
 
-    // ── Create pending Payment record ──────────────────────────────────────
-    // The real Safaricom CheckoutRequestID is used here (replaces Phase 4 UUID).
-    // The cart is stored as JSONB so the callback handler can create the order
-    // without re-fetching anything.
-    const payment = await Payment.create({
-      checkout_request_id: stkResponse.CheckoutRequestID,
-      amount:              total_amount,
-      status:              'pending',
-      cart_data: {
-        consumer_id:      req.user.id,
-        vendor_id,
-        items:            cartItems,
-        delivery_address: delivery_address.trim(),
-        food_subtotal,
-        delivery_fee,
-        total_amount,
-      },
-    });
+    // ─── Card / Cash flow: create order immediately ──────────────────────────────
+    const t = await sequelize.transaction();
+    try {
+      const order = await Order.create(
+        {
+          consumer_id:          req.user.id,
+          vendor_id,
+          rider_id:             null,
+          status:               'Received',
+          food_subtotal,
+          delivery_fee,
+          discount_amount,
+          total_amount,
+          delivery_address:     delivery_address.trim(),
+          special_instructions: special_instructions?.trim() || null,
+          promo_code:           promoRecord ? promoRecord.code : null,
+          scheduled_time:       scheduled_time || null,
+          payment_method,
+        },
+        { transaction: t }
+      );
 
-    res.status(200).json({
-      success: true,
-      message: 'STK Push sent. Check your phone and enter your M-Pesa PIN to confirm your order.',
-      checkout_request_id: payment.checkout_request_id,
-      payment_id:          payment.id,
-      summary: {
-        vendor:           vendor.business_name,
-        items:            cartItems,
-        food_subtotal,
-        delivery_fee,
-        total_amount,
-        delivery_address: delivery_address.trim(),
-      },
-    });
+      await OrderItem.bulkCreate(
+        cartItems.map((i) => ({
+          order_id:     order.id,
+          menu_item_id: i.menu_item_id,
+          quantity:     i.quantity,
+          unit_price:   i.unit_price,
+        })),
+        { transaction: t }
+      );
+
+      const checkout_request_id = `${payment_method.toUpperCase()}-${Date.now()}-${req.user.id.slice(0, 8)}`;
+
+      await Payment.create(
+        {
+          checkout_request_id,
+          amount:       total_amount,
+          status:       payment_method === 'cash' ? 'pending' : 'confirmed',
+          order_id:     order.id,
+          confirmed_at: payment_method === 'cash' ? null : new Date(),
+          cart_data:    null,
+        },
+        { transaction: t }
+      );
+
+      if (promoRecord) {
+        await promoRecord.increment('uses_count', { transaction: t });
+      }
+
+      await t.commit();
+
+      return res.status(201).json({
+        success:             true,
+        immediate:           true,
+        message:             payment_method === 'cash' ? 'Order placed! Pay the rider in cash on delivery.' : 'Order placed! Your card will be charged on delivery.',
+        checkout_request_id,
+        order_id:            order.id,
+        summary: {
+          vendor:           vendor.business_name,
+          items:            cartItems,
+          food_subtotal,
+          delivery_fee,
+          discount_amount,
+          total_amount,
+          delivery_address: delivery_address.trim(),
+          scheduled_time:   scheduled_time || null,
+        },
+      });
+    } catch (innerError) {
+      await t.rollback();
+      throw innerError;
+    }
   } catch (error) {
     console.error('[ORDER] initiateCheckout error:', error);
     res.status(500).json({ success: false, message: 'Server error during checkout.' });
@@ -217,16 +334,6 @@ exports.initiateCheckout = async (req, res) => {
 
 // ─── DEV-ONLY: Simulate M-Pesa Callback ──────────────────────────────────────
 
-/**
- * POST /api/orders/dev-confirm/:checkoutRequestId
- * Protected — consumer only. DEV / TESTING USE ONLY.
- *
- * Simulates a successful M-Pesa STK Push callback so the full order flow
- * can be tested without a real Safaricom integration.
- *
- * This endpoint will be REMOVED and replaced by the real M-Pesa callback
- * handler (POST /api/payments/callback) in Phase 5.
- */
 exports.devConfirmPayment = async (req, res) => {
   if (process.env.NODE_ENV === 'production') {
     return res.status(404).json({ success: false, message: 'Route not found.' });
@@ -251,28 +358,28 @@ exports.devConfirmPayment = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No cart data found for this payment.' });
     }
 
-    // Create the Order and OrderItems — same logic Phase 5 will use
     const order = await exports.createOrderFromPayment(payment, t);
+
+    // Increment promo uses if applicable
+    const promoCode = payment.cart_data.promo_code;
+    if (promoCode) {
+      await PromoCode.increment('uses_count', { where: { code: promoCode }, transaction: t });
+    }
 
     await payment.update(
       {
         status:       'confirmed',
         order_id:     order.id,
-        mpesa_ref:    `DEV-${Date.now()}`, // Phase 5 uses real M-Pesa transaction ID
+        mpesa_ref:    `DEV-${Date.now()}`,
         confirmed_at: new Date(),
-        cart_data:    null,                // Cart no longer needed once Order exists
+        cart_data:    null,
       },
       { transaction: t }
     );
 
     await t.commit();
 
-    res.status(201).json({
-      success:  true,
-      message:  'Payment confirmed. Order created successfully.',
-      order_id: order.id,
-      order,
-    });
+    res.status(201).json({ success: true, message: 'Payment confirmed. Order created.', order_id: order.id, order });
   } catch (error) {
     await t.rollback();
     console.error('[ORDER] devConfirmPayment error:', error);
@@ -282,11 +389,6 @@ exports.devConfirmPayment = async (req, res) => {
 
 // ─── Consumer Endpoints ───────────────────────────────────────────────────────
 
-/**
- * GET /api/orders
- * Protected — consumer only.
- * Lists all orders placed by the authenticated consumer, newest first.
- */
 exports.getMyOrders = async (req, res) => {
   try {
     const orders = await Order.findAll({
@@ -309,15 +411,6 @@ exports.getMyOrders = async (req, res) => {
 
 // ─── Shared: Single Order Detail ─────────────────────────────────────────────
 
-/**
- * GET /api/orders/:id
- * Protected — consumer, vendor, food_courier, or admin.
- * Returns full detail for a single order with access control enforced:
- *   - Consumer: must own the order
- *   - Vendor: must own the shop the order was placed at
- *   - Food Courier: must be the assigned food courier
- *   - Admin: unrestricted
- */
 exports.getOrderById = async (req, res) => {
   try {
     const order = await Order.findByPk(req.params.id, {
@@ -359,12 +452,6 @@ exports.getOrderById = async (req, res) => {
 
 // ─── Vendor Endpoints ─────────────────────────────────────────────────────────
 
-/**
- * GET /api/orders/vendor
- * Protected — vendor only.
- * Lists all orders directed to the authenticated vendor's shop.
- * Optional filter: ?status=Received
- */
 exports.getVendorOrders = async (req, res) => {
   try {
     const vendorProfile = await Vendor.findOne({ where: { user_id: req.user.id } });
@@ -392,16 +479,6 @@ exports.getVendorOrders = async (req, res) => {
   }
 };
 
-/**
- * PATCH /api/orders/:id/status
- * Protected — vendor or food_courier.
- *
- * Advances the order to the next status. The transition map is strict:
- * each status has exactly one valid next state and one authorized role.
- *
- *   Vendor: Received → Preparing → Ready
- *   Food Courier:  Collected → In Transit → Delivered
- */
 exports.updateOrderStatus = async (req, res) => {
   const t = await sequelize.transaction();
   try {
@@ -424,7 +501,6 @@ exports.updateOrderStatus = async (req, res) => {
       });
     }
 
-    // Vendor must own the shop this order belongs to
     if (req.user.role === 'vendor') {
       const vendorProfile = await Vendor.findOne({ where: { user_id: req.user.id }, transaction: t });
       if (!vendorProfile || vendorProfile.id !== order.vendor_id) {
@@ -433,14 +509,10 @@ exports.updateOrderStatus = async (req, res) => {
       }
     }
 
-    // Food Courier must be assigned to this specific order before updating status
     if (req.user.role === 'food_courier') {
       if (!order.rider_id) {
         await t.rollback();
-        return res.status(400).json({
-          success: false,
-          message: 'Assign yourself to this order before updating its status.',
-        });
+        return res.status(400).json({ success: false, message: 'Assign yourself to this order before updating its status.' });
       }
       if (order.rider_id !== req.user.id) {
         await t.rollback();
@@ -452,7 +524,6 @@ exports.updateOrderStatus = async (req, res) => {
     await order.update({ status: transition.next }, { transaction: t });
     await t.commit();
 
-    // Fire-and-forget push notifications per transition
     const CONSUMER_MESSAGES = {
       'Preparing':  ['Being Prepared',  'Your order is being prepared.'],
       'Ready':      ['Order Ready',     'Your order is ready and waiting for a rider.'],
@@ -466,7 +537,6 @@ exports.updateOrderStatus = async (req, res) => {
         .then((u) => notify.send(u?.fcm_token, msg[0], msg[1], { order_id: order.id }))
         .catch(console.error);
     }
-    // Notify vendor when rider collects
     if (transition.next === 'Collected') {
       User.findByPk(req.user.id, { attributes: ['name'] }).then((rider) =>
         Vendor.findByPk(order.vendor_id, { include: [{ model: User, as: 'owner', attributes: ['fcm_token'] }] })
@@ -475,10 +545,10 @@ exports.updateOrderStatus = async (req, res) => {
     }
 
     res.status(200).json({
-      success:       true,
-      message:       `Order advanced: "${previousStatus}" → "${transition.next}"`,
-      order_id:      order.id,
-      new_status:    transition.next,
+      success:    true,
+      message:    `Order advanced: "${previousStatus}" → "${transition.next}"`,
+      order_id:   order.id,
+      new_status: transition.next,
     });
   } catch (error) {
     await t.rollback();
@@ -487,14 +557,8 @@ exports.updateOrderStatus = async (req, res) => {
   }
 };
 
-// ─── Food Courier Endpoints ──────────────────────────────────────────────────────────
+// ─── Food Courier Endpoints ───────────────────────────────────────────────────
 
-/**
- * GET /api/orders/food-courier/available
- * Protected — food_courier only.
- * Returns all "Ready" orders that have no food courier assigned yet.
- * Food Couriers browse this list to choose a delivery.
- */
 exports.getAvailableOrders = async (req, res) => {
   try {
     const orders = await Order.findAll({
@@ -505,7 +569,7 @@ exports.getAvailableOrders = async (req, res) => {
         { model: OrderItem, as: 'items',
           include: [{ model: MenuItem, as: 'menuItem', attributes: ['name'] }] },
       ],
-      order: [['created_at', 'ASC']], // oldest first — fairness for vendors waiting
+      order: [['created_at', 'ASC']],
     });
 
     res.status(200).json({ success: true, count: orders.length, orders });
@@ -515,12 +579,6 @@ exports.getAvailableOrders = async (req, res) => {
   }
 };
 
-/**
- * PATCH /api/orders/:id/assign-food-courier
- * Protected — food_courier only.
- * The authenticated food courier self-assigns to a "Ready" order.
- * Uses a transaction to prevent two food couriers claiming the same order simultaneously.
- */
 exports.assignRider = async (req, res) => {
   const t = await sequelize.transaction();
   try {
@@ -531,10 +589,7 @@ exports.assignRider = async (req, res) => {
     }
     if (order.status !== 'Ready') {
       await t.rollback();
-      return res.status(400).json({
-        success: false,
-        message: `Cannot assign: order status is "${order.status}" (must be "Ready").`,
-      });
+      return res.status(400).json({ success: false, message: `Cannot assign: order status is "${order.status}" (must be "Ready").` });
     }
     if (order.rider_id) {
       await t.rollback();
@@ -544,17 +599,12 @@ exports.assignRider = async (req, res) => {
     await order.update({ rider_id: req.user.id }, { transaction: t });
     await t.commit();
 
-    // Notify the vendor that a rider is coming
     User.findByPk(req.user.id, { attributes: ['name'] }).then((rider) =>
       Vendor.findByPk(order.vendor_id, { include: [{ model: User, as: 'owner', attributes: ['fcm_token'] }] })
         .then((v) => notify.send(v?.owner?.fcm_token, 'Rider Assigned', `${rider?.name ?? 'A rider'} is on the way to collect the order.`, { order_id: order.id }))
     ).catch(console.error);
 
-    res.status(200).json({
-      success:  true,
-      message:  'You are now assigned. Head to the vendor to collect the order.',
-      order_id: order.id,
-    });
+    res.status(200).json({ success: true, message: 'You are now assigned. Head to the vendor to collect the order.', order_id: order.id });
   } catch (error) {
     await t.rollback();
     console.error('[ORDER] assignRider error:', error);
@@ -562,12 +612,6 @@ exports.assignRider = async (req, res) => {
   }
 };
 
-/**
- * GET /api/orders/food-courier/mine
- * Protected — food_courier only.
- * Lists all orders currently assigned to the authenticated food courier.
- * Optional filter: ?status=In Transit
- */
 exports.getRiderOrders = async (req, res) => {
   try {
     const where = { rider_id: req.user.id };
@@ -585,6 +629,67 @@ exports.getRiderOrders = async (req, res) => {
     res.status(200).json({ success: true, count: orders.length, orders });
   } catch (error) {
     console.error('[ORDER] getRiderOrders error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+// ─── Food Courier: Confirm Cash Collection ────────────────────────────────────
+
+exports.collectCash = async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    const order = await Order.findByPk(req.params.id, { transaction: t });
+
+    if (!order) {
+      await t.rollback();
+      return res.status(404).json({ success: false, message: 'Order not found.' });
+    }
+    if (order.rider_id !== req.user.id) {
+      await t.rollback();
+      return res.status(403).json({ success: false, message: 'You are not assigned to this order.' });
+    }
+    if (order.status !== 'In Transit') {
+      await t.rollback();
+      return res.status(400).json({ success: false, message: `Cash can only be collected when the order is "In Transit" (current: "${order.status}").` });
+    }
+    if (order.payment_method === 'mpesa') {
+      await t.rollback();
+      return res.status(400).json({ success: false, message: 'This order was paid via M-Pesa — no cash to collect.' });
+    }
+
+    // Upsert a confirmed cash payment record
+    const existing = await Payment.findOne({ where: { order_id: order.id }, transaction: t });
+    if (existing) {
+      await existing.update(
+        { status: 'confirmed', confirmed_at: new Date() },
+        { transaction: t }
+      );
+    } else {
+      await Payment.create(
+        {
+          checkout_request_id: `CASH-${Date.now()}-${req.user.id.slice(0, 8)}`,
+          amount:       order.total_amount,
+          status:       'confirmed',
+          order_id:     order.id,
+          confirmed_at: new Date(),
+          cart_data:    null,
+        },
+        { transaction: t }
+      );
+    }
+
+    await order.update({ payment_method: 'cash' }, { transaction: t });
+    await t.commit();
+
+    // Notify consumer
+    User.findByPk(order.consumer_id, { attributes: ['fcm_token'] })
+      .then((u) => notify.send(u?.fcm_token, 'Cash Received', 'The rider has confirmed your cash payment.', { order_id: order.id }))
+      .catch(console.error);
+
+    res.status(200).json({ success: true, message: 'Cash collection confirmed.', order_id: order.id });
+  } catch (error) {
+    await t.rollback();
+    console.error('[ORDER] collectCash error:', error);
     res.status(500).json({ success: false, message: 'Server error.' });
   }
 };

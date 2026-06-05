@@ -9,6 +9,7 @@ const Payment             = require('./Payment');
 const Review              = require('./Review');
 const Notification        = require('./Notification');
 const FoodCourierProfile  = require('./FoodCourierProfile');
+const PromoCode           = require('./PromoCode');
 
 // ─── Associations ─────────────────────────────────────────────────────────────
 
@@ -59,6 +60,10 @@ Notification.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 User.hasOne(FoodCourierProfile, { foreignKey: 'user_id', as: 'foodCourierProfile' });
 FoodCourierProfile.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
+// A Vendor has MANY promo codes
+Vendor.hasMany(PromoCode, { foreignKey: 'vendor_id', as: 'promoCodes' });
+PromoCode.belongsTo(Vendor, { foreignKey: 'vendor_id', as: 'vendor' });
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -72,4 +77,5 @@ module.exports = {
   Review,
   Notification,
   FoodCourierProfile,
+  PromoCode,
 };

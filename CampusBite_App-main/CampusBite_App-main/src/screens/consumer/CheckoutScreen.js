@@ -3,13 +3,16 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator,
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
 import { COLORS } from '../../constants';
+import useAuthStore from '../../stores/authStore';
 
 const DELIVERY_FEE = 50;
 
 export default function CheckoutScreen({ route, navigation }) {
   const { vendor, items, subtotal } = route.params;
-  const [address, setAddress] = useState('');
-  const [loading, setLoading] = useState(false);
+  const user = useAuthStore((s) => s.user);
+  const [address, setAddress]                 = useState('');
+  const [specialInstructions, setSpecialInstructions] = useState('');
+  const [loading, setLoading]                 = useState(false);
 
   const total = subtotal + DELIVERY_FEE;
 
@@ -21,6 +24,7 @@ export default function CheckoutScreen({ route, navigation }) {
         vendor_id: vendor.id,
         items,
         delivery_address: address.trim(),
+        special_instructions: specialInstructions.trim() || undefined,
       });
       navigation.replace('PaymentStatus', {
         checkoutRequestId: data.checkout_request_id,
@@ -75,6 +79,35 @@ export default function CheckoutScreen({ route, navigation }) {
           <TextInput style={styles.input} placeholder="e.g. Block C, Room 12" placeholderTextColor={COLORS.gray}
             value={address} onChangeText={setAddress} multiline />
         </View>
+      </View>
+
+      {/* Special Instructions */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Special Instructions</Text>
+        <View style={styles.inputWrap}>
+          <Ionicons name="chatbubble-ellipses-outline" size={18} color={COLORS.gray} />
+          <TextInput
+            style={[styles.input, { minHeight: 60 }]}
+            placeholder="e.g. No onions, extra sauce, call when at gate…"
+            placeholderTextColor={COLORS.gray}
+            value={specialInstructions}
+            onChangeText={setSpecialInstructions}
+            multiline
+          />
+        </View>
+        <Text style={styles.optionalHint}>Optional</Text>
+      </View>
+
+      {/* M-Pesa Phone */}
+      <View style={styles.mpesaRow}>
+        <Ionicons name="phone-portrait-outline" size={18} color={COLORS.primary} />
+        <View style={{ flex: 1, marginLeft: 10 }}>
+          <Text style={styles.mpesaLabel}>M-Pesa will be sent to</Text>
+          <Text style={styles.mpesaPhone}>{user?.phone || 'No phone on account'}</Text>
+        </View>
+        <TouchableOpacity onPress={() => navigation.navigate('Profile')} activeOpacity={0.7}>
+          <Text style={styles.mpesaEdit}>Edit</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Checkout Button */}
@@ -138,6 +171,23 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   input: { flex: 1, fontSize: 14, color: COLORS.black, minHeight: 50 },
+
+  optionalHint: { fontSize: 11, color: COLORS.gray, marginTop: 6, alignSelf: 'flex-end' },
+
+  // M-Pesa phone row
+  mpesaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: COLORS.borderWarm,
+  },
+  mpesaLabel: { fontSize: 11, color: COLORS.gray, fontWeight: '600', letterSpacing: 0.3 },
+  mpesaPhone: { fontSize: 15, fontWeight: '700', color: COLORS.black, marginTop: 2 },
+  mpesaEdit:  { fontSize: 13, color: COLORS.primary, fontWeight: '700' },
 
   // Button
   button: {

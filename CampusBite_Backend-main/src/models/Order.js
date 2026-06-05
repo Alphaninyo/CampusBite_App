@@ -62,6 +62,29 @@ const Order = sequelize.define(
       type: DataTypes.STRING(255),
       allowNull: false,
     },
+    special_instructions: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    payment_method: {
+      type: DataTypes.ENUM('mpesa', 'cash', 'card'),
+      allowNull: false,
+      defaultValue: 'mpesa',
+    },
+    discount_amount: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      defaultValue: 0,
+    },
+    promo_code: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
+    scheduled_time: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'NULL = deliver ASAP.',
+    },
   },
   {
     tableName: 'orders',

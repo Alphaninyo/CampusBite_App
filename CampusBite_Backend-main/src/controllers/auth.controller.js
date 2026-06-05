@@ -256,34 +256,6 @@ exports.getMe = async (req, res) => {
 };
 
 /**
- * PUT /api/auth/profile
- * Protected — any authenticated user.
- * Updates name and/or phone. Email changes are not allowed (used as login identity).
- *
- * Body: { name?, phone? }
- */
-exports.updateProfile = async (req, res) => {
-  try {
-    const { name, phone } = req.body;
-    if (!name && !phone) {
-      return res.status(400).json({ success: false, message: 'Provide at least one field to update: name or phone.' });
-    }
-
-    const updates = {};
-    if (name)  updates.name  = name.trim();
-    if (phone) updates.phone = phone.trim();
-
-    await User.update(updates, { where: { id: req.user.id } });
-    const updated = await User.findByPk(req.user.id, { attributes: { exclude: ['password_hash', 'fcm_token', 'password_reset_otp', 'password_reset_expires'] } });
-
-    res.status(200).json({ success: true, message: 'Profile updated.', user: updated });
-  } catch (error) {
-    console.error('[AUTH] updateProfile error:', error);
-    res.status(500).json({ success: false, message: 'Server error.' });
-  }
-};
-
-/**
  * PUT /api/auth/password
  * Protected — any authenticated user.
  * Changes the password after verifying the current one.

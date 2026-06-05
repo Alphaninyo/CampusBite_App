@@ -5,19 +5,26 @@ const useCartStore = create((set, get) => ({
   cartItems: [],
   totalAmount: 0,
   itemCount: 0,
+  vendorId: null,
+  vendorName: null,
   loading: false,
 
-  // Load cart from storage
+  // Load cart from storage (only used on fresh app start)
   loadCart: async () => {
+    const { cartItems } = get();
+    // Skip if store already has items (hydrated during same session)
+    if (cartItems.length > 0) return;
     set({ loading: true });
     try {
       const storedCart = await AsyncStorage.getItem('cart');
       if (storedCart) {
         const cartData = JSON.parse(storedCart);
-        set({ 
-          cartItems: cartData.items || [],
+        set({
+          cartItems:  cartData.items      || [],
           totalAmount: cartData.totalAmount || 0,
-          itemCount: cartData.itemCount || 0,
+          itemCount:   cartData.itemCount   || 0,
+          vendorId:    cartData.vendorId    || null,
+          vendorName:  cartData.vendorName  || null,
         });
       }
     } catch (error) {
@@ -28,25 +35,26 @@ const useCartStore = create((set, get) => ({
   },
 
   // Save cart to storage
-  saveCart: async (items) => {
+  saveCart: async (items, vendorId, vendorName) => {
     try {
       const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
-      
+      const itemCount   = items.reduce((sum, item) => sum + item.quantity, 0);
+      // Preserve existing vendor info if not explicitly provided
+      const state = get();
+      const vid   = vendorId   !== undefined ? vendorId   : state.vendorId;
+      const vname = vendorName !== undefined ? vendorName : state.vendorName;
+
       const cartData = {
         items,
         totalAmount,
         itemCount,
+        vendorId:   vid,
+        vendorName: vname,
         updatedAt: new Date().toISOString(),
       };
-      
+
       await AsyncStorage.setItem('cart', JSON.stringify(cartData));
-      
-      set({ 
-        cartItems: items,
-        totalAmount,
-        itemCount,
-      });
+      set({ cartItems: items, totalAmount, itemCount, vendorId: vid, vendorName: vname });
     } catch (error) {
       console.error('Error saving cart:', error);
     }
@@ -116,11 +124,7 @@ const useCartStore = create((set, get) => ({
   clearCart: async () => {
     try {
       await AsyncStorage.removeItem('cart');
-      set({ 
-        cartItems: [],
-        totalAmount: 0,
-        itemCount: 0,
-      });
+      set({ cartItems: [], totalAmount: 0, itemCount: 0, vendorId: null, vendorName: null });
     } catch (error) {
       console.error('Error clearing cart:', error);
     }

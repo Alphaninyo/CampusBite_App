@@ -72,9 +72,14 @@ export default function MenuScreen({ navigation }) {
           <Ionicons name="menu-outline" size={24} color={COLORS.black} />
           <Text style={styles.headerTitle}>Menu Management</Text>
         </View>
-        <TouchableOpacity onPress={() => navigation.navigate('AddMenuItem')}>
-          <Ionicons name="add-outline" size={26} color={COLORS.primary} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+          <TouchableOpacity onPress={() => navigation.navigate('PromoCodes')}>
+            <Ionicons name="pricetag-outline" size={22} color={COLORS.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('AddMenuItem')}>
+            <Ionicons name="add-outline" size={26} color={COLORS.primary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
