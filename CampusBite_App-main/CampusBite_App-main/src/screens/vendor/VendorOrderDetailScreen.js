@@ -10,11 +10,11 @@ const NEXT_STATUS = {
 };
 
 const STATUS_CONFIG = {
-  Received:  { color: '#6B7280', icon: 'hourglass-outline', label: 'Received' },
-  Preparing: { color: '#E85D04', icon: 'restaurant-outline', label: 'Preparing' },
-  Ready:     { color: '#4CAF50', icon: 'checkmark-circle-outline', label: 'Ready' },
+  Received:  { color: COLORS.subtext, icon: 'hourglass-outline', label: 'Received' },
+  Preparing: { color: COLORS.primary, icon: 'restaurant-outline', label: 'Preparing' },
+  Ready:     { color: COLORS.success, icon: 'checkmark-circle-outline', label: 'Ready' },
   Collected: { color: '#00796B', icon: 'bicycle-outline', label: 'Collected' },
-  Delivered: { color: '#10B981', icon: 'checkmark-done-outline', label: 'Delivered' },
+  Delivered: { color: COLORS.success, icon: 'checkmark-done-outline', label: 'Delivered' },
 };
 
 export default function VendorOrderDetailScreen({ route, navigation }) {
@@ -78,7 +78,7 @@ export default function VendorOrderDetailScreen({ route, navigation }) {
     ]);
   };
 
-  if (loading) return <View style={styles.loadingContainer}><ActivityIndicator size="large" color="#E85D04" /></View>;
+  if (loading) return <View style={styles.loadingContainer}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
   if (!order) return (
     <View style={styles.loadingContainer}>
       <Ionicons name="alert-circle-outline" size={48} color={COLORS.gray} />
@@ -94,7 +94,7 @@ export default function VendorOrderDetailScreen({ route, navigation }) {
     <ScrollView
       style={styles.container}
       showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchOrder(); }} colors={['#E85D04']} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchOrder(); }} colors={[COLORS.primary]} />}
     >
       {/* Status Badge */}
       <View style={[styles.statusBanner, { backgroundColor: statusCfg.color }]}>
@@ -106,22 +106,22 @@ export default function VendorOrderDetailScreen({ route, navigation }) {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Order Details</Text>
         <View style={styles.infoRow}>
-          <Ionicons name="receipt-outline" size={16} color="#E85D04" />
+          <Ionicons name="receipt-outline" size={16} color={COLORS.primary} />
           <Text style={styles.infoLabel}>Order ID</Text>
           <Text style={styles.infoValue}>#CB-{order.id.slice(0, 4).toUpperCase()}</Text>
         </View>
         <View style={styles.infoRow}>
-          <Ionicons name="person-outline" size={16} color="#E85D04" />
+          <Ionicons name="person-outline" size={16} color={COLORS.primary} />
           <Text style={styles.infoLabel}>Customer</Text>
           <Text style={styles.infoValue}>{order.consumer?.name || 'N/A'}</Text>
         </View>
         <View style={styles.infoRow}>
-          <Ionicons name="call-outline" size={16} color="#E85D04" />
+          <Ionicons name="call-outline" size={16} color={COLORS.primary} />
           <Text style={styles.infoLabel}>Phone</Text>
           <Text style={styles.infoValue}>{order.consumer?.phone || 'N/A'}</Text>
         </View>
         <View style={styles.infoRow}>
-          <Ionicons name="location-outline" size={16} color="#E85D04" />
+          <Ionicons name="location-outline" size={16} color={COLORS.primary} />
           <Text style={styles.infoLabel}>Address</Text>
           <Text style={[styles.infoValue, { flex: 1, textAlign: 'right' }]}>{order.delivery_address || 'N/A'}</Text>
         </View>
@@ -150,7 +150,7 @@ export default function VendorOrderDetailScreen({ route, navigation }) {
         </View>
         <View style={styles.totalRow}>
           <Text style={[styles.totalLabel, { fontWeight: 'bold', color: COLORS.black }]}>Total</Text>
-          <Text style={[styles.totalValue, { fontWeight: 'bold', color: '#E85D04', fontSize: 16 }]}>
+          <Text style={[styles.totalValue, { fontWeight: 'bold', color: COLORS.primary, fontSize: 16 }]}>
             KES {parseFloat(order.total_amount || 0).toFixed(2)}
           </Text>
         </View>
@@ -162,7 +162,7 @@ export default function VendorOrderDetailScreen({ route, navigation }) {
           <Text style={styles.cardTitle}>Assigned Rider</Text>
           <View style={styles.riderRow}>
             <View style={styles.riderAvatar}>
-              <Ionicons name="bicycle" size={20} color="#E85D04" />
+              <Ionicons name="bicycle" size={20} color={COLORS.primary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.riderName}>{order.rider.name}</Text>
@@ -204,8 +204,8 @@ export default function VendorOrderDetailScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF8F6' },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF8F6' },
+  container: { flex: 1, backgroundColor: COLORS.background },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
 
   // Status
   statusBanner: {
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   cardTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.black, marginBottom: 14 },
 
@@ -248,15 +248,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f5f0ed',
+    borderBottomColor: COLORS.borderWarm,
   },
   itemLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 8 },
-  itemQty: { fontSize: 14, fontWeight: 'bold', color: '#E85D04' },
+  itemQty: { fontSize: 14, fontWeight: 'bold', color: COLORS.primary },
   itemName: { fontSize: 14, color: COLORS.black },
   itemPrice: { fontSize: 14, color: COLORS.black, fontWeight: '500' },
 
   // Totals
-  totalDivider: { height: 1, backgroundColor: '#f0e8e4', marginVertical: 10 },
+  totalDivider: { height: 1, backgroundColor: COLORS.borderWarm, marginVertical: 10 },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#FFF0EB',
+    backgroundColor: COLORS.iconBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   actionBtn: {
-    backgroundColor: '#E85D04',
+    backgroundColor: COLORS.primary,
     borderRadius: 14,
     paddingVertical: 14,
     flexDirection: 'row',
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     borderWidth: 1.5,
-    borderColor: '#EF4444',
+    borderColor: COLORS.danger,
   },
-  cancelBtnText: { color: '#EF4444', fontWeight: 'bold', fontSize: 15 },
+  cancelBtnText: { color: COLORS.danger, fontWeight: 'bold', fontSize: 15 },
 });

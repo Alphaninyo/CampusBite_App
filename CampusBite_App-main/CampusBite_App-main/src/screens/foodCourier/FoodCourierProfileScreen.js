@@ -97,8 +97,8 @@ export default function FoodCourierProfileScreen({ navigation }) {
   const avatarLetter = user?.name?.charAt(0)?.toUpperCase() || 'F';
 
   if (loading) return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF8F6' }}>
-      <ActivityIndicator size="large" color="#E85D04" />
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}>
+      <ActivityIndicator size="large" color={COLORS.primary} />
     </View>
   );
 
@@ -109,7 +109,7 @@ export default function FoodCourierProfileScreen({ navigation }) {
       {/* ── Header ── */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Ionicons name="car-outline" size={22} color="#E85D04" />
+          <Ionicons name="car-outline" size={22} color={COLORS.primary} />
           <Text style={styles.headerTitle}>Campus Dispatch</Text>
         </View>
         <TouchableOpacity
@@ -127,7 +127,7 @@ export default function FoodCourierProfileScreen({ navigation }) {
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchProfile(); }} colors={['#E85D04']} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchProfile(); }} colors={[COLORS.primary]} />}
       >
         {/* ── Avatar + Name ── */}
         <TouchableOpacity style={styles.avatarSection} onPress={() => navigation.navigate('EditProfile', { user })}>
@@ -144,7 +144,7 @@ export default function FoodCourierProfileScreen({ navigation }) {
 
           <View style={styles.nameRow}>
             <Text style={styles.name}>{user?.name || 'Food Courier'}</Text>
-            <Ionicons name="checkmark-circle" size={20} color="#E85D04" style={{ marginLeft: 6 }} />
+            <Ionicons name="checkmark-circle" size={20} color={COLORS.primary} style={{ marginLeft: 6 }} />
           </View>
           <View style={styles.vehicleRow}>
             <Ionicons name="bicycle-outline" size={14} color={COLORS.gray} />
@@ -157,14 +157,14 @@ export default function FoodCourierProfileScreen({ navigation }) {
         <View style={styles.availabilityCard}>
           <View>
             <Text style={styles.availabilityTitle}>Availability</Text>
-            <Text style={[styles.availabilityStatus, { color: isAvailable ? '#E85D04' : COLORS.gray }]}>
+            <Text style={[styles.availabilityStatus, { color: isAvailable ? COLORS.primary : COLORS.gray }]}>
               {isAvailable ? 'Currently Online' : 'Currently Offline'}
             </Text>
           </View>
           <Switch
             value={isAvailable}
             onValueChange={handleAvailabilityToggle}
-            trackColor={{ false: '#E5E7EB', true: '#E85D04' }}
+            trackColor={{ false: COLORS.border, true: COLORS.primary }}
             thumbColor={COLORS.white}
           />
         </View>
@@ -173,7 +173,7 @@ export default function FoodCourierProfileScreen({ navigation }) {
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
             <Text style={styles.statCaption}>EARNINGS</Text>
-            <Text style={[styles.statValue, { color: '#E85D04' }]}>KES {totalEarnings.toLocaleString()}</Text>
+            <Text style={[styles.statValue, { color: COLORS.primary }]}>KES {totalEarnings.toLocaleString()}</Text>
           </View>
           <View style={[styles.statCard, styles.statCardBorder]}>
             <Text style={styles.statCaption}>COMPLETED</Text>
@@ -188,7 +188,7 @@ export default function FoodCourierProfileScreen({ navigation }) {
         {/* ── Vehicle Info ── */}
         <TouchableOpacity style={styles.featureCard} onPress={handleVehicleChange}>
           <View style={styles.featureIconBox}>
-            <Ionicons name="swap-horizontal-outline" size={22} color="#E85D04" />
+            <Ionicons name="swap-horizontal-outline" size={22} color={COLORS.primary} />
           </View>
           <View style={styles.featureTextBlock}>
             <Text style={styles.featureTitle}>Vehicle Info</Text>
@@ -202,15 +202,15 @@ export default function FoodCourierProfileScreen({ navigation }) {
             <View style={[styles.twoColIconBox, { backgroundColor: '#E0F2F1' }]}>
               <Ionicons name="trending-up-outline" size={22} color="#00796B" />
             </View>
-            <View style={[styles.twoColIconBox, { backgroundColor: '#E8F5E9', marginTop: 4 }]}>
+            <View style={[styles.twoColIconBox, { backgroundColor: COLORS.successLight, marginTop: 4 }]}>
               <Ionicons name="bar-chart-outline" size={22} color="#388E3C" />
             </View>
             <Text style={styles.twoColTitle}>Weekly Trend</Text>
             <Text style={[styles.twoColSub, { color: '#388E3C' }]}>+12% vs last week</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.twoColCard} onPress={() => navigation.navigate('Support')}>
-            <View style={[styles.twoColIconBox, { backgroundColor: '#FFF0EB' }]}>
-              <Ionicons name="help-circle-outline" size={22} color="#E85D04" />
+            <View style={[styles.twoColIconBox, { backgroundColor: COLORS.iconBg }]}>
+              <Ionicons name="help-circle-outline" size={22} color={COLORS.primary} />
             </View>
             <Text style={styles.twoColTitle}>Support</Text>
             <Text style={styles.twoColSub}>24/7 Help</Text>
@@ -225,7 +225,7 @@ export default function FoodCourierProfileScreen({ navigation }) {
           <TouchableOpacity style={styles.menuRow} onPress={() => navigation.navigate('DeliveriesTab')}>
             <View style={styles.menuLeft}>
               <View style={styles.menuIconBox}>
-                <Ionicons name="time-outline" size={18} color="#E85D04" />
+                <Ionicons name="time-outline" size={18} color={COLORS.primary} />
               </View>
               <Text style={styles.menuText}>Delivery History</Text>
             </View>
@@ -238,7 +238,7 @@ export default function FoodCourierProfileScreen({ navigation }) {
           <TouchableOpacity style={styles.menuRow} onPress={() => navigation.navigate('CustomerFeedback')}>
             <View style={styles.menuLeft}>
               <View style={styles.menuIconBox}>
-                <Ionicons name="chatbox-outline" size={18} color="#E85D04" />
+                <Ionicons name="chatbox-outline" size={18} color={COLORS.primary} />
               </View>
               <View>
                 <Text style={styles.menuText}>Customer Feedback</Text>
@@ -260,7 +260,7 @@ export default function FoodCourierProfileScreen({ navigation }) {
           <TouchableOpacity style={styles.menuRow} onPress={() => navigation.navigate('AppSettings', { user })}>
             <View style={styles.menuLeft}>
               <View style={styles.menuIconBox}>
-                <Ionicons name="settings-outline" size={18} color="#E85D04" />
+                <Ionicons name="settings-outline" size={18} color={COLORS.primary} />
               </View>
               <Text style={styles.menuText}>App Settings</Text>
             </View>
@@ -270,7 +270,7 @@ export default function FoodCourierProfileScreen({ navigation }) {
 
         {/* ── Log Out ── */}
         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={20} color="#E85D04" />
+          <Ionicons name="log-out-outline" size={20} color={COLORS.primary} />
           <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>
 
@@ -281,7 +281,7 @@ export default function FoodCourierProfileScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF8F6' },
+  container: { flex: 1, backgroundColor: COLORS.background },
 
   // Header
   header: {
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: COLORS.border,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.black },
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -2,
     right: -2,
-    backgroundColor: '#E85D04',
+    backgroundColor: COLORS.primary,
     borderRadius: 10,
     minWidth: 18,
     height: 18,
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 4,
   },
-  badgeText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
+  badgeText: { color: COLORS.white, fontSize: 10, fontWeight: 'bold' },
 
   scrollView: { flex: 1, paddingHorizontal: 16 },
 
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     gap: 2,
   },
-  ratingBadgeText: { color: '#fff', fontSize: 11, fontWeight: 'bold' },
+  ratingBadgeText: { color: COLORS.white, fontSize: 11, fontWeight: 'bold' },
   nameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
   name: { fontSize: 22, fontWeight: 'bold', color: COLORS.black },
   vehicleRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
 
   // Availability
   availabilityCard: {
-    backgroundColor: '#FFF0EB',
+    backgroundColor: COLORS.iconBg,
     borderRadius: 14,
     padding: 16,
     marginBottom: 12,
@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   availabilityTitle: { fontSize: 15, fontWeight: 'bold', color: COLORS.black, marginBottom: 2 },
   availabilityStatus: { fontSize: 13, fontWeight: '600' },
@@ -364,14 +364,14 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
     overflow: 'hidden',
   },
   statCard: { flex: 1, padding: 14 },
   statCardBorder: {
     borderLeftWidth: 1,
     borderRightWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   statCaption: { fontSize: 10, fontWeight: '700', color: COLORS.gray, letterSpacing: 0.8, marginBottom: 4 },
   statValue: { fontSize: 14, fontWeight: 'bold', color: COLORS.black },
@@ -386,13 +386,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   featureIconBox: {
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#FFF0EB',
+    backgroundColor: COLORS.iconBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   twoColIconBox: {
     width: 40,
@@ -436,7 +436,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   menuRow: {
     flexDirection: 'row',
@@ -451,22 +451,22 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 8,
-    backgroundColor: '#FFF0EB',
+    backgroundColor: COLORS.iconBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   menuText: { fontSize: 14, fontWeight: '600', color: COLORS.black },
-  menuDivider: { height: 1, backgroundColor: '#f0e8e4', marginHorizontal: 16 },
+  menuDivider: { height: 1, backgroundColor: COLORS.borderWarm, marginHorizontal: 16 },
 
   // Feedback tags
   feedbackTags: { flexDirection: 'row', gap: 6, marginTop: 4 },
   tag: {
-    backgroundColor: '#FFF0EB',
+    backgroundColor: COLORS.iconBg,
     borderRadius: 6,
     paddingHorizontal: 7,
     paddingVertical: 2,
   },
-  tagText: { fontSize: 10, fontWeight: '700', color: '#E85D04' },
+  tagText: { fontSize: 10, fontWeight: '700', color: COLORS.primary },
   feedbackRating: { fontSize: 16, fontWeight: 'bold', color: COLORS.black },
 
   // Logout
@@ -479,8 +479,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
     marginBottom: 8,
   },
-  logoutText: { fontSize: 15, fontWeight: 'bold', color: '#E85D04' },
+  logoutText: { fontSize: 15, fontWeight: 'bold', color: COLORS.primary },
 });

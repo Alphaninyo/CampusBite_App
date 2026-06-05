@@ -41,8 +41,8 @@ export default function CustomerFeedbackScreen({ navigation }) {
     : '0.0';
 
   if (loading) return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF8F6' }}>
-      <ActivityIndicator size="large" color="#E85D04" />
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}>
+      <ActivityIndicator size="large" color={COLORS.primary} />
     </View>
   );
 
@@ -60,7 +60,7 @@ export default function CustomerFeedbackScreen({ navigation }) {
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={{ padding: 16 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchFeedback(); }} colors={['#E85D04']} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchFeedback(); }} colors={[COLORS.primary]} />}
       >
         {/* Rating Summary */}
         <View style={styles.summaryCard}>
@@ -117,7 +117,7 @@ export default function CustomerFeedbackScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF8F6' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -126,19 +126,19 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0e8e4',
+    borderBottomColor: COLORS.borderWarm,
   },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.black },
   scrollView: { flex: 1 },
   summaryCard: {
     flexDirection: 'row',
-    backgroundColor: '#E85D04',
+    backgroundColor: COLORS.primary,
     borderRadius: 14,
     padding: 20,
     marginBottom: 16,
   },
   summaryLeft: { flex: 1 },
-  ratingValue: { fontSize: 36, fontWeight: 'bold', color: '#fff' },
+  ratingValue: { fontSize: 36, fontWeight: 'bold', color: COLORS.white },
   ratingLabel: { fontSize: 14, color: 'rgba(255,255,255,0.9)', marginTop: 4 },
   summaryRight: { alignItems: 'flex-end' },
   reviewCount: { fontSize: 14, color: 'rgba(255,255,255,0.9)', marginTop: 4 },
@@ -149,40 +149,40 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   feedbackHeader: { flexDirection: 'row', marginBottom: 12 },
   avatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#E85D04',
+    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
-  avatarText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  avatarText: { color: COLORS.white, fontSize: 16, fontWeight: 'bold' },
   feedbackInfo: { flex: 1 },
   customerName: { fontSize: 15, fontWeight: '600', color: COLORS.black },
   feedbackDate: { fontSize: 12, color: COLORS.gray, marginTop: 2 },
   ratingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF0EB',
+    backgroundColor: COLORS.iconBg,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
   },
-  ratingText: { fontSize: 12, fontWeight: 'bold', color: '#E85D04', marginLeft: 4 },
+  ratingText: { fontSize: 12, fontWeight: 'bold', color: COLORS.primary, marginLeft: 4 },
   comment: { fontSize: 14, color: COLORS.black, marginBottom: 12, lineHeight: 20 },
   tags: { flexDirection: 'row', gap: 8 },
   tag: {
-    backgroundColor: '#FFF0EB',
+    backgroundColor: COLORS.iconBg,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
   },
-  tagText: { fontSize: 11, fontWeight: '700', color: '#E85D04' },
+  tagText: { fontSize: 11, fontWeight: '700', color: COLORS.primary },
   emptyContainer: { alignItems: 'center', paddingVertical: 60 },
   emptyText: { fontSize: 16, fontWeight: 'bold', color: COLORS.gray, marginTop: 12 },
   emptySub: { fontSize: 14, color: COLORS.gray, marginTop: 4, textAlign: 'center' },

@@ -123,7 +123,7 @@ export default function EarningsScreen({ navigation }) {
   }));
   const bestDay = dayTotals.reduce((best, d) => d.total > best.total ? d : best, { day: '—', total: 0 });
 
-  if (loading) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF8F6' }}><ActivityIndicator size="large" color="#E85D04" /></View>;
+  if (loading) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
 
   const ListHeader = () => (
     <View>
@@ -190,7 +190,7 @@ export default function EarningsScreen({ navigation }) {
           </View>
           <View style={styles.breakdownDivider} />
           <View style={styles.breakdownItem}>
-            <Ionicons name="cash-outline" size={20} color="#E85D04" />
+            <Ionicons name="cash-outline" size={20} color={COLORS.primary} />
             <Text style={styles.breakdownValue}>KES {avgEarnings}</Text>
             <Text style={styles.breakdownLabel}>Avg / Trip</Text>
           </View>
@@ -234,7 +234,7 @@ export default function EarningsScreen({ navigation }) {
       {/* Header — matches CampusBite design system */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Ionicons name="wallet-outline" size={22} color="#E85D04" />
+          <Ionicons name="wallet-outline" size={22} color={COLORS.primary} />
           <Text style={styles.headerTitle}>CampusBite</Text>
         </View>
         <TouchableOpacity
@@ -252,7 +252,7 @@ export default function EarningsScreen({ navigation }) {
         data={filteredOrders}
         keyExtractor={(o) => o.id}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchOrders(); }} colors={['#E85D04']} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchOrders(); }} colors={[COLORS.primary]} />}
         ListHeaderComponent={ListHeader}
       renderItem={({ item }) => {
         const earned = getEarnings(item);
@@ -264,7 +264,7 @@ export default function EarningsScreen({ navigation }) {
           >
             <View style={styles.cardTop}>
               {/* Icon */}
-              <View style={[styles.iconBox, { backgroundColor: isDelivered ? '#ECFDF5' : '#FFF5F0' }]}>
+              <View style={[styles.iconBox, { backgroundColor: isDelivered ? COLORS.successBg : COLORS.backgroundAlt }]}>
                 <Ionicons
                   name={isDelivered ? 'checkmark-circle' : 'bicycle'}
                   size={22}
@@ -308,7 +308,7 @@ export default function EarningsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  screenContainer: { flex: 1, backgroundColor: '#FFF8F6' },
+  screenContainer: { flex: 1, backgroundColor: COLORS.background },
 
   // Header — matches VendorDashboardScreen
   header: {
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: COLORS.border,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.black },
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -2,
     right: -2,
-    backgroundColor: '#E85D04',
+    backgroundColor: COLORS.primary,
     borderRadius: 10,
     minWidth: 18,
     height: 18,
@@ -337,10 +337,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 4,
   },
-  badgeText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
+  badgeText: { color: COLORS.white, fontSize: 10, fontWeight: 'bold' },
 
   summaryCard: {
-    backgroundColor: '#E85D04',
+    backgroundColor: COLORS.primary,
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
   },
   periodChipActive: { backgroundColor: COLORS.white },
   periodChipText: { color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: '600' },
-  periodChipTextActive: { color: '#E85D04', fontWeight: 'bold' },
+  periodChipTextActive: { color: COLORS.primary, fontWeight: 'bold' },
   statsRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
   statCard: {
     flex: 1,
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
     padding: 14,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   statValue: { fontSize: 16, fontWeight: 'bold', color: COLORS.black, marginTop: 6, marginBottom: 2 },
   statLabel: { fontSize: 11, color: COLORS.gray, fontWeight: '500', textAlign: 'center' },
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
     gap: 12,
     borderLeftWidth: 4,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   badgeIcon: {
     width: 52,
@@ -428,7 +428,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   chartTitle: { fontSize: 15, fontWeight: '800', color: COLORS.black, marginBottom: 16 },
   chartBars: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 120 },
@@ -443,13 +443,13 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   breakdownRow: { flexDirection: 'row', alignItems: 'center' },
   breakdownItem: { flex: 1, alignItems: 'center', gap: 6 },
   breakdownValue: { fontSize: 15, fontWeight: '800', color: COLORS.black },
   breakdownLabel: { fontSize: 11, color: COLORS.gray, fontWeight: '600' },
-  breakdownDivider: { width: 1, height: 50, backgroundColor: '#f0e8e4' },
+  breakdownDivider: { width: 1, height: 50, backgroundColor: COLORS.borderWarm },
   infoRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
   infoCard: {
     flex: 1,
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   infoValue: { fontSize: 18, fontWeight: '900', color: COLORS.black },
   infoLabel: { fontSize: 11, color: COLORS.gray, fontWeight: '600', textAlign: 'center' },
@@ -470,7 +470,7 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   cardTop: {
     flexDirection: 'row',

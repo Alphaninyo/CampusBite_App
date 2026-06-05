@@ -127,7 +127,7 @@ export default function AppSettingsScreen({ navigation }) {
                 <View key={itemIndex} style={[styles.item, itemIndex < section.items.length - 1 && styles.itemBorder]}>
                   <View style={styles.itemLeft}>
                     <View style={styles.iconBox}>
-                      <Ionicons name={item.icon} size={20} color="#E85D04" />
+                      <Ionicons name={item.icon} size={20} color={COLORS.primary} />
                     </View>
                     <Text style={styles.itemLabel}>{item.label}</Text>
                   </View>
@@ -135,7 +135,7 @@ export default function AppSettingsScreen({ navigation }) {
                     <Switch
                       value={item.value}
                       onValueChange={item.onToggle}
-                      trackColor={{ false: '#E5E7EB', true: '#E85D04' }}
+                      trackColor={{ false: COLORS.border, true: COLORS.primary }}
                       thumbColor={COLORS.white}
                     />
                   ) : item.showArrow !== false ? (
@@ -155,12 +155,12 @@ export default function AppSettingsScreen({ navigation }) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Danger Zone</Text>
           <TouchableOpacity style={styles.dangerBtn} onPress={handleLogout}>
-            <Ionicons name="log-out-outline" size={20} color="#E85D04" />
+            <Ionicons name="log-out-outline" size={20} color={COLORS.primary} />
             <Text style={styles.dangerText}>Logout</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.dangerBtn} onPress={handleDeleteAccount}>
             <Ionicons name="trash-outline" size={20} color="#DC2626" />
-            <Text style={[styles.dangerText, { color: '#DC2626' }]}>Delete Account</Text>
+            <Text style={[styles.dangerText, { color: COLORS.danger }]}>Delete Account</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -169,7 +169,7 @@ export default function AppSettingsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF8F6' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0e8e4',
+    borderBottomColor: COLORS.borderWarm,
   },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.black },
   scrollView: { flex: 1 },
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   item: {
     flexDirection: 'row',
@@ -196,13 +196,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
   },
-  itemBorder: { borderBottomWidth: 1, borderBottomColor: '#f0e8e4' },
+  itemBorder: { borderBottomWidth: 1, borderBottomColor: COLORS.borderWarm },
   itemLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   iconBox: {
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: '#FFF0EB',
+    backgroundColor: COLORS.iconBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
-  dangerText: { fontSize: 15, fontWeight: '600', color: '#E85D04' },
+  dangerText: { fontSize: 15, fontWeight: '600', color: COLORS.primary },
 });

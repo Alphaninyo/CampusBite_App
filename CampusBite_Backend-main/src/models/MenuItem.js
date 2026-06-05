@@ -40,6 +40,15 @@ const MenuItem = sequelize.define(
         isDecimal: { msg: 'Price must be a valid decimal number.' },
       },
     },
+    category: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
+    image: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      comment: 'Relative path to the uploaded item image, e.g. /uploads/menu/xxx.jpg',
+    },
     is_available: {
       type: DataTypes.BOOLEAN,
       allowNull: false,

@@ -43,10 +43,10 @@ export default function ResetPasswordScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background, padding: 24, justifyContent: 'center' },
-  title:     { fontSize: 26, fontWeight: 'bold', marginBottom: 8, color: COLORS.black },
-  subtitle:  { fontSize: 14, color: COLORS.gray, marginBottom: 32 },
-  input:     { backgroundColor: COLORS.white, borderRadius: 10, padding: 14, marginBottom: 16, fontSize: 15, borderWidth: 1, borderColor: COLORS.lightGray },
+  container: { flex: 1, backgroundColor: COLORS.backgroundAlt, padding: 24, justifyContent: 'center' },
+  title:     { fontSize: 26, fontWeight: 'bold', marginBottom: 8, color: COLORS.text },
+  subtitle:  { fontSize: 14, color: COLORS.subtext, marginBottom: 32 },
+  input:     { backgroundColor: COLORS.card, borderRadius: 10, padding: 14, marginBottom: 16, fontSize: 15, borderWidth: 1, borderColor: COLORS.border },
   button:    { backgroundColor: COLORS.primary, borderRadius: 10, padding: 16, alignItems: 'center' },
   buttonText:{ color: COLORS.white, fontWeight: 'bold', fontSize: 16 },
 });

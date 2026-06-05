@@ -194,13 +194,13 @@ export default function CartScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF8F6',
+    backgroundColor: COLORS.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFF8F6',
+    backgroundColor: COLORS.background,
   },
   emptyContainer: {
     flex: 1,
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   shopBtn: {
-    backgroundColor: '#E85D04',
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 32,
     paddingVertical: 14,
     borderRadius: 14,
@@ -248,14 +248,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   itemImage: {
     width: 60,
     height: 60,
     borderRadius: 10,
     marginRight: 10,
-    backgroundColor: '#FFF0EB',
+    backgroundColor: COLORS.iconBg,
   },
   itemDetails: {
     flex: 1,
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#FFF0EB',
+    backgroundColor: COLORS.iconBg,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
   },
   totalRow: {
     borderTopWidth: 1,
-    borderTopColor: '#f0e8e4',
+    borderTopColor: COLORS.borderWarm,
     paddingTop: 10,
     marginTop: 6,
   },
@@ -351,16 +351,16 @@ const styles = StyleSheet.create({
   totalValue: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#E85D04',
+    color: COLORS.primary,
   },
   checkoutSection: {
     backgroundColor: COLORS.white,
     padding: 14,
     borderTopWidth: 1,
-    borderTopColor: '#f0e8e4',
+    borderTopColor: COLORS.borderWarm,
   },
   checkoutBtn: {
-    backgroundColor: '#E85D04',
+    backgroundColor: COLORS.primary,
     borderRadius: 14,
     padding: 14,
     alignItems: 'center',

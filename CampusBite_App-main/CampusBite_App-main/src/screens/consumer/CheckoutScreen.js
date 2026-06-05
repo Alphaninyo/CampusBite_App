@@ -37,7 +37,7 @@ export default function CheckoutScreen({ route, navigation }) {
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16 }}>
       {/* Vendor Info */}
       <View style={styles.vendorCard}>
-        <Ionicons name="storefront-outline" size={20} color="#E85D04" />
+        <Ionicons name="storefront-outline" size={20} color={COLORS.primary} />
         <View style={{ marginLeft: 10 }}>
           <Text style={styles.heading}>Order Summary</Text>
           <Text style={styles.vendorName}>{vendor.business_name}</Text>
@@ -91,7 +91,7 @@ export default function CheckoutScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF8F6' },
+  container: { flex: 1, backgroundColor: COLORS.background },
 
   // Vendor
   vendorCard: {
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   heading: { fontSize: 18, fontWeight: 'bold', color: COLORS.black },
   vendorName: { color: COLORS.gray, fontSize: 13, marginTop: 2 },
@@ -114,13 +114,13 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   cardTitle: { fontSize: 15, fontWeight: 'bold', color: COLORS.black, marginBottom: 12 },
 
   // Items
   itemRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
-  itemQty: { fontSize: 14, fontWeight: 'bold', color: '#E85D04' },
+  itemQty: { fontSize: 14, fontWeight: 'bold', color: COLORS.primary },
   itemName: { fontSize: 14, color: COLORS.black },
 
   // Summary
@@ -128,8 +128,8 @@ const styles = StyleSheet.create({
   rowLabel: { color: COLORS.gray, fontSize: 13 },
   rowValue: { color: COLORS.black, fontSize: 13 },
   totalLabel: { fontWeight: 'bold', fontSize: 16, color: COLORS.black },
-  totalValue: { fontWeight: 'bold', fontSize: 16, color: '#E85D04' },
-  divider: { height: 1, backgroundColor: '#f0e8e4', marginVertical: 10 },
+  totalValue: { fontWeight: 'bold', fontSize: 16, color: COLORS.primary },
+  divider: { height: 1, backgroundColor: COLORS.borderWarm, marginVertical: 10 },
 
   // Input
   inputWrap: {
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
 
   // Button
   button: {
-    backgroundColor: '#E85D04',
+    backgroundColor: COLORS.primary,
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',

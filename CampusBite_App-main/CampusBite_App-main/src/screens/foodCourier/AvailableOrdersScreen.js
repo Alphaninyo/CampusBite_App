@@ -80,14 +80,14 @@ export default function AvailableOrdersScreen({ navigation }) {
     return true;
   });
 
-  if (loading) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF8F6' }}><ActivityIndicator size="large" color="#E85D04" /></View>;
+  if (loading) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
 
   return (
     <View style={styles.container}>
       {/* Header — matches CampusBite design system */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Ionicons name="bicycle-outline" size={22} color="#E85D04" />
+          <Ionicons name="bicycle-outline" size={22} color={COLORS.primary} />
           <Text style={styles.headerTitle}>CampusBite</Text>
         </View>
         <TouchableOpacity
@@ -214,7 +214,7 @@ export default function AvailableOrdersScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF8F6' },
+  container: { flex: 1, backgroundColor: COLORS.background },
 
   // Header — matches VendorDashboardScreen
   header: {
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: COLORS.border,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.black },
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -2,
     right: -2,
-    backgroundColor: '#E85D04',
+    backgroundColor: COLORS.primary,
     borderRadius: 10,
     minWidth: 18,
     height: 18,
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 4,
   },
-  badgeText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
+  badgeText: { color: COLORS.white, fontSize: 10, fontWeight: 'bold' },
 
   // Sub-header
   subHeader: {
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     gap: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0e8e4',
+    borderBottomColor: COLORS.borderWarm,
   },
   filterChip: {
     paddingHorizontal: 14,
@@ -269,11 +269,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: COLORS.white,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   filterChipActive: {
-    backgroundColor: '#E85D04',
-    borderColor: '#E85D04',
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   filterChipText: { fontSize: 13, fontWeight: '600', color: COLORS.gray },
   filterChipTextActive: { color: COLORS.white },
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   imageContainer: {
     position: 'relative',
@@ -350,11 +350,11 @@ const styles = StyleSheet.create({
   destinationBox: {
     marginHorizontal: 16,
     marginBottom: 12,
-    backgroundColor: '#FFF0EB',
+    backgroundColor: COLORS.iconBg,
     borderRadius: 10,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   destinationHeader: {
     flexDirection: 'row',
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   acceptButton: {
-    backgroundColor: '#E85D04',
+    backgroundColor: COLORS.primary,
     marginHorizontal: 16,
     marginBottom: 12,
     paddingVertical: 13,
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0e8e4',
+    borderBottomColor: COLORS.borderWarm,
   },
   earningsLabel: {
     flexDirection: 'row',
@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
   earningsAmount: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#E85D04',
+    color: COLORS.primary,
   },
   detailsRow: {
     flexDirection: 'row',

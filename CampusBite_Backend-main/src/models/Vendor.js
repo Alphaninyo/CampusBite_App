@@ -47,6 +47,11 @@ const Vendor = sequelize.define(
       allowNull: true,
       comment: 'Timestamp when admin approved this vendor profile.',
     },
+    rejected_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'Timestamp when admin rejected this vendor profile.',
+    },
   },
   {
     tableName: 'vendors',

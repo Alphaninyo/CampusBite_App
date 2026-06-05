@@ -11,6 +11,7 @@ const router = express.Router();
 // ── Admin routes ──────────────────────────────────────────────────────────────
 router.get(  '/admin/pending',     protect, restrictTo('admin'), vendorController.getPendingVendors);
 router.patch('/admin/:id/approve', protect, restrictTo('admin'), vendorController.approveVendor);
+router.patch('/admin/:id/reject',  protect, restrictTo('admin'), vendorController.rejectVendor);
 
 // ── Vendor profile routes (authenticated vendor only) ─────────────────────────
 router.post( '/profile',           protect, restrictTo('vendor'), vendorController.createProfile);

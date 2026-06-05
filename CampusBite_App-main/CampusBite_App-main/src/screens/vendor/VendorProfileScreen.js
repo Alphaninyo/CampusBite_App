@@ -109,7 +109,7 @@ export default function VendorProfileScreen({ navigation }) {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#E85D04" />
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
@@ -153,8 +153,8 @@ export default function VendorProfileScreen({ navigation }) {
         <Text style={styles.sectionTitle}>Store Settings</Text>
         <View style={styles.sectionCard}>
           <TouchableOpacity style={styles.settingRow} onPress={handleBusinessHours}>
-            <View style={[styles.settingIcon, { backgroundColor: '#FFF0EB' }]}>
-              <Ionicons name="time-outline" size={20} color="#E85D04" />
+            <View style={[styles.settingIcon, { backgroundColor: COLORS.iconBg }]}>
+              <Ionicons name="time-outline" size={20} color={COLORS.primary} />
             </View>
             <View style={styles.settingInfo}>
               <Text style={styles.settingLabel}>Business Hours</Text>
@@ -166,8 +166,8 @@ export default function VendorProfileScreen({ navigation }) {
           <View style={styles.settingDivider} />
 
           <TouchableOpacity style={styles.settingRow} onPress={handlePrepTime}>
-            <View style={[styles.settingIcon, { backgroundColor: '#FFF0EB' }]}>
-              <Ionicons name="timer-outline" size={20} color="#E85D04" />
+            <View style={[styles.settingIcon, { backgroundColor: COLORS.iconBg }]}>
+              <Ionicons name="timer-outline" size={20} color={COLORS.primary} />
             </View>
             <View style={styles.settingInfo}>
               <Text style={styles.settingLabel}>Estimated Prep Time</Text>
@@ -179,8 +179,8 @@ export default function VendorProfileScreen({ navigation }) {
           <View style={styles.settingDivider} />
 
           <View style={styles.settingRow}>
-            <View style={[styles.settingIcon, { backgroundColor: '#FFF0EB' }]}>
-              <Ionicons name="radio-outline" size={20} color="#E85D04" />
+            <View style={[styles.settingIcon, { backgroundColor: COLORS.iconBg }]}>
+              <Ionicons name="radio-outline" size={20} color={COLORS.primary} />
             </View>
             <View style={styles.settingInfo}>
               <Text style={styles.settingLabel}>Store Status</Text>
@@ -192,7 +192,7 @@ export default function VendorProfileScreen({ navigation }) {
               value={!!vendor?.is_open}
               onValueChange={toggleStoreStatus}
               disabled={toggling}
-              trackColor={{ false: '#ddd', true: '#E85D04' }}
+              trackColor={{ false: '#ddd', true: COLORS.primary }}
               thumbColor={COLORS.white}
             />
           </View>
@@ -202,8 +202,8 @@ export default function VendorProfileScreen({ navigation }) {
         <Text style={styles.sectionTitle}>Finance & Payouts</Text>
         <View style={styles.sectionCard}>
           <TouchableOpacity style={styles.settingRow} onPress={handleBankDetails}>
-            <View style={[styles.settingIcon, { backgroundColor: '#FFF0EB' }]}>
-              <Ionicons name="card-outline" size={20} color="#E85D04" />
+            <View style={[styles.settingIcon, { backgroundColor: COLORS.iconBg }]}>
+              <Ionicons name="card-outline" size={20} color={COLORS.primary} />
             </View>
             <View style={styles.settingInfo}>
               <Text style={styles.settingLabel}>Bank Details</Text>
@@ -215,8 +215,8 @@ export default function VendorProfileScreen({ navigation }) {
           <View style={styles.settingDivider} />
 
           <TouchableOpacity style={styles.settingRow} onPress={handlePayoutHistory}>
-            <View style={[styles.settingIcon, { backgroundColor: '#FFF0EB' }]}>
-              <Ionicons name="wallet-outline" size={20} color="#E85D04" />
+            <View style={[styles.settingIcon, { backgroundColor: COLORS.iconBg }]}>
+              <Ionicons name="wallet-outline" size={20} color={COLORS.primary} />
             </View>
             <View style={styles.settingInfo}>
               <Text style={styles.settingLabel}>Payout History</Text>
@@ -228,8 +228,8 @@ export default function VendorProfileScreen({ navigation }) {
           <View style={styles.settingDivider} />
 
           <TouchableOpacity style={styles.settingRow} onPress={handleTaxInfo}>
-            <View style={[styles.settingIcon, { backgroundColor: '#FFF0EB' }]}>
-              <Ionicons name="document-text-outline" size={20} color="#E85D04" />
+            <View style={[styles.settingIcon, { backgroundColor: COLORS.iconBg }]}>
+              <Ionicons name="document-text-outline" size={20} color={COLORS.primary} />
             </View>
             <View style={styles.settingInfo}>
               <Text style={styles.settingLabel}>Tax Information</Text>
@@ -291,8 +291,8 @@ export default function VendorProfileScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF8F6' },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF8F6' },
+  container: { flex: 1, backgroundColor: COLORS.background },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
 
   // Header
   header: {
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: COLORS.border,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.black },
@@ -318,9 +318,9 @@ const styles = StyleSheet.create({
     width: 90,
     height: 90,
     borderRadius: 45,
-    backgroundColor: '#FFF0EB',
+    backgroundColor: COLORS.iconBg,
     borderWidth: 3,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   verifiedBadge: {
     position: 'absolute',
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
     overflow: 'hidden',
   },
 
@@ -361,8 +361,8 @@ const styles = StyleSheet.create({
   },
   settingInfo: { flex: 1 },
   settingLabel: { fontSize: 14, fontWeight: '600', color: COLORS.black },
-  settingValue: { fontSize: 12, color: '#E85D04', marginTop: 2 },
-  settingDivider: { height: 1, backgroundColor: '#f5f0ed', marginLeft: 64 },
+  settingValue: { fontSize: 12, color: COLORS.primary, marginTop: 2 },
+  settingDivider: { height: 1, backgroundColor: COLORS.borderWarm, marginLeft: 64 },
 
   // Analytics
   analyticsCard: {
@@ -381,10 +381,10 @@ const styles = StyleSheet.create({
   logoutBtn: {
     marginTop: 20,
     borderWidth: 1.5,
-    borderColor: '#E85D04',
+    borderColor: COLORS.primary,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
   },
-  logoutText: { color: '#E85D04', fontWeight: 'bold', fontSize: 14 },
+  logoutText: { color: COLORS.primary, fontWeight: 'bold', fontSize: 14 },
 });

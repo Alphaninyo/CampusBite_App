@@ -55,15 +55,15 @@ export default function NotificationsScreen({ navigation }) {
     switch (type) {
       case 'order_status': return '#2563EB';
       case 'payment': return '#7C3AED';
-      case 'delivery': return '#E85D04';
+      case 'delivery': return COLORS.primary;
       case 'feedback': return '#059669';
       default: return COLORS.gray;
     }
   };
 
   if (loading) return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF8F6' }}>
-      <ActivityIndicator size="large" color="#E85D04" />
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}>
+      <ActivityIndicator size="large" color={COLORS.primary} />
     </View>
   );
 
@@ -88,7 +88,7 @@ export default function NotificationsScreen({ navigation }) {
         data={notifications}
         keyExtractor={(n) => n.id}
         contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchNotifications(); }} colors={['#E85D04']} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchNotifications(); }} colors={[COLORS.primary]} />}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons name="notifications-off-outline" size={64} color={COLORS.gray} />
@@ -120,7 +120,7 @@ export default function NotificationsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF8F6' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -129,11 +129,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0e8e4',
+    borderBottomColor: COLORS.borderWarm,
   },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.black },
   markAllBtn: { paddingHorizontal: 8 },
-  markAllText: { fontSize: 13, color: '#E85D04', fontWeight: '600' },
+  markAllText: { fontSize: 13, color: COLORS.primary, fontWeight: '600' },
   notificationCard: {
     flexDirection: 'row',
     backgroundColor: COLORS.white,
@@ -141,9 +141,9 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
-  unreadCard: { backgroundColor: '#FFF0EB', borderColor: '#E85D04' },
+  unreadCard: { backgroundColor: COLORS.iconBg, borderColor: COLORS.primary },
   iconBox: {
     width: 44,
     height: 44,
@@ -154,14 +154,14 @@ const styles = StyleSheet.create({
   },
   content: { flex: 1 },
   title: { fontSize: 15, fontWeight: '600', color: COLORS.black, marginBottom: 4 },
-  unreadTitle: { color: '#E85D04' },
+  unreadTitle: { color: COLORS.primary },
   body: { fontSize: 13, color: COLORS.gray, marginBottom: 4 },
-  time: { fontSize: 11, color: '#9CA3AF' },
+  time: { fontSize: 11, color: COLORS.muted },
   unreadDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#E85D04',
+    backgroundColor: COLORS.primary,
     marginLeft: 8,
     marginTop: 4,
   },

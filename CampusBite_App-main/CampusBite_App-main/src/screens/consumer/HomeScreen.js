@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, TextInput, ScrollView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
-import { COLORS } from '../../constants';
+import { COLORS, API_BASE_URL } from '../../constants';
 import useCartStore from '../../stores/cartStore';
 
 function FeaturedVendorCard({ vendor, onPress }) {
@@ -111,7 +111,7 @@ export default function HomeScreen({ navigation }) {
               vendor_id: vendor.id,
               name: item.name,
               price: parseFloat(item.price).toFixed(2),
-              image: null,
+              image: item.image ? `${API_BASE_URL}${item.image}` : null,
               _vendor_type: vendor.vendor_type,
             }));
         } catch {
@@ -137,7 +137,7 @@ export default function HomeScreen({ navigation }) {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  if (loading) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF8F6' }}><ActivityIndicator size="large" color="#E85D04" /></View>;
+  if (loading) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
 
   return (
     <View style={styles.container}>
@@ -302,7 +302,7 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF8F6' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   
   // Header
   header: {
@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: COLORS.border,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#FFF0EB',
+    backgroundColor: COLORS.iconBg,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     right: 0,
-    backgroundColor: '#E85D04',
+    backgroundColor: COLORS.primary,
     borderRadius: 10,
     width: 18,
     height: 18,
@@ -371,7 +371,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
     paddingHorizontal: 14,
   },
   searchIconLeft: {
@@ -399,13 +399,13 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
     flexDirection: 'row',
     alignItems: 'center',
   },
   categoryBtnActive: {
-    backgroundColor: '#E85D04',
-    borderColor: '#E85D04',
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   categoryIcon: {
     marginRight: 6,
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     marginRight: 12,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   imageContainer: {
     position: 'relative',
@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   trendingImage: {
     width: '100%',
@@ -587,7 +587,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0e8e4',
+    borderBottomColor: COLORS.borderWarm,
   },
   notificationModalTitle: {
     fontSize: 18,
@@ -602,7 +602,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0e8e4',
+    borderBottomColor: COLORS.borderWarm,
   },
   notificationContent: {
     flex: 1,
@@ -638,11 +638,11 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#E85D04',
+    backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 4,
-    shadowColor: '#E85D04',
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

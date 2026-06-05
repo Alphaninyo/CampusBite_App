@@ -14,7 +14,7 @@ function StarRow({ label, value, onChange }) {
             <Ionicons
               name={n <= value ? 'star' : 'star-outline'}
               size={32}
-              color={n <= value ? '#F59E0B' : '#ddd'}
+              color={n <= value ? COLORS.warning : '#ddd'}
             />
           </TouchableOpacity>
         ))}
@@ -107,7 +107,7 @@ export default function WriteReviewScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF8F6' },
+  container: { flex: 1, backgroundColor: COLORS.background },
 
   // Header
   headerCard: {
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   heading: { fontSize: 18, fontWeight: 'bold', color: COLORS.black },
   sub: { color: COLORS.gray, fontSize: 13, marginTop: 2 },
@@ -130,9 +130,9 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
-  divider: { height: 1, backgroundColor: '#f0e8e4', marginVertical: 12 },
+  divider: { height: 1, backgroundColor: COLORS.borderWarm, marginVertical: 12 },
 
   // Stars
   starSection: { marginBottom: 4 },
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
 
   // Button
   button: {
-    backgroundColor: '#E85D04',
+    backgroundColor: COLORS.primary,
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',

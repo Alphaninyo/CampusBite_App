@@ -136,11 +136,11 @@ export default function EditMenuItemScreen({ route, navigation }) {
       {/* Availability */}
       <View style={styles.switchCard}>
         <View style={styles.switchLeft}>
-          <Ionicons name="checkmark-circle-outline" size={20} color="#E85D04" />
+          <Ionicons name="checkmark-circle-outline" size={20} color={COLORS.primary} />
           <Text style={styles.switchLabel}>Available now</Text>
         </View>
         <Switch value={form.is_available} onValueChange={(v) => set('is_available', v)}
-          trackColor={{ false: '#ddd', true: '#E85D04' }} thumbColor={COLORS.white} />
+          trackColor={{ false: '#ddd', true: COLORS.primary }} thumbColor={COLORS.white} />
       </View>
 
       {/* Submit */}
@@ -163,7 +163,7 @@ export default function EditMenuItemScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF8F6' },
+  container: { flex: 1, backgroundColor: COLORS.background },
 
   fieldGroup: { marginBottom: 16 },
   label: { fontSize: 13, color: COLORS.gray, fontWeight: '600', marginBottom: 6, marginLeft: 2 },
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
     borderStyle: 'dashed',
     overflow: 'hidden',
   },
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFF8F6',
+    backgroundColor: COLORS.background,
   },
   imagePlaceholderText: {
     marginTop: 8,
@@ -203,11 +203,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 0,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
     gap: 8,
   },
   input: { flex: 1, fontSize: 15, color: COLORS.black, paddingVertical: 14 },
-  currencyLabel: { fontSize: 14, fontWeight: 'bold', color: '#E85D04' },
+  currencyLabel: { fontSize: 14, fontWeight: 'bold', color: COLORS.primary },
 
   // Category
   categoryRow: { flexDirection: 'row', gap: 8 },
@@ -217,9 +217,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: COLORS.white,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
-  categoryChipActive: { backgroundColor: '#E85D04', borderColor: '#E85D04' },
+  categoryChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   categoryText: { fontSize: 13, color: COLORS.gray, fontWeight: '500' },
   categoryTextActive: { color: COLORS.white, fontWeight: '600' },
 
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
     marginBottom: 24,
   },
   switchLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
 
   // Button
   button: {
-    backgroundColor: '#E85D04',
+    backgroundColor: COLORS.primary,
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
@@ -257,8 +257,8 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingVertical: 14,
     borderWidth: 1,
-    borderColor: '#EF4444',
+    borderColor: COLORS.danger,
     borderRadius: 14,
   },
-  deleteBtnText: { color: '#EF4444', fontWeight: '600', fontSize: 14 },
+  deleteBtnText: { color: COLORS.danger, fontWeight: '600', fontSize: 14 },
 });

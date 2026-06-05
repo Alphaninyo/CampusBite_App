@@ -4,7 +4,7 @@ import { api } from '../../api';
 import { COLORS } from '../../constants';
 
 const ROLES = ['All', 'consumer', 'vendor', 'food_courier', 'admin'];
-const ROLE_COLORS = { consumer: '#6366F1', vendor: COLORS.primary, food_courier: '#F59E0B', admin: '#EF4444' };
+const ROLE_COLORS = { consumer: '#6366F1', vendor: COLORS.primary, food_courier: COLORS.warning, admin: COLORS.danger };
 
 export default function AdminUsersScreen() {
   const [users, setUsers]       = useState([]);

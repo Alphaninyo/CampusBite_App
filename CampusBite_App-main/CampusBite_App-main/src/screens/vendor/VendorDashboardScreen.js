@@ -127,14 +127,14 @@ export default function VendorDashboardScreen({ navigation }) {
     }).join(', ');
   };
 
-  if (loading) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF8F6' }}><ActivityIndicator size="large" color="#E85D04" /></View>;
+  if (loading) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Ionicons name="storefront-outline" size={22} color="#E85D04" />
+          <Ionicons name="storefront-outline" size={22} color={COLORS.primary} />
           <Text style={styles.headerTitle}>CampusBite</Text>
         </View>
         <View style={styles.headerRight}>
@@ -144,7 +144,7 @@ export default function VendorDashboardScreen({ navigation }) {
               value={!!vendor?.is_open}
               onValueChange={toggleOpen}
               disabled={toggling}
-              trackColor={{ false: '#ddd', true: '#E85D04' }}
+              trackColor={{ false: '#ddd', true: COLORS.primary }}
               thumbColor={COLORS.white}
             />
           </View>
@@ -235,15 +235,15 @@ export default function VendorDashboardScreen({ navigation }) {
           inProgressOrders.map(order => (
             <View key={order.id} style={styles.progressCard}>
               <View style={styles.progressLeft}>
-                <View style={[styles.progressIcon, { backgroundColor: order.status === 'Ready' ? '#E8F5E9' : '#FFF3E0' }]}>
+                <View style={[styles.progressIcon, { backgroundColor: order.status === 'Ready' ? COLORS.successLight : COLORS.warningBg }]}>
                   <Ionicons 
                     name={order.status === 'Ready' ? 'checkmark-circle' : 'restaurant'} 
                     size={22} 
-                    color={order.status === 'Ready' ? '#4CAF50' : '#E85D04'} 
+                    color={order.status === 'Ready' ? COLORS.success : COLORS.primary} 
                   />
                 </View>
                 <View>
-                  <Text style={[styles.progressStatus, { color: order.status === 'Ready' ? '#4CAF50' : '#E85D04' }]}>
+                  <Text style={[styles.progressStatus, { color: order.status === 'Ready' ? COLORS.success : COLORS.primary }]}>
                     {order.status.toUpperCase()}
                   </Text>
                   <Text style={styles.progressOrderId}>
@@ -343,7 +343,7 @@ export default function VendorDashboardScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF8F6' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   
   // Header
   header: { 
@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12, 
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: COLORS.border,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.black },
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
   
   // Revenue Card
   revenueCard: {
-    backgroundColor: '#E85D04',
+    backgroundColor: COLORS.primary,
     borderRadius: 16,
     padding: 20,
     marginTop: 16,
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   statLabel: { color: COLORS.gray, fontSize: 12, marginTop: 8 },
   statValue: { fontSize: 22, fontWeight: 'bold', color: COLORS.black, marginTop: 2 },
@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
   
   // Incoming Orders
   incomingCard: {
-    backgroundColor: '#FFF0EB',
+    backgroundColor: COLORS.iconBg,
     borderRadius: 14,
     padding: 16,
     marginBottom: 12,
@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
   incomingItems: { color: '#555', fontSize: 13, marginBottom: 12 },
   incomingActions: { flexDirection: 'row', gap: 10 },
   acceptBtn: {
-    backgroundColor: '#E85D04',
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
   
   // Progress Orders
   progressCard: {
-    backgroundColor: '#FFF0EB',
+    backgroundColor: COLORS.iconBg,
     borderRadius: 14,
     padding: 14,
     marginBottom: 10,
@@ -492,18 +492,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   popularRank: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#FFF0EB',
+    backgroundColor: COLORS.iconBg,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
-  popularRankText: { fontSize: 13, fontWeight: 'bold', color: '#E85D04' },
+  popularRankText: { fontSize: 13, fontWeight: 'bold', color: COLORS.primary },
   popularInfo: { flex: 1 },
   popularName: { fontSize: 14, fontWeight: '600', color: COLORS.black },
   popularStats: { fontSize: 12, color: COLORS.gray, marginTop: 2 },
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#E8F5E9',
+    backgroundColor: COLORS.successLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -523,7 +523,7 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   reviewHeader: {
     flexDirection: 'row',
@@ -536,7 +536,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#E85D04',
+    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 8,

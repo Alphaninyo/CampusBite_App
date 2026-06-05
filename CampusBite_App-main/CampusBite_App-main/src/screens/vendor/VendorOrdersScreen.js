@@ -95,14 +95,14 @@ export default function VendorOrdersScreen({ navigation }) {
   const incomingCount = allOrders.filter(o => o.status === 'Received').length;
   const filteredOrders = getFilteredOrders();
 
-  if (loading) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF8F6' }}><ActivityIndicator size="large" color="#E85D04" /></View>;
+  if (loading) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Ionicons name="clipboard-outline" size={22} color="#E85D04" />
+          <Ionicons name="clipboard-outline" size={22} color={COLORS.primary} />
           <Text style={styles.headerTitle}>Orders</Text>
         </View>
         <TouchableOpacity onPress={() => navigation.navigate('ProfileTab')}>
@@ -153,7 +153,7 @@ export default function VendorOrdersScreen({ navigation }) {
                   <Text style={styles.customerName}>{order.consumer?.name || 'Customer'}</Text>
                 </View>
                 <View style={styles.timeRow}>
-                  <Ionicons name="time-outline" size={14} color="#E85D04" />
+                  <Ionicons name="time-outline" size={14} color={COLORS.primary} />
                   <Text style={styles.timeText}>{getTimeAgo(order.created_at)}</Text>
                 </View>
               </View>
@@ -215,7 +215,7 @@ export default function VendorOrdersScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF8F6' },
+  container: { flex: 1, backgroundColor: COLORS.background },
 
   // Header
   header: {
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: COLORS.border,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.black },
@@ -248,12 +248,12 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#E85D04',
+    borderBottomColor: COLORS.primary,
   },
   tabText: { fontSize: 14, color: COLORS.gray, fontWeight: '500' },
-  tabTextActive: { color: '#E85D04', fontWeight: '700' },
+  tabTextActive: { color: COLORS.primary, fontWeight: '700' },
   tabBadge: {
-    backgroundColor: '#E85D04',
+    backgroundColor: COLORS.primary,
     width: 20,
     height: 20,
     borderRadius: 10,
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   orderHeader: {
     flexDirection: 'row',
@@ -281,14 +281,14 @@ const styles = StyleSheet.create({
   orderNumber: { fontSize: 12, color: COLORS.gray, fontWeight: '600', letterSpacing: 0.5 },
   customerName: { fontSize: 16, fontWeight: 'bold', color: COLORS.black, marginTop: 2 },
   timeRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  timeText: { fontSize: 12, color: '#E85D04', fontWeight: '500' },
+  timeText: { fontSize: 12, color: COLORS.primary, fontWeight: '500' },
 
-  divider: { height: 1, backgroundColor: '#f0e8e4', marginVertical: 12 },
+  divider: { height: 1, backgroundColor: COLORS.borderWarm, marginVertical: 12 },
 
   // Items
   itemsList: { marginBottom: 16 },
   itemRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  itemQty: { fontSize: 15, fontWeight: 'bold', color: '#E85D04', width: 28 },
+  itemQty: { fontSize: 15, fontWeight: 'bold', color: COLORS.primary, width: 28 },
   itemName: { fontSize: 15, color: COLORS.black },
 
   // Actions
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: 10,
-    backgroundColor: '#FFF0EB',
+    backgroundColor: COLORS.iconBg,
     alignItems: 'center',
   },
   declineBtnText: { color: '#333', fontWeight: '600', fontSize: 14 },
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
     flex: 1.5,
     paddingVertical: 12,
     borderRadius: 10,
-    backgroundColor: '#E85D04',
+    backgroundColor: COLORS.primary,
     alignItems: 'center',
   },
   acceptBtnText: { color: COLORS.white, fontWeight: 'bold', fontSize: 14 },
@@ -323,12 +323,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#E8F5E9',
+    backgroundColor: COLORS.successLight,
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 8,
   },
-  statusBannerText: { color: '#4CAF50', fontWeight: '600', fontSize: 13 },
+  statusBannerText: { color: COLORS.success, fontWeight: '600', fontSize: 13 },
 
   // Empty
   emptyState: { alignItems: 'center', paddingVertical: 60 },

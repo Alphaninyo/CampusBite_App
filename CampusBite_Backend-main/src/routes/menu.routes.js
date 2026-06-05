@@ -8,8 +8,8 @@ const router = express.Router();
 router.get('/vendor/:vendorId', menuController.getVendorMenu);
 
 // ── Vendor only ───────────────────────────────────────────────────────────────
-router.post(  '/',           protect, restrictTo('vendor'), menuController.addMenuItem);
-router.put(   '/:id',        protect, restrictTo('vendor'), menuController.updateMenuItem);
+router.post(  '/',           protect, restrictTo('vendor'), menuController.uploadMiddleware, menuController.addMenuItem);
+router.put(   '/:id',        protect, restrictTo('vendor'), menuController.uploadMiddleware, menuController.updateMenuItem);
 router.patch( '/:id/toggle', protect, restrictTo('vendor'), menuController.toggleItemAvailability);
 router.delete('/:id',        protect, restrictTo('vendor'), menuController.deleteMenuItem);
 

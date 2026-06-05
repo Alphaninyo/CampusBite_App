@@ -58,6 +58,11 @@ const FoodCourierProfile = sequelize.define(
       allowNull: true,
       comment: 'Timestamp when admin approved this courier profile.',
     },
+    rejected_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'Timestamp when admin rejected this courier profile.',
+    },
   },
   {
     tableName: 'food_courier_profiles',

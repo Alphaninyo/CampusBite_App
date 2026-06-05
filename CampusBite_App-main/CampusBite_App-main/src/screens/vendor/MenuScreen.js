@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Switch, Alert, RefreshControl, TextInput, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../api';
-import { COLORS } from '../../constants';
+import { COLORS, API_BASE_URL } from '../../constants';
 
 const CATEGORIES = ['All', 'Main Course', 'Drinks', 'Snacks'];
 
@@ -17,7 +18,7 @@ export default function MenuScreen({ navigation }) {
     try {
       const profileRes = await api.vendors.getProfile();
       const vendorId   = profileRes.data.vendor.id;
-      const { data }   = await api.menu.getVendorMenu(vendorId);
+      const { data }   = await api.menu.getVendorMenu(vendorId, { all: true });
       setMenu(data.items || data.menu_items || []);
     } catch (err) {
       console.error(err.message);
@@ -27,7 +28,7 @@ export default function MenuScreen({ navigation }) {
     }
   }, []);
 
-  useEffect(() => { fetchMenu(); }, [fetchMenu]);
+  useFocusEffect(useCallback(() => { fetchMenu(); }, [fetchMenu]));
 
   const toggleAvailable = async (item) => {
     try {
@@ -72,14 +73,14 @@ export default function MenuScreen({ navigation }) {
           <Text style={styles.headerTitle}>Menu Management</Text>
         </View>
         <TouchableOpacity onPress={() => navigation.navigate('AddMenuItem')}>
-          <Ionicons name="add-outline" size={26} color="#E85D04" />
+          <Ionicons name="add-outline" size={26} color={COLORS.primary} />
         </TouchableOpacity>
       </View>
 
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchMenu(); }} colors={['#E85D04']} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchMenu(); }} colors={[COLORS.primary]} />}
       >
         {/* Search Bar */}
         <View style={styles.searchContainer}>
@@ -124,7 +125,7 @@ export default function MenuScreen({ navigation }) {
           filteredMenu.map(item => (
             <View key={item.id} style={styles.menuCard}>
               <Image
-                source={{ uri: item.image || 'https://via.placeholder.com/70x70/FFF0EB/E85D04?text=Food' }}
+                source={item.image ? { uri: `${API_BASE_URL}${item.image}` } : { uri: 'https://via.placeholder.com/70x70/FFF0EB/E85D04?text=Food' }}
                 style={styles.menuImage}
               />
               {!item.is_available && (
@@ -150,16 +151,16 @@ export default function MenuScreen({ navigation }) {
                     <Ionicons 
                       name="time-outline" 
                       size={14} 
-                      color={item.is_available ? '#4CAF50' : COLORS.gray} 
+                      color={item.is_available ? COLORS.success : COLORS.gray} 
                     />
-                    <Text style={[styles.statusText, { color: item.is_available ? '#4CAF50' : COLORS.gray }]}>
+                    <Text style={[styles.statusText, { color: item.is_available ? COLORS.success : COLORS.gray }]}>
                       {item.is_available ? 'Available' : 'Inactive'}
                     </Text>
                   </View>
                   <Switch
                     value={item.is_available}
                     onValueChange={() => toggleAvailable(item)}
-                    trackColor={{ false: '#ddd', true: '#E85D04' }}
+                    trackColor={{ false: '#ddd', true: COLORS.primary }}
                     thumbColor={COLORS.white}
                     style={{ transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }] }}
                   />
@@ -172,7 +173,7 @@ export default function MenuScreen({ navigation }) {
         {/* Tip Card */}
         <View style={styles.tipCard}>
           <View style={styles.tipIconWrap}>
-            <Ionicons name="restaurant" size={28} color="#E85D04" />
+            <Ionicons name="restaurant" size={28} color={COLORS.primary} />
           </View>
           <Text style={styles.tipTitle}>Expanding your menu?</Text>
           <Text style={styles.tipText}>Add seasonal specials or new daily dishes to attract more students.</Text>
@@ -191,7 +192,7 @@ export default function MenuScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF8F6' },
+  container: { flex: 1, backgroundColor: COLORS.background },
 
   // Header
   header: {
@@ -203,7 +204,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: COLORS.border,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.black },
@@ -220,7 +221,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginTop: 16,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
     gap: 8,
   },
   searchInput: { flex: 1, fontSize: 14, color: COLORS.black },
@@ -234,11 +235,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   categoryChipActive: {
-    backgroundColor: '#E85D04',
-    borderColor: '#E85D04',
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   categoryText: { fontSize: 13, color: COLORS.gray, fontWeight: '500' },
   categoryTextActive: { color: COLORS.white, fontWeight: '600' },
@@ -261,14 +262,14 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
     alignItems: 'center',
   },
   menuImage: {
     width: 70,
     height: 70,
     borderRadius: 10,
-    backgroundColor: '#FFF0EB',
+    backgroundColor: COLORS.iconBg,
     marginRight: 12,
   },
   outOfStockBadge: {
@@ -290,7 +291,7 @@ const styles = StyleSheet.create({
   menuName: { fontSize: 15, fontWeight: 'bold', color: COLORS.black, flex: 1 },
   actionButtons: { flexDirection: 'row', gap: 8 },
   actionBtn: { padding: 4 },
-  menuPrice: { fontSize: 14, color: '#E85D04', fontWeight: 'bold', marginTop: 2 },
+  menuPrice: { fontSize: 14, color: COLORS.primary, fontWeight: 'bold', marginTop: 2 },
   menuStatusRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -302,20 +303,20 @@ const styles = StyleSheet.create({
 
   // Tip Card
   tipCard: {
-    backgroundColor: '#FFF0EB',
+    backgroundColor: COLORS.iconBg,
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',
     marginTop: 16,
     borderWidth: 1.5,
-    borderColor: '#E85D04',
+    borderColor: COLORS.primary,
     borderStyle: 'dashed',
   },
   tipIconWrap: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#FFF8F6',
+    backgroundColor: COLORS.background,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
@@ -329,7 +330,7 @@ const styles = StyleSheet.create({
     bottom: 16,
     left: 16,
     right: 16,
-    backgroundColor: '#E85D04',
+    backgroundColor: COLORS.primary,
     borderRadius: 14,
     paddingVertical: 14,
     flexDirection: 'row',
@@ -337,7 +338,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     elevation: 4,
-    shadowColor: '#E85D04',
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

@@ -134,7 +134,7 @@ export default function MyOrdersScreen({ navigation }) {
     </TouchableOpacity>
   );
 
-  if (loading) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF8F6' }}><ActivityIndicator size="large" color="#E85D04" /></View>;
+  if (loading) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
 
   return (
     <View style={styles.container}>
@@ -216,7 +216,7 @@ export default function MyOrdersScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF8F6',
+    backgroundColor: COLORS.background,
   },
   
   // Search Bar
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   searchIcon: {
     marginRight: 12,
@@ -253,11 +253,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   filterBtnActive: {
-    backgroundColor: '#E85D04',
-    borderColor: '#E85D04',
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   filterText: {
     fontSize: 14,
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0e8e4',
+    borderBottomColor: COLORS.borderWarm,
   },
   orderInfo: {
     flex: 1,
@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
   totalAmount: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#E85D04',
+    color: COLORS.primary,
   },
   
   // Card Footer
@@ -374,13 +374,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: '#f0e8e4',
+    borderTopColor: COLORS.borderWarm,
     alignItems: 'flex-end',
   },
   trackBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E85D04',
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 16,
@@ -417,7 +417,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   shopBtn: {
-    backgroundColor: '#E85D04',
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 32,
     paddingVertical: 14,
     borderRadius: 14,

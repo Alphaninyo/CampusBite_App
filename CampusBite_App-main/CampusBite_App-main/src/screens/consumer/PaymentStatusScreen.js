@@ -81,7 +81,7 @@ export default function PaymentStatusScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
-      <ActivityIndicator size="large" color="#E85D04" />
+      <ActivityIndicator size="large" color={COLORS.primary} />
       <Text style={styles.title}>Waiting for M-Pesa...</Text>
       <Text style={styles.subtitle}>Enter your PIN on your phone to confirm payment.</Text>
       <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel}>
@@ -92,12 +92,12 @@ export default function PaymentStatusScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF8F6', alignItems: 'center', justifyContent: 'center', padding: 32 },
+  container: { flex: 1, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center', padding: 32 },
   iconCircleSuccess: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#E8F5E9',
+    backgroundColor: COLORS.successLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#FFEBEE',
+    backgroundColor: COLORS.dangerBg,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: 'bold', color: COLORS.black, marginTop: 16, marginBottom: 8, textAlign: 'center' },
   subtitle: { fontSize: 14, color: COLORS.gray, textAlign: 'center', marginBottom: 32 },
   button: {
-    backgroundColor: '#E85D04',
+    backgroundColor: COLORS.primary,
     borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 32,
@@ -125,5 +125,5 @@ const styles = StyleSheet.create({
   },
   buttonText: { color: COLORS.white, fontWeight: 'bold', fontSize: 15 },
   cancelBtn: { marginTop: 20 },
-  cancelText: { color: '#EF4444', fontSize: 14, fontWeight: '500' },
+  cancelText: { color: COLORS.danger, fontSize: 14, fontWeight: '500' },
 });

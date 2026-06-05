@@ -65,8 +65,8 @@ export default function EditProfileScreen({ navigation, route }) {
   };
 
   if (fetching) return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF8F6' }}>
-      <ActivityIndicator size="large" color="#E85D04" />
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}>
+      <ActivityIndicator size="large" color={COLORS.primary} />
     </View>
   );
 
@@ -152,7 +152,7 @@ export default function EditProfileScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF8F6' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0e8e4',
+    borderBottomColor: COLORS.borderWarm,
   },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.black },
   scrollView: { flex: 1 },
@@ -170,14 +170,14 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#E85D04',
+    backgroundColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
   },
-  avatarText: { color: '#fff', fontSize: 28, fontWeight: 'bold' },
+  avatarText: { color: COLORS.white, fontSize: 28, fontWeight: 'bold' },
   changeAvatarBtn: { padding: 8 },
-  changeAvatarText: { fontSize: 14, color: '#E85D04', fontWeight: '600' },
+  changeAvatarText: { fontSize: 14, color: COLORS.primary, fontWeight: '600' },
   formSection: { marginBottom: 24 },
   label: { fontSize: 14, fontWeight: '600', color: COLORS.black, marginBottom: 8, marginTop: 16 },
   sectionTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.black, marginTop: 24, marginBottom: 8 },
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
     fontSize: 15,
     color: COLORS.black,
   },
@@ -198,15 +198,15 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   pickerText: { fontSize: 15, color: COLORS.black },
   saveBtn: {
-    backgroundColor: '#E85D04',
+    backgroundColor: COLORS.primary,
     borderRadius: 10,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 16,
   },
-  saveBtnText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  saveBtnText: { color: COLORS.white, fontSize: 16, fontWeight: 'bold' },
 });

@@ -1,4 +1,4 @@
-const { Op }   = require('sequelize');
+const { Op, literal }   = require('sequelize');
 const { Vendor, User, MenuItem, sequelize } = require('../models');
 
 // ─── Vendor Profile ───────────────────────────────────────────────────────────
@@ -221,21 +221,73 @@ exports.getVendorById = async (req, res) => {
  */
 exports.getPendingVendors = async (req, res) => {
   try {
+    // Primary: vendor profiles not yet approved or rejected
+    const profilePending = await Vendor.findAll({
+      where: { approved_at: null, rejected_at: null },
+      include: [{ model: User, as: 'owner', attributes: ['name', 'email', 'phone', 'is_approved', 'created_at'] }],
+      order: [['created_at', 'ASC']],
+    });
+
+    // Fallback: vendor-role users with no vendor profile (data inconsistency recovery)
+    const profilePendingUserIds = profilePending.map((v) => v.user_id);
+    const orphanUsers = await User.findAll({
+      where: {
+        role: 'vendor',
+        is_approved: false,
+        id: { [Op.notIn]: profilePendingUserIds.length ? profilePendingUserIds : ['00000000-0000-0000-0000-000000000000'] },
+      },
+      attributes: ['id', 'name', 'email', 'phone', 'is_approved', 'created_at'],
+    });
+
+    // For each orphaned user, auto-create a minimal vendor profile so the admin can act on them
+    for (const u of orphanUsers) {
+      const existing = await Vendor.findOne({ where: { user_id: u.id } });
+      if (!existing) {
+        await Vendor.create({ user_id: u.id, business_name: `${u.name} (pending setup)`, vendor_type: 'restaurant', is_open: false });
+      }
+    }
+
+    // Re-fetch after auto-creating any missing profiles
     const vendors = await Vendor.findAll({
-      where: { approved_at: null },
-      include: [
-        {
-          model:      User,
-          as:         'owner',
-          attributes: ['name', 'email', 'phone', 'is_approved', 'created_at'],
-        },
-      ],
+      where: { approved_at: null, rejected_at: null },
+      include: [{ model: User, as: 'owner', attributes: ['name', 'email', 'phone', 'is_approved', 'created_at'] }],
       order: [['created_at', 'ASC']],
     });
 
     res.status(200).json({ success: true, count: vendors.length, vendors });
   } catch (error) {
     console.error('[VENDOR] getPendingVendors error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/**
+ * PATCH /api/vendors/admin/:id/reject
+ * Protected — admin only.
+ * Rejects a pending vendor profile.
+ */
+exports.rejectVendor = async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    const vendor = await Vendor.findByPk(req.params.id, { transaction: t });
+    if (!vendor) {
+      await t.rollback();
+      return res.status(404).json({ success: false, message: 'Vendor not found.' });
+    }
+    if (vendor.approved_at) {
+      await t.rollback();
+      return res.status(409).json({ success: false, message: 'Cannot reject an already approved vendor.' });
+    }
+    if (vendor.rejected_at) {
+      await t.rollback();
+      return res.status(409).json({ success: false, message: 'This vendor has already been rejected.' });
+    }
+    await vendor.update({ rejected_at: new Date() }, { transaction: t });
+    await t.commit();
+    res.status(200).json({ success: true, message: `Vendor "${vendor.business_name}" has been rejected.` });
+  } catch (error) {
+    await t.rollback();
+    console.error('[VENDOR] rejectVendor error:', error);
     res.status(500).json({ success: false, message: 'Server error.' });
   }
 };

@@ -35,7 +35,7 @@ export default function OrderDetailScreen({ route, navigation }) {
 
   useEffect(() => { fetchOrder(); }, [fetchOrder]);
 
-  if (loading) return <View style={styles.loadingContainer}><ActivityIndicator size="large" color="#E85D04" /></View>;
+  if (loading) return <View style={styles.loadingContainer}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
   if (!order) return (
     <View style={styles.loadingContainer}>
       <Ionicons name="alert-circle-outline" size={48} color={COLORS.gray} />
@@ -50,7 +50,7 @@ export default function OrderDetailScreen({ route, navigation }) {
     <ScrollView
       style={styles.container}
       showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchOrder(); }} colors={['#E85D04']} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchOrder(); }} colors={[COLORS.primary]} />}
     >
       {/* Status Banner */}
       <View style={[styles.statusBanner, { backgroundColor: STATUS_COLORS[order.status] || COLORS.gray }]}>
@@ -61,7 +61,7 @@ export default function OrderDetailScreen({ route, navigation }) {
       {/* Progress Steps */}
       <View style={styles.progressRow}>
         {STEPS.map((s, i) => (
-          <View key={s} style={[styles.step, { backgroundColor: i <= stepIndex ? '#E85D04' : '#f0e8e4' }]} />
+          <View key={s} style={[styles.step, { backgroundColor: i <= stepIndex ? COLORS.primary : COLORS.borderWarm }]} />
         ))}
       </View>
 
@@ -93,7 +93,7 @@ export default function OrderDetailScreen({ route, navigation }) {
         <View style={styles.totalDivider} />
         <View style={styles.summaryRow}>
           <Text style={[styles.summaryLabel, { fontWeight: 'bold', color: COLORS.black }]}>Total</Text>
-          <Text style={[styles.summaryValue, { fontWeight: 'bold', color: '#E85D04', fontSize: 16 }]}>
+          <Text style={[styles.summaryValue, { fontWeight: 'bold', color: COLORS.primary, fontSize: 16 }]}>
             KES {parseFloat(order.total_amount || 0).toFixed(2)}
           </Text>
         </View>
@@ -103,7 +103,7 @@ export default function OrderDetailScreen({ route, navigation }) {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Delivery Address</Text>
         <View style={styles.addressRow}>
-          <Ionicons name="location-outline" size={16} color="#E85D04" />
+          <Ionicons name="location-outline" size={16} color={COLORS.primary} />
           <Text style={styles.addressText}>{order.delivery_address || 'N/A'}</Text>
         </View>
       </View>
@@ -114,7 +114,7 @@ export default function OrderDetailScreen({ route, navigation }) {
           <Text style={styles.cardTitle}>Delivery Rider</Text>
           <View style={styles.riderRow}>
             <View style={styles.riderAvatar}>
-              <Ionicons name="bicycle" size={20} color="#E85D04" />
+              <Ionicons name="bicycle" size={20} color={COLORS.primary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.riderName}>{order.rider.name}</Text>
@@ -138,8 +138,8 @@ export default function OrderDetailScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF8F6' },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF8F6' },
+  container: { flex: 1, backgroundColor: COLORS.background },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
 
   // Status
   statusBanner: {
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   cardTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.black, marginBottom: 14 },
 
@@ -176,10 +176,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f5f0ed',
+    borderBottomColor: COLORS.borderWarm,
   },
   itemLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 8 },
-  itemQty: { fontSize: 14, fontWeight: 'bold', color: '#E85D04' },
+  itemQty: { fontSize: 14, fontWeight: 'bold', color: COLORS.primary },
   itemName: { fontSize: 14, color: COLORS.black },
   itemPrice: { fontSize: 14, color: COLORS.black, fontWeight: '500' },
 
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   summaryLabel: { fontSize: 13, color: COLORS.gray },
   summaryValue: { fontSize: 13, color: COLORS.black },
-  totalDivider: { height: 1, backgroundColor: '#f0e8e4', marginVertical: 10 },
+  totalDivider: { height: 1, backgroundColor: COLORS.borderWarm, marginVertical: 10 },
 
   // Address
   addressRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#FFF0EB',
+    backgroundColor: COLORS.iconBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
   reviewBtn: {
     marginHorizontal: 16,
     marginTop: 4,
-    backgroundColor: '#F59E0B',
+    backgroundColor: COLORS.warning,
     borderRadius: 14,
     paddingVertical: 14,
     flexDirection: 'row',

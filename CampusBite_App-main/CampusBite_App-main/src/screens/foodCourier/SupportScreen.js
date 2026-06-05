@@ -68,7 +68,7 @@ export default function SupportScreen({ navigation }) {
         {supportOptions.map((option, index) => (
           <TouchableOpacity key={index} style={styles.card} onPress={option.onPress}>
             <View style={styles.iconBox}>
-              <Ionicons name={option.icon} size={24} color="#E85D04" />
+              <Ionicons name={option.icon} size={24} color={COLORS.primary} />
             </View>
             <View style={styles.cardContent}>
               <Text style={styles.cardTitle}>{option.title}</Text>
@@ -90,7 +90,7 @@ export default function SupportScreen({ navigation }) {
 
         {/* Info Card */}
         <View style={styles.infoCard}>
-          <Ionicons name="information-circle-outline" size={24} color="#E85D04" />
+          <Ionicons name="information-circle-outline" size={24} color={COLORS.primary} />
           <View style={styles.infoContent}>
             <Text style={styles.infoTitle}>Need immediate help?</Text>
             <Text style={styles.infoText}>Our support team is available 24/7 for urgent delivery issues.</Text>
@@ -102,7 +102,7 @@ export default function SupportScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF8F6' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0e8e4',
+    borderBottomColor: COLORS.borderWarm,
   },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.black },
   scrollView: { flex: 1 },
@@ -124,13 +124,13 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   iconBox: {
     width: 44,
     height: 44,
     borderRadius: 10,
-    backgroundColor: '#FFF0EB',
+    backgroundColor: COLORS.iconBg,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -146,12 +146,12 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
   },
   listText: { flex: 1, fontSize: 14, color: COLORS.black, marginLeft: 12 },
   infoCard: {
     flexDirection: 'row',
-    backgroundColor: '#FFF0EB',
+    backgroundColor: COLORS.iconBg,
     borderRadius: 12,
     padding: 16,
     marginTop: 8,

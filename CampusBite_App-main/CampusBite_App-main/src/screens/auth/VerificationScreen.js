@@ -6,14 +6,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { api } from '../../api';
-
-const PRIMARY  = '#E85D04';
-const BG       = '#FEF3ED';
-const CARD     = '#FFFFFF';
-const MUTED    = '#9CA3AF';
-const TEXT     = '#111827';
-const SUBTEXT  = '#6B7280';
-const BORDER   = '#F3E8E2';
+import { COLORS } from '../../constants';
 
 const DOC_TYPES = [
   { key: 'national_id', label: 'National ID',  icon: 'card-outline',    desc: 'Front + back of your national identity card' },
@@ -132,7 +125,7 @@ export default function VerificationScreen({ navigation, route }) {
         <View style={styles.header}>
           <View style={styles.logoRing}>
             <View style={styles.logoInner}>
-              <Ionicons name="shield-checkmark" size={24} color={CARD} />
+              <Ionicons name="shield-checkmark" size={24} color={COLORS.card} />
             </View>
           </View>
         </View>
@@ -151,7 +144,7 @@ export default function VerificationScreen({ navigation, route }) {
             <View key={s} style={styles.stepItem}>
               <View style={[styles.stepDot, i === 1 && styles.stepDotActive, i < 1 && styles.stepDotDone]}>
                 {i < 1
-                  ? <Ionicons name="checkmark" size={12} color={CARD} />
+                  ? <Ionicons name="checkmark" size={12} color={COLORS.card} />
                   : <Text style={[styles.stepNum, i === 1 && styles.stepNumActive]}>{i + 1}</Text>
                 }
               </View>
@@ -175,7 +168,7 @@ export default function VerificationScreen({ navigation, route }) {
                 onPress={() => setDocType(d.key)}
                 activeOpacity={0.8}
               >
-                <Ionicons name={d.icon} size={22} color={docType === d.key ? CARD : MUTED} />
+                <Ionicons name={d.icon} size={22} color={docType === d.key ? COLORS.card : COLORS.muted} />
                 <Text style={[styles.docTypeLabel, docType === d.key && styles.docTypeLabelActive]}>{d.label}</Text>
                 <Text style={[styles.docTypeDesc,  docType === d.key && styles.docTypeDescActive]} numberOfLines={2}>{d.desc}</Text>
               </TouchableOpacity>
@@ -187,30 +180,30 @@ export default function VerificationScreen({ navigation, route }) {
           {pickedFile ? (
             <View style={styles.previewBox}>
               <View style={styles.previewIcon}>
-                <Ionicons name="document-text" size={36} color={PRIMARY} />
+                <Ionicons name="document-text" size={36} color={COLORS.primary} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.previewName} numberOfLines={1}>Document selected ✓</Text>
                 <Text style={styles.previewSize}>{Math.round((pickedFile.fileSize || 0) / 1024)} KB</Text>
               </View>
               <TouchableOpacity onPress={() => setPickedFile(null)} style={styles.removeBtn}>
-                <Ionicons name="close-circle" size={22} color="#EF4444" />
+                <Ionicons name="close-circle" size={22} color={COLORS.danger} />
               </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.uploadArea}>
               <View style={styles.uploadIconRing}>
-                <Ionicons name="cloud-upload-outline" size={32} color={PRIMARY} />
+                <Ionicons name="cloud-upload-outline" size={32} color={COLORS.primary} />
               </View>
               <Text style={styles.uploadTitle}>Upload your document</Text>
               <Text style={styles.uploadSub}>JPEG, PNG or PDF · Max 8 MB</Text>
               <View style={styles.uploadBtnRow}>
                 <TouchableOpacity style={styles.uploadBtn} onPress={pickFromGallery} activeOpacity={0.8}>
-                  <Ionicons name="images-outline" size={18} color={PRIMARY} />
+                  <Ionicons name="images-outline" size={18} color={COLORS.primary} />
                   <Text style={styles.uploadBtnText}>Gallery</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.uploadBtn} onPress={pickFromCamera} activeOpacity={0.8}>
-                  <Ionicons name="camera-outline" size={18} color={PRIMARY} />
+                  <Ionicons name="camera-outline" size={18} color={COLORS.primary} />
                   <Text style={styles.uploadBtnText}>Camera</Text>
                 </TouchableOpacity>
               </View>
@@ -227,7 +220,7 @@ export default function VerificationScreen({ navigation, route }) {
               'No glare or heavy shadows on the image',
             ].map((tip, i) => (
               <View key={i} style={styles.tipRow}>
-                <Ionicons name="checkmark-circle-outline" size={14} color="#10B981" />
+                <Ionicons name="checkmark-circle-outline" size={14} color={COLORS.success} />
                 <Text style={styles.tipText}>{tip}</Text>
               </View>
             ))}
@@ -244,10 +237,10 @@ export default function VerificationScreen({ navigation, route }) {
               activeOpacity={1}
             >
               {uploading ? (
-                <ActivityIndicator color={CARD} size="small" />
+                <ActivityIndicator color={COLORS.card} size="small" />
               ) : (
                 <View style={styles.submitInner}>
-                  <Ionicons name="cloud-upload" size={18} color={CARD} style={{ marginRight: 8 }} />
+                  <Ionicons name="cloud-upload" size={18} color={COLORS.card} style={{ marginRight: 8 }} />
                   <Text style={styles.submitText}>Submit for Verification</Text>
                 </View>
               )}
@@ -258,7 +251,7 @@ export default function VerificationScreen({ navigation, route }) {
         {/* Skip */}
         <TouchableOpacity onPress={skip} activeOpacity={0.7} style={styles.skipRow}>
           <Text style={styles.skipText}>I'll do this later</Text>
-          <Ionicons name="arrow-forward" size={14} color={MUTED} style={{ marginLeft: 4 }} />
+          <Ionicons name="arrow-forward" size={14} color={COLORS.muted} style={{ marginLeft: 4 }} />
         </TouchableOpacity>
 
         <View style={styles.blobBottom} />
@@ -268,95 +261,95 @@ export default function VerificationScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  root:   { flex: 1, backgroundColor: BG },
+  root:   { flex: 1, backgroundColor: COLORS.backgroundAlt },
   scroll: { flexGrow: 1, alignItems: 'center', paddingHorizontal: 22, paddingTop: 50, paddingBottom: 48 },
 
-  blobTopRight: { position: 'absolute', top: -60, right: -60, width: 200, height: 200, borderRadius: 100, backgroundColor: '#FDDCC8', opacity: 0.55 },
-  blobTopLeft:  { position: 'absolute', top: 40, left: -80,   width: 160, height: 160, borderRadius: 80,  backgroundColor: '#FDDCC8', opacity: 0.35 },
-  blobBottom:   { position: 'absolute', bottom: -80, right: -60, width: 180, height: 180, borderRadius: 90, backgroundColor: '#FDDCC8', opacity: 0.3 },
+  blobTopRight: { position: 'absolute', top: -60, right: -60, width: 200, height: 200, borderRadius: 100, backgroundColor: COLORS.blob, opacity: 0.55 },
+  blobTopLeft:  { position: 'absolute', top: 40, left: -80,   width: 160, height: 160, borderRadius: 80,  backgroundColor: COLORS.blob, opacity: 0.35 },
+  blobBottom:   { position: 'absolute', bottom: -80, right: -60, width: 180, height: 180, borderRadius: 90, backgroundColor: COLORS.blob, opacity: 0.3 },
 
   header:    { alignItems: 'center', marginBottom: 20, zIndex: 1 },
-  logoRing:  { width: 72, height: 72, borderRadius: 36, backgroundColor: '#FDDCC8', alignItems: 'center', justifyContent: 'center', shadowColor: PRIMARY, shadowOpacity: 0.2, shadowRadius: 10, elevation: 5 },
-  logoInner: { width: 54, height: 54, borderRadius: 27, backgroundColor: PRIMARY, alignItems: 'center', justifyContent: 'center' },
+  logoRing:  { width: 72, height: 72, borderRadius: 36, backgroundColor: COLORS.blob, alignItems: 'center', justifyContent: 'center', shadowColor: COLORS.primary, shadowOpacity: 0.2, shadowRadius: 10, elevation: 5 },
+  logoInner: { width: 54, height: 54, borderRadius: 27, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
 
   titleSection: { width: '100%', alignItems: 'center', marginBottom: 24, zIndex: 1 },
-  title:        { fontSize: 26, fontWeight: '800', color: TEXT, letterSpacing: -0.5, marginBottom: 8, textAlign: 'center' },
-  subtitle:     { fontSize: 14, color: SUBTEXT, textAlign: 'center', lineHeight: 20 },
-  roleChip:     { fontWeight: '700', color: PRIMARY },
+  title:        { fontSize: 26, fontWeight: '800', color: COLORS.text, letterSpacing: -0.5, marginBottom: 8, textAlign: 'center' },
+  subtitle:     { fontSize: 14, color: COLORS.subtext, textAlign: 'center', lineHeight: 20 },
+  roleChip:     { fontWeight: '700', color: COLORS.primary },
 
   // Steps
   stepsRow:       { flexDirection: 'row', alignItems: 'center', marginBottom: 28, zIndex: 1 },
   stepItem:       { flexDirection: 'row', alignItems: 'center' },
-  stepDot:        { width: 26, height: 26, borderRadius: 13, backgroundColor: '#E5E7EB', alignItems: 'center', justifyContent: 'center' },
-  stepDotActive:  { backgroundColor: PRIMARY, shadowColor: PRIMARY, shadowOpacity: 0.3, shadowRadius: 6, elevation: 3 },
-  stepDotDone:    { backgroundColor: '#10B981' },
-  stepNum:        { fontSize: 11, fontWeight: '700', color: MUTED },
-  stepNumActive:  { color: CARD },
-  stepLabel:      { fontSize: 10, color: MUTED, fontWeight: '600', marginLeft: 6 },
-  stepLabelActive:{ color: PRIMARY, fontWeight: '700' },
-  stepLine:       { width: 28, height: 2, backgroundColor: '#E5E7EB', marginHorizontal: 4 },
-  stepLineDone:   { backgroundColor: '#10B981' },
+  stepDot:        { width: 26, height: 26, borderRadius: 13, backgroundColor: COLORS.border, alignItems: 'center', justifyContent: 'center' },
+  stepDotActive:  { backgroundColor: COLORS.primary, shadowColor: COLORS.primary, shadowOpacity: 0.3, shadowRadius: 6, elevation: 3 },
+  stepDotDone:    { backgroundColor: COLORS.success },
+  stepNum:        { fontSize: 11, fontWeight: '700', color: COLORS.muted },
+  stepNumActive:  { color: COLORS.card },
+  stepLabel:      { fontSize: 10, color: COLORS.muted, fontWeight: '600', marginLeft: 6 },
+  stepLabelActive:{ color: COLORS.primary, fontWeight: '700' },
+  stepLine:       { width: 28, height: 2, backgroundColor: COLORS.border, marginHorizontal: 4 },
+  stepLineDone:   { backgroundColor: COLORS.success },
 
   // Card
   card: {
-    width: '100%', backgroundColor: CARD, borderRadius: 28,
+    width: '100%', backgroundColor: COLORS.card, borderRadius: 28,
     paddingHorizontal: 22, paddingTop: 0, paddingBottom: 24,
     marginBottom: 16, overflow: 'hidden',
-    shadowColor: '#C44D00', shadowOpacity: 0.10, shadowRadius: 20, shadowOffset: { width: 0, height: 8 }, elevation: 6,
+    shadowColor: COLORS.primary, shadowOpacity: 0.10, shadowRadius: 20, shadowOffset: { width: 0, height: 8 }, elevation: 6,
   },
-  cardAccent:   { height: 5, backgroundColor: PRIMARY, marginHorizontal: -22, marginBottom: 22 },
-  sectionLabel: { fontSize: 10, fontWeight: '700', color: SUBTEXT, letterSpacing: 1.2, marginBottom: 10 },
+  cardAccent:   { height: 5, backgroundColor: COLORS.primary, marginHorizontal: -22, marginBottom: 22 },
+  sectionLabel: { fontSize: 10, fontWeight: '700', color: COLORS.subtext, letterSpacing: 1.2, marginBottom: 10 },
 
   // Document type
   docTypeRow:          { flexDirection: 'row', columnGap: 12, marginBottom: 22 },
-  docTypeBtn:          { flex: 1, alignItems: 'center', paddingVertical: 14, borderRadius: 14, borderWidth: 1.5, borderColor: BORDER, backgroundColor: '#FBF7F5' },
-  docTypeBtnActive:    { backgroundColor: PRIMARY, borderColor: PRIMARY, shadowColor: PRIMARY, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
-  docTypeLabel:        { fontSize: 12, fontWeight: '700', color: SUBTEXT, marginTop: 6, marginBottom: 2 },
-  docTypeLabelActive:  { color: CARD },
-  docTypeDesc:         { fontSize: 10, color: MUTED, textAlign: 'center', paddingHorizontal: 4 },
+  docTypeBtn:          { flex: 1, alignItems: 'center', paddingVertical: 14, borderRadius: 14, borderWidth: 1.5, borderColor: COLORS.borderWarm, backgroundColor: COLORS.inputBg },
+  docTypeBtnActive:    { backgroundColor: COLORS.primary, borderColor: COLORS.primary, shadowColor: COLORS.primary, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
+  docTypeLabel:        { fontSize: 12, fontWeight: '700', color: COLORS.subtext, marginTop: 6, marginBottom: 2 },
+  docTypeLabelActive:  { color: COLORS.card },
+  docTypeDesc:         { fontSize: 10, color: COLORS.muted, textAlign: 'center', paddingHorizontal: 4 },
   docTypeDescActive:   { color: 'rgba(255,255,255,0.8)' },
 
   // Upload area
   uploadArea: {
-    borderWidth: 2, borderColor: BORDER, borderStyle: 'dashed',
+    borderWidth: 2, borderColor: COLORS.borderWarm, borderStyle: 'dashed',
     borderRadius: 16, paddingVertical: 28, alignItems: 'center',
-    backgroundColor: '#FBF7F5', marginBottom: 20,
+    backgroundColor: COLORS.inputBg, marginBottom: 20,
   },
-  uploadIconRing: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#FEF0E7', alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  uploadTitle:    { fontSize: 15, fontWeight: '700', color: TEXT, marginBottom: 4 },
-  uploadSub:      { fontSize: 12, color: MUTED, marginBottom: 16 },
+  uploadIconRing: { width: 64, height: 64, borderRadius: 32, backgroundColor: COLORS.iconBg, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  uploadTitle:    { fontSize: 15, fontWeight: '700', color: COLORS.text, marginBottom: 4 },
+  uploadSub:      { fontSize: 12, color: COLORS.muted, marginBottom: 16 },
   uploadBtnRow:   { flexDirection: 'row', columnGap: 12 },
   uploadBtn: {
     flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 10,
-    borderRadius: 10, borderWidth: 1.5, borderColor: PRIMARY, backgroundColor: CARD,
+    borderRadius: 10, borderWidth: 1.5, borderColor: COLORS.primary, backgroundColor: COLORS.card,
   },
-  uploadBtnText: { fontSize: 13, fontWeight: '700', color: PRIMARY, marginLeft: 6 },
+  uploadBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.primary, marginLeft: 6 },
 
   // Preview
   previewBox: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#F0FDF4', borderRadius: 14,
-    borderWidth: 1.5, borderColor: '#86EFAC',
+    backgroundColor: COLORS.successBg, borderRadius: 14,
+    borderWidth: 1.5, borderColor: COLORS.successBorder,
     padding: 14, marginBottom: 20,
   },
-  previewIcon: { width: 48, height: 48, borderRadius: 10, backgroundColor: '#DCFCE7', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  previewName: { fontSize: 14, fontWeight: '700', color: '#166534' },
-  previewSize: { fontSize: 12, color: '#4ADE80', marginTop: 2 },
+  previewIcon: { width: 48, height: 48, borderRadius: 10, backgroundColor: COLORS.successIconBg, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  previewName: { fontSize: 14, fontWeight: '700', color: COLORS.successText },
+  previewSize: { fontSize: 12, color: COLORS.success, marginTop: 2 },
   removeBtn:   { padding: 4 },
 
   // Guidelines
-  guidelines:      { backgroundColor: '#F9FAFB', borderRadius: 12, padding: 14, marginBottom: 20 },
-  guidelinesTitle: { fontSize: 12, fontWeight: '700', color: TEXT, marginBottom: 10 },
+  guidelines:      { backgroundColor: COLORS.inputBg, borderRadius: 12, padding: 14, marginBottom: 20 },
+  guidelinesTitle: { fontSize: 12, fontWeight: '700', color: COLORS.text, marginBottom: 10 },
   tipRow:          { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 },
-  tipText:         { fontSize: 12, color: SUBTEXT, marginLeft: 8, flex: 1 },
+  tipText:         { fontSize: 12, color: COLORS.subtext, marginLeft: 8, flex: 1 },
 
   // Submit
-  submitBtn:         { backgroundColor: PRIMARY, borderRadius: 16, paddingVertical: 17, alignItems: 'center', justifyContent: 'center', shadowColor: PRIMARY, shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 6 },
-  submitBtnDisabled: { backgroundColor: '#FDDCC8', shadowOpacity: 0 },
+  submitBtn:         { backgroundColor: COLORS.primary, borderRadius: 16, paddingVertical: 17, alignItems: 'center', justifyContent: 'center', shadowColor: COLORS.primary, shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 6 },
+  submitBtnDisabled: { backgroundColor: COLORS.blob, shadowOpacity: 0 },
   submitInner:       { flexDirection: 'row', alignItems: 'center' },
-  submitText:        { color: CARD, fontSize: 16, fontWeight: '800', letterSpacing: 0.2 },
+  submitText:        { color: COLORS.card, fontSize: 16, fontWeight: '800', letterSpacing: 0.2 },
 
   // Skip
   skipRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
-  skipText: { fontSize: 13, color: MUTED, fontWeight: '500' },
+  skipText: { fontSize: 13, color: COLORS.muted, fontWeight: '500' },
 });

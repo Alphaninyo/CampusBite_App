@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
-import { COLORS } from '../../constants';
+import { COLORS, API_BASE_URL } from '../../constants';
 
 export default function VendorDetailScreen({ route, navigation }) {
   const { vendor } = route.params;
@@ -40,7 +40,7 @@ export default function VendorDetailScreen({ route, navigation }) {
     navigation.navigate('Checkout', { vendor, items, subtotal: parseFloat(cartTotal) });
   };
 
-  if (loading) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF8F6' }}><ActivityIndicator size="large" color="#E85D04" /></View>;
+  if (loading) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
 
   return (
     <View style={styles.container}>
@@ -58,8 +58,8 @@ export default function VendorDetailScreen({ route, navigation }) {
               </View>
             )}
             <View style={styles.statusRow}>
-              <View style={[styles.statusDot, { backgroundColor: vendor.is_open ? '#4CAF50' : COLORS.gray }]} />
-              <Text style={[styles.statusLabel, { color: vendor.is_open ? '#4CAF50' : COLORS.gray }]}>
+              <View style={[styles.statusDot, { backgroundColor: vendor.is_open ? COLORS.success : COLORS.gray }]} />
+              <Text style={[styles.statusLabel, { color: vendor.is_open ? COLORS.success : COLORS.gray }]}>
                 {vendor.is_open ? 'Open Now' : 'Closed'}
               </Text>
             </View>
@@ -67,6 +67,12 @@ export default function VendorDetailScreen({ route, navigation }) {
         }
         renderItem={({ item }) => (
           <View style={styles.item}>
+            <Image
+              source={item.image
+                ? { uri: `${API_BASE_URL}${item.image}` }
+                : { uri: 'https://via.placeholder.com/70x70/FFF0EB/E85D04?text=Food' }}
+              style={styles.itemImage}
+            />
             <View style={styles.itemInfo}>
               <Text style={styles.itemName}>{item.name}</Text>
               {item.description && <Text style={styles.itemDesc}>{item.description}</Text>}
@@ -74,7 +80,7 @@ export default function VendorDetailScreen({ route, navigation }) {
             </View>
             <View style={styles.qtyRow}>
               <TouchableOpacity style={styles.qtyBtn} onPress={() => removeFromCart(item.id)}>
-                <Ionicons name="remove-outline" size={16} color="#E85D04" />
+                <Ionicons name="remove-outline" size={16} color={COLORS.primary} />
               </TouchableOpacity>
               <Text style={styles.qty}>{cart[item.id] || 0}</Text>
               <TouchableOpacity style={[styles.qtyBtn, styles.qtyBtnAdd]} onPress={() => addToCart(item.id)}>
@@ -109,7 +115,7 @@ export default function VendorDetailScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF8F6' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   header: { marginBottom: 16 },
   vendorName: { fontSize: 22, fontWeight: 'bold', color: COLORS.black },
   locationContainer: { flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 },
@@ -120,32 +126,39 @@ const styles = StyleSheet.create({
   item: {
     backgroundColor: COLORS.white,
     borderRadius: 14,
-    padding: 14,
+    padding: 12,
     marginBottom: 10,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#f0e8e4',
+    borderColor: COLORS.borderWarm,
+    gap: 12,
   },
-  itemInfo: { flex: 1, marginRight: 12 },
+  itemImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 10,
+    backgroundColor: COLORS.iconBg,
+    flexShrink: 0,
+  },
+  itemInfo: { flex: 1 },
   itemName: { fontSize: 15, fontWeight: 'bold', color: COLORS.black },
   itemDesc: { fontSize: 12, color: COLORS.gray, marginTop: 2 },
-  itemPrice: { fontSize: 14, color: '#E85D04', fontWeight: 'bold', marginTop: 6 },
+  itemPrice: { fontSize: 14, color: COLORS.primary, fontWeight: 'bold', marginTop: 6 },
   qtyRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   qtyBtn: {
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#FFF0EB',
+    backgroundColor: COLORS.iconBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  qtyBtnAdd: { backgroundColor: '#E85D04' },
+  qtyBtnAdd: { backgroundColor: COLORS.primary },
   qty: { fontSize: 16, fontWeight: 'bold', minWidth: 20, textAlign: 'center', color: COLORS.black },
   empty: { textAlign: 'center', color: COLORS.gray, marginTop: 12, fontSize: 14 },
   checkoutBar: {
-    backgroundColor: '#E85D04',
+    backgroundColor: COLORS.primary,
     padding: 16,
     paddingHorizontal: 20,
     flexDirection: 'row',
