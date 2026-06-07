@@ -63,6 +63,98 @@ exports.getStats = async (req, res) => {
   }
 };
 
+// ─── Weekly Orders ─────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/admin/stats/weekly-orders
+ * Admin only — orders per day for the current week.
+ */
+exports.getWeeklyOrders = async (req, res) => {
+  try {
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // Start from Sunday
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    const orders = await Order.findAll({
+      where: {
+        created_at: {
+          [Op.between]: [startOfWeek, endOfWeek],
+        },
+      },
+      attributes: [
+        [sequelize.fn('DATE', sequelize.col('created_at')), 'date'],
+        [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
+      ],
+      group: [sequelize.fn('DATE', sequelize.col('created_at'))],
+      raw: true,
+    });
+
+    // Create array for all days of the week
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const weeklyData = days.map((day, index) => {
+      const date = new Date(startOfWeek);
+      date.setDate(startOfWeek.getDate() + index);
+      const dateStr = date.toISOString().split('T')[0];
+      const found = orders.find(o => o.date === dateStr);
+      return { day, value: found ? parseInt(found.count) : 0 };
+    });
+
+    res.status(200).json({
+      success: true,
+      weekly_orders: weeklyData,
+    });
+  } catch (error) {
+    console.error('[ADMIN] getWeeklyOrders error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+// ─── Top Vendors ───────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/admin/stats/top-vendors
+ * Admin only — vendors ranked by total orders.
+ */
+exports.getTopVendors = async (req, res) => {
+  try {
+    const vendors = await Order.findAll({
+      attributes: [
+        'vendor_id',
+        [sequelize.fn('COUNT', sequelize.col('Order.id')), 'order_count'],
+      ],
+      include: [
+        {
+          model: Vendor,
+          as: 'vendor',
+          attributes: ['business_name'],
+        },
+      ],
+      group: ['vendor_id', 'vendor.id'],
+      order: [[sequelize.fn('COUNT', sequelize.col('Order.id')), 'DESC']],
+      limit: 10,
+      raw: false,
+    });
+
+    const topVendors = vendors.map(v => ({
+      name: v.vendor?.business_name || 'Unknown Vendor',
+      orders: parseInt(v.dataValues.order_count),
+    }));
+
+    res.status(200).json({
+      success: true,
+      top_vendors: topVendors,
+    });
+  } catch (error) {
+    console.error('[ADMIN] getTopVendors error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 // ─── All Orders ───────────────────────────────────────────────────────────────
 
 /**

@@ -108,10 +108,12 @@ export const api = {
 
   // ─── Admin ──────────────────────────────────────────────────────────────────
   admin: {
-    getStats:      ()       => client.get('/admin/stats'),
-    getOrders:     (params) => client.get('/admin/orders', { params }),
-    getUsers:      (params) => client.get('/admin/users', { params }),
-    getVendors:    (params) => client.get('/admin/vendors', { params }),
+    getStats:        ()       => client.get('/admin/stats'),
+    getWeeklyOrders:  ()       => client.get('/admin/stats/weekly-orders'),
+    getTopVendors:    ()       => client.get('/admin/stats/top-vendors'),
+    getOrders:       (params) => client.get('/admin/orders', { params }),
+    getUsers:        (params) => client.get('/admin/users', { params }),
+    getVendors:      (params) => client.get('/admin/vendors', { params }),
     // Vendor approvals
     getPendingVendors:       ()   => client.get('/vendors/admin/pending'),
     approveVendor:           (id) => client.patch(`/vendors/admin/${id}/approve`),

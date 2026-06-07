@@ -1,102 +1,496 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
+import {
+  View, Text, FlatList, TouchableOpacity, StyleSheet,
+  ActivityIndicator, RefreshControl, ScrollView, TextInput,
+  Alert, Modal,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
 import { COLORS, STATUS_COLORS } from '../../constants';
 
-const STATUSES = ['All', 'Received', 'Preparing', 'Ready', 'In Transit', 'Delivered'];
+const TABS = ['All', 'Pending', 'In Progress', 'Completed', 'Cancelled'];
 
 export default function AdminOrdersScreen() {
-  const [orders, setOrders]       = useState([]);
-  const [filter, setFilter]       = useState('All');
-  const [loading, setLoading]     = useState(true);
+  const [activeTab, setActiveTab] = useState('All');
+  const [orders, setOrders] = useState([]);
+  const [filteredOrders, setFilteredOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [page, setPage]           = useState(1);
-  const [hasMore, setHasMore]     = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [inProgressCount, setInProgressCount] = useState(0);
+  const [completedCount, setCompletedCount] = useState(0);
+  const [cancelledCount, setCancelledCount] = useState(0);
 
-  const fetchOrders = useCallback(async (pageNum = 1, reset = false) => {
+  const fetchOrders = useCallback(async () => {
     try {
-      const params = { page: pageNum, limit: 20 };
-      if (filter !== 'All') params.status = filter;
-      const { data } = await api.admin.getOrders(params);
-      if (reset) {
-        setOrders(data.orders);
-      } else {
-        setOrders((prev) => [...prev, ...data.orders]);
-      }
-      setHasMore(data.orders.length === 20);
+      const { data } = await api.admin.getOrders({ limit: 100 });
+      setOrders(data.orders || []);
+      
+      const allOrders = data.orders || [];
+      setPendingCount(allOrders.filter(o => o.status === 'Received' || o.status === 'Pending').length);
+      setInProgressCount(allOrders.filter(o => o.status === 'Preparing' || o.status === 'Ready' || o.status === 'In Transit').length);
+      setCompletedCount(allOrders.filter(o => o.status === 'Delivered').length);
+      setCancelledCount(allOrders.filter(o => o.status === 'Cancelled').length);
     } catch (err) {
       console.error(err.message);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [filter]);
+  }, []);
+
+  useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
   useEffect(() => {
-    setLoading(true);
-    setPage(1);
-    fetchOrders(1, true);
-  }, [filter]);
+    let filtered = orders;
+    
+    // Filter by tab
+    if (activeTab === 'Pending') {
+      filtered = filtered.filter(o => o.status === 'Received' || o.status === 'Pending');
+    } else if (activeTab === 'In Progress') {
+      filtered = filtered.filter(o => o.status === 'Preparing' || o.status === 'Ready' || o.status === 'In Transit');
+    } else if (activeTab === 'Completed') {
+      filtered = filtered.filter(o => o.status === 'Delivered');
+    } else if (activeTab === 'Cancelled') {
+      filtered = filtered.filter(o => o.status === 'Cancelled');
+    }
+    
+    // Filter by search
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(o => 
+        o.id?.toLowerCase().includes(query) ||
+        o.consumer?.name?.toLowerCase().includes(query) ||
+        o.vendor?.business_name?.toLowerCase().includes(query)
+      );
+    }
+    
+    setFilteredOrders(filtered);
+  }, [activeTab, searchQuery, orders]);
 
-  const loadMore = () => {
-    if (!hasMore) return;
-    const next = page + 1;
-    setPage(next);
-    fetchOrders(next, false);
+  const getStatusColor = (status) => {
+    if (status === 'Delivered') return COLORS.success;
+    if (status === 'Cancelled') return COLORS.danger;
+    if (status === 'Preparing' || status === 'Ready' || status === 'In Transit') return COLORS.warning;
+    return COLORS.primary;
   };
 
-  if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.primary} />;
+  const getStatusLabel = (status) => {
+    if (status === 'Received' || status === 'Pending') return 'Pending';
+    if (status === 'Preparing' || status === 'Ready' || status === 'In Transit') return 'In Progress';
+    if (status === 'Delivered') return 'Completed';
+    return status;
+  };
+
+  const openOrderDetail = (order) => {
+    setSelectedOrder(order);
+    setShowDetailModal(true);
+  };
+
+  if (loading) {
+    return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.primary} />;
+  }
 
   return (
     <View style={styles.container}>
-      <View style={styles.filterRow}>
-        {STATUSES.map((s) => (
-          <TouchableOpacity key={s} style={[styles.chip, filter === s && styles.chipActive]} onPress={() => setFilter(s)}>
-            <Text style={[styles.chipText, filter === s && styles.chipTextActive]}>{s}</Text>
-          </TouchableOpacity>
-        ))}
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <Ionicons name="bag-outline" size={22} color={COLORS.primary} />
+          <View>
+            <Text style={styles.headerTitle}>Orders</Text>
+            <Text style={styles.headerSubtitle}>{pendingCount} pending - {inProgressCount} in progress</Text>
+          </View>
+        </View>
+        <TouchableOpacity style={styles.notificationBtn}>
+          <Ionicons name="notifications-outline" size={22} color={COLORS.text} />
+          {pendingCount > 0 && <View style={styles.notificationBadge} />}
+        </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={orders}
-        keyExtractor={(o) => o.id}
-        contentContainerStyle={{ padding: 16 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); setPage(1); fetchOrders(1, true); }} colors={[COLORS.primary]} />}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.3}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <View style={styles.row}>
-              <Text style={styles.orderId}>#{item.id.slice(0, 8)}</Text>
-              <View style={[styles.badge, { backgroundColor: STATUS_COLORS[item.status] }]}>
-                <Text style={styles.badgeText}>{item.status}</Text>
-              </View>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => { setRefreshing(true); fetchOrders(); }}
+            colors={[COLORS.primary]}
+          />
+        }
+      >
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <Ionicons name="search-outline" size={20} color={COLORS.subtext} style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search by order ID, customer or vendor..."
+            placeholderTextColor={COLORS.muted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+
+        {/* Tabs */}
+        <View style={styles.tabRow}>
+          {TABS.map((tab) => {
+            const count = tab === 'All' ? orders.length :
+                          tab === 'Pending' ? pendingCount :
+                          tab === 'In Progress' ? inProgressCount :
+                          tab === 'Completed' ? completedCount : cancelledCount;
+            return (
+              <TouchableOpacity
+                key={tab}
+                style={[styles.tab, activeTab === tab && styles.tabActive]}
+                onPress={() => setActiveTab(tab)}
+              >
+                <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+                  {tab} ({count})
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* Orders List */}
+        <View style={styles.section}>
+          {filteredOrders.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="receipt-outline" size={48} color={COLORS.subtext} />
+              <Text style={styles.emptyText}>No orders found</Text>
             </View>
-            <Text style={styles.sub}>{item.vendor?.business_name} → {item.consumer?.name}</Text>
-            <Text style={styles.amount}>KES {parseFloat(item.total_amount).toFixed(2)}</Text>
-            <Text style={styles.date}>{new Date(item.created_at).toLocaleString()}</Text>
+          ) : (
+            filteredOrders.map((order) => (
+              <TouchableOpacity key={order.id} style={styles.orderCard} onPress={() => openOrderDetail(order)}>
+                <View style={styles.orderHeader}>
+                  <View style={styles.orderIdContainer}>
+                    <Text style={styles.orderId}>#{order.id?.slice(0, 8) || 'N/A'}</Text>
+                  </View>
+                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) + '20' }]}>
+                    <Text style={[styles.statusBadgeText, { color: getStatusColor(order.status) }]}>
+                      {getStatusLabel(order.status)}
+                    </Text>
+                  </View>
+                </View>
+                
+                <View style={styles.orderDetails}>
+                  <View style={styles.detailRow}>
+                    <Ionicons name="person-outline" size={16} color={COLORS.subtext} />
+                    <Text style={styles.detailText}>{order.consumer?.name || 'Unknown'}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Ionicons name="storefront-outline" size={16} color={COLORS.subtext} />
+                    <Text style={styles.detailText}>{order.vendor?.business_name || 'Unknown'}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Ionicons name="cash-outline" size={16} color={COLORS.subtext} />
+                    <Text style={styles.detailText}>KES {parseFloat(order.total_amount || 0).toFixed(2)}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Ionicons name="time-outline" size={16} color={COLORS.subtext} />
+                    <Text style={styles.detailText}>{new Date(order.created_at).toLocaleString()}</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
+        </View>
+
+        <View style={{ height: 20 }} />
+      </ScrollView>
+
+      {/* Order Detail Modal */}
+      <Modal visible={showDetailModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>ORDER DETAIL - #{selectedOrder?.id?.slice(0, 8)}</Text>
+              <TouchableOpacity onPress={() => setShowDetailModal(false)}>
+                <Ionicons name="close" size={24} color={COLORS.text} />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalBody}>
+              <View style={styles.detailSection}>
+                <Text style={styles.detailSectionTitle}>Order Information</Text>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Status</Text>
+                  <Text style={[styles.detailValue, { color: getStatusColor(selectedOrder?.status) }]}>
+                    {getStatusLabel(selectedOrder?.status)}
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Total Amount</Text>
+                  <Text style={styles.detailValue}>KES {parseFloat(selectedOrder?.total_amount || 0).toFixed(2)}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Order Date</Text>
+                  <Text style={styles.detailValue}>{selectedOrder?.created_at ? new Date(selectedOrder.created_at).toLocaleString() : 'N/A'}</Text>
+                </View>
+              </View>
+
+              <View style={styles.detailSection}>
+                <Text style={styles.detailSectionTitle}>Customer</Text>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Name</Text>
+                  <Text style={styles.detailValue}>{selectedOrder?.consumer?.name || 'N/A'}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Phone</Text>
+                  <Text style={styles.detailValue}>{selectedOrder?.consumer?.phone || 'N/A'}</Text>
+                </View>
+              </View>
+
+              <View style={styles.detailSection}>
+                <Text style={styles.detailSectionTitle}>Vendor</Text>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Business</Text>
+                  <Text style={styles.detailValue}>{selectedOrder?.vendor?.business_name || 'N/A'}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Location</Text>
+                  <Text style={styles.detailValue}>{selectedOrder?.vendor?.location || 'N/A'}</Text>
+                </View>
+              </View>
+
+              <View style={styles.detailSection}>
+                <Text style={styles.detailSectionTitle}>Delivery</Text>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Courier</Text>
+                  <Text style={styles.detailValue}>{selectedOrder?.rider?.name || 'Not assigned'}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Delivery Address</Text>
+                  <Text style={styles.detailValue}>{selectedOrder?.delivery_address || 'N/A'}</Text>
+                </View>
+              </View>
+            </ScrollView>
           </View>
-        )}
-        ListEmptyComponent={<Text style={styles.empty}>No orders found.</Text>}
-      />
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container:       { flex: 1, backgroundColor: COLORS.background },
-  filterRow:       { flexDirection: 'row', flexWrap: 'wrap', gap: 8, padding: 12, backgroundColor: COLORS.white, borderBottomWidth: 1, borderColor: COLORS.lightGray },
-  chip:            { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: COLORS.lightGray },
-  chipActive:      { backgroundColor: COLORS.primary },
-  chipText:        { fontSize: 12, color: COLORS.gray },
-  chipTextActive:  { color: COLORS.white, fontWeight: 'bold' },
-  card:            { backgroundColor: COLORS.white, borderRadius: 12, padding: 16, marginBottom: 10, elevation: 1 },
-  row:             { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  orderId:         { fontWeight: 'bold', color: COLORS.black },
-  badge:           { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  badgeText:       { color: COLORS.white, fontSize: 11, fontWeight: 'bold' },
-  sub:             { color: COLORS.gray, fontSize: 13, marginBottom: 4 },
-  amount:          { color: COLORS.primary, fontWeight: 'bold', marginBottom: 4 },
-  date:            { fontSize: 11, color: COLORS.gray },
-  empty:           { textAlign: 'center', color: COLORS.gray, marginTop: 60, fontSize: 15 },
+  container: { flex: 1, backgroundColor: COLORS.background },
+
+  // Header
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
+    backgroundColor: COLORS.card,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    color: COLORS.subtext,
+  },
+  notificationBtn: {
+    padding: 8,
+    minWidth: 40,
+    minHeight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.primary,
+  },
+
+  // ScrollView
+  scrollView: {
+    flex: 1,
+  },
+
+  // Search
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 12,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.borderWarm,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: COLORS.text,
+  },
+
+  // Tabs
+  tabRow: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.card,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  tab: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: COLORS.background,
+  },
+  tabActive: {
+    backgroundColor: COLORS.primary,
+  },
+  tabText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.subtext,
+  },
+  tabTextActive: {
+    color: COLORS.white,
+  },
+
+  // Section
+  section: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+
+  // Order Card
+  orderCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: COLORS.borderWarm,
+  },
+  orderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  orderIdContainer: {
+    backgroundColor: COLORS.iconBg,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  orderId: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  orderDetails: {
+    gap: 6,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  detailText: {
+    fontSize: 13,
+    color: COLORS.subtext,
+  },
+
+  // Empty State
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: COLORS.subtext,
+    marginTop: 8,
+  },
+
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: COLORS.card,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    paddingBottom: 32,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+  modalBody: {
+    flex: 1,
+  },
+  detailSection: {
+    marginBottom: 20,
+  },
+  detailSectionTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    marginBottom: 12,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: COLORS.subtext,
+  },
+  detailValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
 });

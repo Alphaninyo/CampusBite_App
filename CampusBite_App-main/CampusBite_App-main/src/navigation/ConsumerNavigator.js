@@ -122,7 +122,7 @@ export default function ConsumerNavigator() {
         options={{
           title: 'Orders',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="cube-outline" size={size} color={color} />
+            <Ionicons name="bag-outline" size={size} color={color} />
           ),
         }}
       />

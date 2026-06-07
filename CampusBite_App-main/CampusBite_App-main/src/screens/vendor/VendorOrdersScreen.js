@@ -102,7 +102,7 @@ export default function VendorOrdersScreen({ navigation }) {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Ionicons name="clipboard-outline" size={22} color={COLORS.primary} />
+          <Ionicons name="bag-outline" size={22} color={COLORS.primary} />
           <Text style={styles.headerTitle}>Orders</Text>
         </View>
         <TouchableOpacity onPress={() => navigation.navigate('ProfileTab')}>
@@ -140,7 +140,7 @@ export default function VendorOrdersScreen({ navigation }) {
       >
         {filteredOrders.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="receipt-outline" size={48} color={COLORS.gray} />
+            <Ionicons name="bag-outline" size={48} color={COLORS.gray} />
             <Text style={styles.emptyText}>No {activeTab.toLowerCase()} orders</Text>
           </View>
         ) : (

@@ -180,7 +180,7 @@ export default function MyOrdersScreen({ navigation }) {
             ))
           ) : (
             <View style={styles.emptyContainer}>
-              <Ionicons name="receipt-outline" size={60} color={COLORS.gray} />
+              <Ionicons name="bag-outline" size={60} color={COLORS.gray} />
               <Text style={styles.emptyTitle}>
                 {searchText || selectedFilter !== 'All' ? 'No matching orders' : 'No orders yet'}
               </Text>

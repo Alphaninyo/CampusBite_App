@@ -49,7 +49,7 @@ export default function VendorNavigator() {
   return (
     <Tab.Navigator screenOptions={{ tabBarActiveTintColor: COLORS.primary, headerShown: false }}>
       <Tab.Screen name="HomeTab"    component={HomeStack}    options={{ title: 'Home',    tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} /> }} />
-      <Tab.Screen name="OrdersTab"  component={OrdersStack}  options={{ title: 'Orders',  tabBarIcon: ({ color, size }) => <Ionicons name="clipboard-outline" size={size} color={color} /> }} />
+      <Tab.Screen name="OrdersTab"  component={OrdersStack}  options={{ title: 'Orders',  tabBarIcon: ({ color, size }) => <Ionicons name="bag-outline" size={size} color={color} /> }} />
       <Tab.Screen name="MenuTab"    component={MenuStack}    options={{ title: 'Menu',    tabBarIcon: ({ color, size }) => <Ionicons name="restaurant-outline" size={size} color={color} /> }} />
       <Tab.Screen name="ProfileTab" component={VendorProfileScreen} options={{ title: 'Profile', tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} /> }} />
     </Tab.Navigator>
