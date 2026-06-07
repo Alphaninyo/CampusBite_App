@@ -1,6 +1,7 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, ScrollView, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../api';
 import { COLORS, STATUS_COLORS } from '../../constants';
 
@@ -11,6 +12,7 @@ export default function MyOrdersScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('All');
+  const intervalRef = useRef(null);
   const statusFilters = ['All', 'Received', 'Preparing', 'Ready', 'Collected', 'In Transit', 'Delivered'];
 
   const fetchOrders = useCallback(async () => {
@@ -36,7 +38,19 @@ export default function MyOrdersScreen({ navigation }) {
     }
   }, []);
 
-  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+  // Poll for order updates every 5 seconds when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      fetchOrders();
+      intervalRef.current = setInterval(fetchOrders, 5000);
+      return () => {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+      };
+    }, [fetchOrders])
+  );
 
   useEffect(() => {
     let filtered = orders;

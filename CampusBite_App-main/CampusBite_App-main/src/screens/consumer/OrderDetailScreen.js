@@ -1,6 +1,7 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../api';
 import { COLORS, STATUS_COLORS } from '../../constants';
 
@@ -20,6 +21,7 @@ export default function OrderDetailScreen({ route, navigation }) {
   const [order, setOrder]     = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const intervalRef = useRef(null);
 
   const fetchOrder = useCallback(async () => {
     try {
@@ -33,7 +35,19 @@ export default function OrderDetailScreen({ route, navigation }) {
     }
   }, [orderId]);
 
-  useEffect(() => { fetchOrder(); }, [fetchOrder]);
+  // Poll for order updates every 5 seconds when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      fetchOrder();
+      intervalRef.current = setInterval(fetchOrder, 5000);
+      return () => {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+      };
+    }, [fetchOrder])
+  );
 
   if (loading) return <View style={styles.loadingContainer}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
   if (!order) return (
