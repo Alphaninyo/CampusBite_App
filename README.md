@@ -296,19 +296,23 @@ For issues and questions:
 
 ## 🗄️ Database Migrations
 
-After updating the backend with new features (Food Courier Profile, Notifications, Identity Verification), run the database migrations:
+After updating the backend with new features (Food Courier Profile, Notifications, Identity Verification, Live Tracking, Reviews), run the database migrations:
 
 ```bash
 cd CampusBite_Backend-main
 node migrations/003-create-food-courier-profile-table.js
 node migrations/004-create-notifications-table.js
 node migrations/005-add-verification-fields-to-users.js
+node migrations/006-add-rider-location-to-orders.js
+node migrations/007-create-reviews-table.js
 ```
 
 This will create/update the necessary tables:
 - `food_courier_profiles` - Stores courier-specific data (vehicle type, availability, earnings, rating)
 - `notifications` - Stores in-app notifications for all users
 - `users` (updates) - Appends verification document, document type, and admin review status columns to authorize securely.
+- `orders` (updates) - Appends rider location fields (`rider_lat`, `rider_lng`, `location_updated_at`) for live transit mapping.
+- `reviews` - Stores order reviews written by consumers for food quality and delivery service.
 
 ## 📄 License
 MIT License - CampusBite Team

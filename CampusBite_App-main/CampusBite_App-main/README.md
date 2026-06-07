@@ -99,12 +99,22 @@ CampusBite integrates with Safaricom's Daraja API for seamless mobile payments v
 - **👤 Profile Avatar** - Navigate to profile
 - **🔔 Notifications** - View updates
 
-### **📋 Orders Screen**
+### **🧭 Explore Screen**
+- **� Smart Filtering** - Search all campus vendors by name or location
+- **📂 Interactive Category Chips** - Toggle between Restaurants and Home-based kitchens instantly
+- **📊 Real-time Vendor Status** - Displays open/closed badges, locations, and direct navigation links to vendor menus
+
+### **�📋 Orders Screen**
 - **📜 Order History** - View past orders
 - **🔍 Search Orders** - Find specific orders
 - **📊 Status Filters** - Filter by order status
 - **📱 Compact Design** - Clean order cards
-- **🚚 Track Orders** - Real-time tracking
+- **🚚 Track Orders** - Real-time vertical stepper timeline and live GPS transit tracking map for rider location updates Every 10 seconds
+
+### **✍️ Write Review Screen**
+- **⭐ Dual Service Rating** - Separately rate the food vendor and delivery rider out of 5 stars
+- **💬 Feedback Comment** - Provide optional experience summaries/comments
+- **🎉 Interactive Success Page** - Clean rating feedback summary and single-submission protection to prevent duplicates
 
 ### **🛒 Cart Screen**
 - **📦 Cart Items** - View added items
