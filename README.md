@@ -69,17 +69,19 @@ CampusBite System/
 │   │   ├── screens/             # UI Screens
 │   │   │   ├── consumer/        # Consumer screens (Home, Cart, Orders, Profile)
 │   │   │   ├── vendor/          # Vendor screens (Dashboard, Menu, Orders, Profile)
-│   │   │   └── foodCourier/     # Food Courier screens (Tasks, Earnings, Profile, Notifications)
-│   │   ├── navigation/          # Navigation Setup (ConsumerNavigator, VendorNavigator, FoodCourierNavigator)
-│   │   ├── api/                 # API Client (orders, vendors, menu, payments, reviews, notifications, foodCourier)
+│   │   │   ├── foodCourier/     # Food Courier screens (Tasks, Earnings, Profile, Notifications)
+│   │   │   ├── admin/           # Admin screens (Stats, Approvals, Vendors, Orders, Users)
+│   │   │   └── shared/          # Shared screens (Profile)
+│   │   ├── navigation/          # Navigation Setup (ConsumerNavigator, VendorNavigator, FoodCourierNavigator, AdminNavigator)
+│   │   ├── api/                 # API Client (orders, vendors, menu, payments, reviews, notifications, foodCourier, admin)
 │   │   ├── stores/              # State Management (Zustand)
 │   │   └── constants/           # App Constants (COLORS, STATUS_COLORS)
 │   └── package.json
 ├── CampusBite_Backend-main/      # Node.js Backend
 │   ├── src/
-│   │   ├── controllers/         # API Controllers (auth, vendor, menu, order, payment, review, notification, foodCourierProfile)
+│   │   ├── controllers/         # API Controllers (auth, vendor, menu, order, payment, review, notification, foodCourierProfile, admin)
 │   │   ├── models/              # Database Models (User, Vendor, MenuItem, Order, OrderItem, Payment, Review, Notification, FoodCourierProfile)
-│   │   ├── routes/              # API Routes (auth, vendor, menu, order, payment, review, notification, foodCourierProfile)
+│   │   ├── routes/              # API Routes (auth, vendor, menu, order, payment, review, notification, foodCourierProfile, admin)
 │   │   ├── middleware/          # Auth Middleware (protect, restrictTo)
 │   │   └── services/            # Business Logic (email, notification)
 │   ├── migrations/             # Database Migration Scripts
@@ -115,6 +117,12 @@ CampusBite System/
 - **Review system**
 - **Payment integration**
 - **Push notifications** (Firebase)
+- **Admin Dashboard** with comprehensive management tools
+  - **Stats Dashboard:** View platform statistics, weekly orders, top vendors, and export reports
+  - **Approvals System:** Review and approve/reject vendor and courier applications
+  - **Vendor Management:** Monitor active vendors, pending applications, and vendor details
+  - **Order Management:** Track all orders with filtering by status and detailed order views
+  - **User Management:** Manage consumers and couriers with suspend/unsuspend capabilities
 
 ## 📋 Prerequisites
 
@@ -225,6 +233,47 @@ The CampusBite auth screens have been modernized with a polished, lightweight vi
 - **Form Card:** A floating pure white `#FFFFFF` card with soft elevation shadows, detailed with a bold brand accent bar (`#E85D04`) on top.
 - **Minimalist Underlined Input Fields:** Fully customized, transparent-background inputs using a sleek bottom-line border instead of rigid rectangular boxes. Focused fields trigger a smooth brand accent highlight.
 - **No Clutter:** Browser-native black highlights and autocomplete blue background fills are completely disabled on Web, and validation checkmark icons have been removed for a premium, clean layout.
+
+## 📊 Admin Dashboard Features
+
+The admin panel provides comprehensive management capabilities for the CampusBite platform:
+
+### Stats Dashboard
+- **Platform Overview:** Total orders, revenue, consumers, active vendors, couriers, and reviews
+- **Weekly Orders:** Visual bar chart showing order trends over the week
+- **Top Vendors:** Leaderboard of vendors ranked by total orders
+- **Export Reports:** Download statistics as CSV files (web platform)
+- **Real-time Updates:** Pull-to-refresh for latest data
+
+### Approvals System
+- **Pending Applications:** View all pending vendor and courier applications
+- **Alert Banners:** Notifications for applications waiting over 24 hours
+- **Filtering:** Tabs for All, Vendors, Couriers, and Rejected applications
+- **Application Details:** View owner name, phone, location, menu items
+- **Quick Actions:** Approve or reject applications with confirmation dialogs
+- **Recently Approved:** Track recently approved entities
+
+### Vendor Management
+- **Vendor Directory:** List of all vendors with status indicators
+- **Search & Filter:** Search by name, owner, or location; filter by status
+- **Status Tracking:** Active, Pending, and Suspended vendors
+- **Vendor Details:** View business information, owner details, and approval dates
+- **Status Management:** Monitor vendor approval status
+
+### Order Management
+- **Order Tracking:** View all platform orders with status indicators
+- **Status Filtering:** All, Pending, In Progress, Completed, Cancelled
+- **Search:** Find orders by ID, customer name, or vendor name
+- **Order Details:** Comprehensive order information including customer, vendor, courier, and delivery details
+- **Real-time Status:** Color-coded status badges for quick identification
+
+### User Management
+- **User Directory:** List of all consumers and couriers
+- **Role Filtering:** Separate views for Consumers and Couriers
+- **Search:** Find users by name or phone number
+- **User Details:** View role, email, phone, join date, orders, and spending
+- **Account Control:** Suspend or unsuspend user accounts with confirmation
+- **Status Tracking:** Active and Suspended user sections
 
 ## �📞 Support
 
