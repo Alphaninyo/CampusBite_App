@@ -158,6 +158,10 @@ MPESA_PASSKEY=your_lipa_na_mpesa_passkey
 MPESA_CALLBACK_URL=https://your-public-url.ngrok.io/api/payments/callback
 MPESA_ENV=sandbox
 
+# Important: MPESA_PASSKEY is the STK Push (Lipa Na M-Pesa Online) passkey, NOT the Security Credential
+# For sandbox shortcode 174379, the passkey is: bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919
+# Obtain your production credentials from: https://developer.safaricom.co.ke/
+
 # Firebase Cloud Messaging (Optional - for push notifications)
 FIREBASE_PROJECT_ID=your_firebase_project_id
 FIREBASE_CLIENT_EMAIL=your_firebase_client_email
@@ -204,6 +208,14 @@ FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour_Private_Key_Here\n-----E
    - Firebase is optional - notifications work without it
    - Check Firebase credentials in `.env` if using push notifications
    - Verify FCM token is saved on user registration
+
+7. **M-Pesa STK Push not working**
+   - Verify `MPESA_PASSKEY` is the STK Push passkey, NOT the Security Credential
+   - For sandbox shortcode 174379, use: `bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919`
+   - Ensure ngrok tunnel is running and callback URL is correctly set
+   - Check that phone number is in Kenyan format (2547XXXXXXXX)
+   - Verify Consumer Key and Secret match the environment (sandbox/production)
+   - Check backend logs for detailed Safaricom error responses
 
 ## 🎯 Test Accounts
 

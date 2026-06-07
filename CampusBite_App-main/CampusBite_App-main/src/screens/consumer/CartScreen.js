@@ -170,8 +170,15 @@ export default function CartScreen({ navigation }) {
     setShowConfirm(false);
     setCheckingOut(true);
     try {
+      // Fall back to vendor_id stored on the cart items if store-level value is missing
+      const resolvedVendorId = vendorId || cartItems.find((i) => i.vendor_id)?.vendor_id || null;
+      if (!resolvedVendorId) {
+        Alert.alert('Checkout Failed', 'Vendor information is missing. Please re-add items to your cart.');
+        setCheckingOut(false);
+        return;
+      }
       const { data } = await api.orders.initiate({
-        vendor_id:            vendorId,
+        vendor_id:            resolvedVendorId,
         items:                cartItems.map((i) => ({ menu_item_id: i.id, quantity: Math.round(Number(i.quantity)) })),
         delivery_address:     address.trim(),
         special_instructions: specialInstructions.trim() || undefined,

@@ -18,13 +18,28 @@ export default function CheckoutScreen({ route, navigation }) {
 
   const handleCheckout = async () => {
     if (!address.trim()) return Alert.alert('Error', 'Please enter your delivery address.');
+    if (!user?.phone) return Alert.alert('Error', 'Please add a phone number to your profile.');
+    
+    const vendorId = vendor?.id || vendor?.vendor_id;
+    if (!vendorId) {
+      Alert.alert('Error', 'Vendor information is missing. Please try again.');
+      return;
+    }
+    
     setLoading(true);
     try {
+      const formattedItems = items.map((item) => ({
+        menu_item_id: item.menu_item_id || item.id,
+        quantity: item.quantity,
+      }));
+      
       const { data } = await api.orders.initiate({
-        vendor_id: vendor.id,
-        items,
+        vendor_id: vendorId,
+        items: formattedItems,
         delivery_address: address.trim(),
         special_instructions: specialInstructions.trim() || undefined,
+        phone_number: user.phone,
+        payment_method: 'mpesa',
       });
       navigation.replace('PaymentStatus', {
         checkoutRequestId: data.checkout_request_id,

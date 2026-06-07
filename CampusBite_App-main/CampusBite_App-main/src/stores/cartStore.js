@@ -78,7 +78,10 @@ const useCartStore = create((set, get) => ({
       updatedItems = [...cartItems, { ...item, quantity: 1 }];
     }
     
-    await get().saveCart(updatedItems);
+    // Capture vendor info from the item so checkout has a vendor_id
+    const vid   = item.vendor_id   ?? get().vendorId ?? undefined;
+    const vname = item.vendor_name ?? get().vendorName ?? undefined;
+    await get().saveCart(updatedItems, vid, vname);
   },
 
   // Update item quantity

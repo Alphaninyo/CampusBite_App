@@ -22,7 +22,8 @@ For detailed instructions, see [QUICK_START.md](./QUICK_START.md)
 - **📂 8 Food Categories** - Restaurants, Home-based, Drinks, Coffee & Tea, Quick Bites, Healthy Options, Pastries
 - **🛒 Shopping Cart** - Add/remove items with real-time updates
 - **📋 Order Management** - Track order history and status
-- **👤 User Profile** - Account management and activity tracking
+- **� M-Pesa STK Push** - Seamless mobile payments via Safaricom Daraja API
+- **� User Profile** - Account management and activity tracking
 - **🔔 Notifications** - Order updates and special offers
 - **🔐 Security** - Two-Factor Authentication (2FA) and password management
 - **📍 Saved Addresses** - Manage delivery locations with current location support
@@ -39,7 +40,38 @@ For detailed instructions, see [QUICK_START.md](./QUICK_START.md)
 
 ---
 
-## 🛠️ **Technical Stack**
+## � **M-Pesa Payment Integration**
+
+CampusBite integrates with Safaricom's Daraja API for seamless mobile payments via M-Pesa STK Push.
+
+### **Payment Flow**
+1. **Consumer adds items to cart** and proceeds to checkout
+2. **Enters delivery address** and phone number
+3. **Selects M-Pesa** as payment method
+4. **STK Push is triggered** - Consumer receives prompt on their phone
+5. **Enters M-Pesa PIN** to authorize payment
+6. **Payment status updates** automatically via callback
+7. **Order confirmation** displayed upon successful payment
+
+### **Setup Requirements**
+- Backend must have valid M-Pesa Daraja credentials in `.env`
+- ngrok tunnel must be running for callback URL
+- Phone number must be in Kenyan format (2547XXXXXXXX)
+
+### **Sandbox Testing**
+- Shortcode: `174379`
+- Passkey: `bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919`
+- Environment: `sandbox`
+- Test phone: Any Safaricom number registered for M-Pesa
+
+### **Troubleshooting**
+- **Wrong credentials error**: Verify MPESA_PASSKEY is the STK Push passkey, not Security Credential
+- **No STK Push received**: Check phone number format and ensure backend logs show successful initiation
+- **Callback failures**: Verify ngrok tunnel is running and callback URL is accessible
+
+---
+
+## �🛠️ **Technical Stack**
 
 ### **Frontend**
 - **React Native** - Mobile app framework
@@ -80,6 +112,7 @@ For detailed instructions, see [QUICK_START.md](./QUICK_START.md)
 - **💰 Price Summary** - Total calculation
 - **🗑️ Remove Items** - Delete from cart
 - **🧾 Checkout** - Proceed to payment
+- **💳 M-Pesa Payment** - STK Push integration for seamless mobile payments
 
 ### **👤 Profile Screen**
 - **📊 User Stats** - Total orders, favorite vendor, total spent

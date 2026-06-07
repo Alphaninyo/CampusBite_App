@@ -119,14 +119,19 @@ exports.initiateCheckout = async (req, res) => {
       phone_number,
     } = req.body;
 
+    console.log('[ORDER] initiateCheckout request:', { vendor_id, items, delivery_address, payment_method, phone_number });
+
     // ── Basic validation ──────────────────────────────────────────────────────
     if (!vendor_id || !Array.isArray(items) || items.length === 0) {
+      console.log('[ORDER] Validation failed: vendor_id or items');
       return res.status(400).json({ success: false, message: 'Please provide vendor_id and a non-empty items array.' });
     }
     if (!delivery_address || !delivery_address.trim()) {
+      console.log('[ORDER] Validation failed: delivery_address');
       return res.status(400).json({ success: false, message: 'delivery_address is required.' });
     }
     if (!['mpesa', 'card', 'cash'].includes(payment_method)) {
+      console.log('[ORDER] Validation failed: payment_method', payment_method);
       return res.status(400).json({ success: false, message: 'payment_method must be mpesa, card, or cash.' });
     }
 

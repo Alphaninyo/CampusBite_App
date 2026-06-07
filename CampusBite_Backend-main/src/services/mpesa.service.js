@@ -64,28 +64,39 @@ async function initiateSTKPush({ phone, amount, accountRef, description }) {
     `${shortcode}${process.env.MPESA_PASSKEY}${timestamp}`
   ).toString('base64');
 
-  const { data } = await axios.post(
-    `${BASE_URL}/mpesa/stkpush/v1/processrequest`,
-    {
-      BusinessShortCode: shortcode,
-      Password:          password,
-      Timestamp:         timestamp,
-      TransactionType:   'CustomerPayBillOnline',
-      Amount:            Math.ceil(amount),        // M-Pesa only accepts whole numbers
-      PartyA:            formatPhone(phone),
-      PartyB:            shortcode,
-      PhoneNumber:       formatPhone(phone),
-      CallBackURL:       process.env.MPESA_CALLBACK_URL,
-      AccountReference:  accountRef.slice(0, 12),
-      TransactionDesc:   description.slice(0, 13),
-    },
-    {
-      headers: {
-        Authorization:  `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    }
-  );
+  const payload = {
+    BusinessShortCode: shortcode,
+    Password:          password,
+    Timestamp:         timestamp,
+    TransactionType:   'CustomerPayBillOnline',
+    Amount:            Math.ceil(amount),        // M-Pesa only accepts whole numbers
+    PartyA:            formatPhone(phone),
+    PartyB:            shortcode,
+    PhoneNumber:       formatPhone(phone),
+    CallBackURL:       process.env.MPESA_CALLBACK_URL,
+    AccountReference:  accountRef.slice(0, 12),
+    TransactionDesc:   description.slice(0, 13),
+  };
+
+  console.log('[MPESA] STK Push payload:', JSON.stringify(payload, null, 2));
+
+  let data;
+  try {
+    ({ data } = await axios.post(
+      `${BASE_URL}/mpesa/stkpush/v1/processrequest`,
+      payload,
+      {
+        headers: {
+          Authorization:  `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    ));
+  } catch (err) {
+    console.error('[MPESA] Safaricom error response:', JSON.stringify(err.response?.data, null, 2));
+    const safMsg = err.response?.data?.errorMessage || err.response?.data?.ResponseDescription;
+    throw new Error(safMsg || err.message || 'STK Push request failed');
+  }
 
   // Safaricom returns ResponseCode "0" (a string) on success
   if (data.ResponseCode !== '0') {
