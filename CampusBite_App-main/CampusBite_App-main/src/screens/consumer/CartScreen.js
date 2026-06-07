@@ -706,7 +706,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32, backgroundColor: COLORS.background },
   scroll: { padding: 14 },
 
-  emptyIcon:     { width: 90, height: 90, borderRadius: 45, backgroundColor: COLORS.iconBg, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  emptyIcon:     { width: 90, height: 90, borderRadius: 45, backgroundColor: COLORS.primary + '20', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
   emptyTitle:    { fontSize: 20, fontWeight: 'bold', color: COLORS.black, marginBottom: 8 },
   emptySubtitle: { fontSize: 14, color: COLORS.gray, textAlign: 'center', marginBottom: 28 },
   shopBtn:       { backgroundColor: COLORS.primary, paddingHorizontal: 28, paddingVertical: 13, borderRadius: 14 },
@@ -724,7 +724,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 10,
     borderWidth: 1, borderColor: COLORS.borderWarm,
   },
-  itemImage:       { width: 60, height: 60, borderRadius: 10, backgroundColor: COLORS.iconBg, flexShrink: 0 },
+  itemImage:       { width: 60, height: 60, borderRadius: 10, backgroundColor: COLORS.primary + '20', flexShrink: 0 },
   itemImageFallback: { alignItems: 'center', justifyContent: 'center' },
   itemInfo:   { flex: 1 },
   itemName:   { fontSize: 14, fontWeight: 'bold', color: COLORS.black, marginBottom: 2 },
@@ -735,7 +735,7 @@ const styles = StyleSheet.create({
   qtyRow:     { flexDirection: 'row', alignItems: 'center', gap: 6 },
   qtyBtn: {
     width: 28, height: 28, borderRadius: 14,
-    backgroundColor: COLORS.iconBg, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: COLORS.primary + '20', alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: COLORS.borderAccent,
   },
   qtyBtnFill: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
@@ -746,7 +746,7 @@ const styles = StyleSheet.create({
   cardTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   mapBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: COLORS.iconBg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5,
+    backgroundColor: COLORS.primary + '20', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5,
     borderWidth: 1, borderColor: COLORS.borderAccent,
   },
   mapBtnText: { fontSize: 12, color: COLORS.primary, fontWeight: '600' },
@@ -856,7 +856,7 @@ const styles = StyleSheet.create({
     width: 100, marginRight: 10, alignItems: 'center', borderRadius: 12, padding: 8,
     borderWidth: 1, borderColor: COLORS.borderWarm, backgroundColor: COLORS.background,
   },
-  suggestionImg:   { width: 60, height: 60, borderRadius: 10, backgroundColor: COLORS.iconBg, marginBottom: 6 },
+  suggestionImg:   { width: 60, height: 60, borderRadius: 10, backgroundColor: COLORS.primary + '20', marginBottom: 6 },
   suggestionName:  { fontSize: 11, fontWeight: '600', color: COLORS.black, textAlign: 'center', marginBottom: 2 },
   suggestionPrice: { fontSize: 11, color: COLORS.primary, fontWeight: '700', marginBottom: 6 },
   addBtn: {
@@ -912,7 +912,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14, paddingHorizontal: 12, borderRadius: 12, marginBottom: 6,
     backgroundColor: COLORS.background,
   },
-  slotRowActive:   { backgroundColor: COLORS.iconBg, borderWidth: 1.5, borderColor: COLORS.borderAccent },
+  slotRowActive:   { backgroundColor: COLORS.primary + '20', borderWidth: 1.5, borderColor: COLORS.borderAccent },
   slotLabel:       { flex: 1, fontSize: 14, color: COLORS.black },
   slotLabelActive: { color: COLORS.primary, fontWeight: '600' },
 

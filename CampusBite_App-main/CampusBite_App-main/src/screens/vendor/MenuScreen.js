@@ -207,12 +207,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 12,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.black },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.text },
 
   scrollView: { flex: 1, paddingHorizontal: 16 },
 
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.borderWarm,
     gap: 8,
   },
-  searchInput: { flex: 1, fontSize: 14, color: COLORS.black },
+  searchInput: { flex: 1, fontSize: 14, color: COLORS.text },
 
   // Categories
   categoryRow: { marginTop: 14, marginBottom: 16 },
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     marginRight: 8,
     borderWidth: 1,
     borderColor: COLORS.borderWarm,
@@ -256,13 +256,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 14,
   },
-  itemsTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.black },
+  itemsTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.text },
   itemsCount: { fontSize: 13, color: COLORS.gray },
 
   // Menu Card
   menuCard: {
     flexDirection: 'row',
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     padding: 12,
     marginBottom: 12,
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 10,
-    backgroundColor: COLORS.iconBg,
+    backgroundColor: COLORS.primary + '20',
     marginRight: 12,
   },
   outOfStockBadge: {
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  menuName: { fontSize: 15, fontWeight: 'bold', color: COLORS.black, flex: 1 },
+  menuName: { fontSize: 15, fontWeight: 'bold', color: COLORS.text, flex: 1 },
   actionButtons: { flexDirection: 'row', gap: 8 },
   actionBtn: { padding: 4 },
   menuPrice: { fontSize: 14, color: COLORS.primary, fontWeight: 'bold', marginTop: 2 },
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 10,
   },
-  tipTitle: { fontSize: 14, fontWeight: 'bold', color: COLORS.black, marginBottom: 4 },
+  tipTitle: { fontSize: 14, fontWeight: 'bold', color: COLORS.text, marginBottom: 4 },
   tipText: { fontSize: 12, color: COLORS.gray, textAlign: 'center', lineHeight: 18 },
 
   // Add Button

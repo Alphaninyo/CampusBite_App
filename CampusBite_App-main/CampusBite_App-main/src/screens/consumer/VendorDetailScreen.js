@@ -111,7 +111,7 @@ export default function VendorDetailScreen({ route, navigation }) {
               </TouchableOpacity>
               <Text style={styles.qty}>{cart[item.id] || 0}</Text>
               <TouchableOpacity style={[styles.qtyBtn, styles.qtyBtnAdd]} onPress={() => addToCart(item.id)}>
-                <Ionicons name="add-outline" size={16} color={COLORS.white} />
+                <Ionicons name="add-outline" size={16} color={COLORS.card} />
               </TouchableOpacity>
             </View>
           </View>
@@ -133,7 +133,7 @@ export default function VendorDetailScreen({ route, navigation }) {
           </View>
           <View style={styles.checkoutRight}>
             <Text style={styles.checkoutText}>Checkout</Text>
-            <Ionicons name="arrow-forward" size={18} color={COLORS.white} />
+            <Ionicons name="arrow-forward" size={18} color={COLORS.card} />
           </View>
         </TouchableOpacity>
       )}
@@ -144,14 +144,14 @@ export default function VendorDetailScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   header: { marginBottom: 16 },
-  vendorName: { fontSize: 22, fontWeight: 'bold', color: COLORS.black },
+  vendorName: { fontSize: 22, fontWeight: 'bold', color: COLORS.text },
   locationContainer: { flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 },
   location: { color: COLORS.gray, fontSize: 13 },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
   statusLabel: { fontSize: 13, fontWeight: '500' },
   item: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     padding: 12,
     marginBottom: 10,
@@ -165,11 +165,11 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 10,
-    backgroundColor: COLORS.iconBg,
+    backgroundColor: COLORS.primary + '20',
     flexShrink: 0,
   },
   itemInfo: { flex: 1 },
-  itemName: { fontSize: 15, fontWeight: 'bold', color: COLORS.black },
+  itemName: { fontSize: 15, fontWeight: 'bold', color: COLORS.text },
   itemDesc: { fontSize: 12, color: COLORS.gray, marginTop: 2 },
   itemPrice: { fontSize: 14, color: COLORS.primary, fontWeight: 'bold', marginTop: 6 },
   qtyRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -177,12 +177,12 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: COLORS.iconBg,
+    backgroundColor: COLORS.primary + '20',
     alignItems: 'center',
     justifyContent: 'center',
   },
   qtyBtnAdd: { backgroundColor: COLORS.primary },
-  qty: { fontSize: 16, fontWeight: 'bold', minWidth: 20, textAlign: 'center', color: COLORS.black },
+  qty: { fontSize: 16, fontWeight: 'bold', minWidth: 20, textAlign: 'center', color: COLORS.text },
   empty: { textAlign: 'center', color: COLORS.gray, marginTop: 12, fontSize: 14 },
   checkoutBar: {
     backgroundColor: COLORS.primary,
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
   },
-  checkoutText: { color: COLORS.white, fontWeight: 'bold', fontSize: 14 },
+  checkoutText: { color: COLORS.card, fontWeight: 'bold', fontSize: 14 },
   checkoutAmount: { color: 'rgba(255,255,255,0.8)', fontSize: 12, marginTop: 2 },
   checkoutRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 });

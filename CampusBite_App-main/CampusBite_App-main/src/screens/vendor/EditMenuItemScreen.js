@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 0,
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.borderWarm,
     gap: 8,
   },
-  input: { flex: 1, fontSize: 15, color: COLORS.black, paddingVertical: 14 },
+  input: { flex: 1, fontSize: 15, color: COLORS.text, paddingVertical: 14 },
   currencyLabel: { fontSize: 14, fontWeight: 'bold', color: COLORS.primary },
 
   // Category
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderWidth: 1,
     borderColor: COLORS.borderWarm,
   },
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   switchLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  switchLabel: { fontSize: 14, fontWeight: '600', color: COLORS.black },
+  switchLabel: { fontSize: 14, fontWeight: '600', color: COLORS.text },
 
   // Button
   button: {

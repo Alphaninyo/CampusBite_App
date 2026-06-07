@@ -303,18 +303,18 @@ const styles = StyleSheet.create({
   list:   { padding: 16, paddingBottom: 100 },
 
   listHeader: { marginBottom: 16 },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.black, marginBottom: 4 },
+  headerTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.text, marginBottom: 4 },
   headerSub:   { fontSize: 13, color: COLORS.gray, lineHeight: 18 },
 
   codeCard: {
-    backgroundColor: COLORS.white, borderRadius: 16, padding: 16, marginBottom: 12,
+    backgroundColor: COLORS.card, borderRadius: 16, padding: 16, marginBottom: 12,
     borderWidth: 1, borderColor: COLORS.borderWarm,
   },
   codeCardInactive: { opacity: 0.6 },
   codeHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   codeBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: COLORS.iconBg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6,
+    backgroundColor: COLORS.primary + '20', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6,
   },
   codeText: { fontSize: 15, fontWeight: 'bold', color: COLORS.primary, letterSpacing: 1 },
 
@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
   deleteBtnText: { fontSize: 12, color: COLORS.danger, fontWeight: '600' },
 
   empty:     { alignItems: 'center', paddingVertical: 48 },
-  emptyText: { fontSize: 16, fontWeight: '600', color: COLORS.black, marginTop: 12 },
+  emptyText: { fontSize: 16, fontWeight: '600', color: COLORS.text, marginTop: 12 },
   emptySub:  { fontSize: 13, color: COLORS.gray, marginTop: 4 },
 
   fabWrap: { position: 'absolute', bottom: 24, right: 20 },
@@ -343,26 +343,26 @@ const styles = StyleSheet.create({
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalSheet: {
-    backgroundColor: COLORS.white, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    backgroundColor: COLORS.card, borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: 24, paddingBottom: 36,
   },
   modalHandle: {
     width: 40, height: 4, borderRadius: 2, backgroundColor: COLORS.borderWarm,
     alignSelf: 'center', marginBottom: 20,
   },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.black, marginBottom: 16 },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.text, marginBottom: 16 },
 
-  label: { fontSize: 13, fontWeight: '600', color: COLORS.black, marginBottom: 6, marginTop: 12 },
+  label: { fontSize: 13, fontWeight: '600', color: COLORS.text, marginBottom: 6, marginTop: 12 },
   input: {
     borderWidth: 1.5, borderColor: COLORS.borderWarm, borderRadius: 10,
-    paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: COLORS.black,
+    paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: COLORS.text,
   },
   typeRow: { flexDirection: 'row', gap: 10 },
   typeBtn: {
     flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center',
     borderWidth: 1.5, borderColor: COLORS.borderWarm,
   },
-  typeBtnActive:     { borderColor: COLORS.primary, backgroundColor: COLORS.iconBg },
+  typeBtnActive:     { borderColor: COLORS.primary, backgroundColor: COLORS.primary + '20' },
   typeBtnText:       { fontSize: 13, fontWeight: '600', color: COLORS.gray },
   typeBtnTextActive: { color: COLORS.primary },
 

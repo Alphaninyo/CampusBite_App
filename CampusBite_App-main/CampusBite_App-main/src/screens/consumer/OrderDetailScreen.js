@@ -54,15 +54,31 @@ export default function OrderDetailScreen({ route, navigation }) {
     >
       {/* Status Banner */}
       <View style={[styles.statusBanner, { backgroundColor: STATUS_COLORS[order.status] || COLORS.gray }]}>
-        <Ionicons name={STEP_ICONS[order.status] || 'help-circle-outline'} size={20} color={COLORS.white} />
+        <Ionicons name={STEP_ICONS[order.status] || 'help-circle-outline'} size={20} color={COLORS.card} />
         <Text style={styles.statusBannerText}>{order.status}</Text>
       </View>
 
-      {/* Progress Steps */}
-      <View style={styles.progressRow}>
-        {STEPS.map((s, i) => (
-          <View key={s} style={[styles.step, { backgroundColor: i <= stepIndex ? COLORS.primary : COLORS.borderWarm }]} />
-        ))}
+      {/* Order Timeline */}
+      <View style={styles.timelineCard}>
+        <Text style={styles.timelineTitle}>Order Progress</Text>
+        <View style={styles.timeline}>
+          {STEPS.map((step, index) => {
+            const isPast = index < stepIndex;
+            const isCurrent = index === stepIndex;
+            const isFuture = index > stepIndex;
+            return (
+              <View key={step} style={styles.timelineStep}>
+                <View style={[styles.stepDot, isPast && styles.stepDotDone, isCurrent && styles.stepDotCurrent]}>
+                  {isPast ? <Ionicons name="checkmark" size={12} color="#fff" /> : null}
+                </View>
+                <Text style={[styles.stepLabel, isPast && styles.stepLabelDone, isCurrent && styles.stepLabelCurrent]}>
+                  {step}
+                </Text>
+                {index < STEPS.length - 1 && <View style={[styles.stepLine, isPast && styles.stepLineDone]} />}
+              </View>
+            );
+          })}
+        </View>
       </View>
 
       {/* Order Items */}
@@ -92,7 +108,7 @@ export default function OrderDetailScreen({ route, navigation }) {
         </View>
         <View style={styles.totalDivider} />
         <View style={styles.summaryRow}>
-          <Text style={[styles.summaryLabel, { fontWeight: 'bold', color: COLORS.black }]}>Total</Text>
+          <Text style={[styles.summaryLabel, { fontWeight: 'bold', color: COLORS.text }]}>Total</Text>
           <Text style={[styles.summaryValue, { fontWeight: 'bold', color: COLORS.primary, fontSize: 16 }]}>
             KES {parseFloat(order.total_amount || 0).toFixed(2)}
           </Text>
@@ -127,7 +143,7 @@ export default function OrderDetailScreen({ route, navigation }) {
       {/* Review Button */}
       {order.status === 'Delivered' && (
         <TouchableOpacity style={styles.reviewBtn} onPress={() => navigation.navigate('WriteReview', { order })}>
-          <Ionicons name="star-outline" size={18} color={COLORS.white} />
+          <Ionicons name="star-outline" size={18} color={COLORS.card} />
           <Text style={styles.reviewBtnText}>Write a Review</Text>
         </TouchableOpacity>
       )}
@@ -151,15 +167,49 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  statusBannerText: { color: COLORS.white, fontWeight: 'bold', fontSize: 15 },
+  statusBannerText: { color: COLORS.card, fontWeight: 'bold', fontSize: 15 },
 
-  // Progress
-  progressRow: { flexDirection: 'row', gap: 4, marginHorizontal: 16, marginBottom: 16 },
-  step: { flex: 1, height: 4, borderRadius: 2 },
+  // Timeline
+  timelineCard: {
+    backgroundColor: COLORS.card,
+    margin: 16,
+    marginTop: 16,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: COLORS.borderWarm,
+  },
+  timelineTitle: { fontSize: 15, fontWeight: 'bold', color: COLORS.text, marginBottom: 16 },
+  timeline: { flexDirection: 'row', justifyContent: 'space-between' },
+  timelineStep: { alignItems: 'center', flex: 1 },
+  stepDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: COLORS.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  stepDotDone: { backgroundColor: '#388E3C' },
+  stepDotCurrent: { backgroundColor: COLORS.primary },
+  stepLabel: { fontSize: 11, color: COLORS.gray, textAlign: 'center' },
+  stepLabelDone: { color: '#388E3C', fontWeight: '600' },
+  stepLabelCurrent: { color: COLORS.primary, fontWeight: 'bold' },
+  stepLine: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    right: -12,
+    height: 2,
+    backgroundColor: COLORS.border,
+    zIndex: -1,
+  },
+  stepLineDone: { backgroundColor: '#388E3C' },
 
   // Cards
   card: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     marginHorizontal: 16,
     marginBottom: 12,
     borderRadius: 14,
@@ -167,7 +217,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.borderWarm,
   },
-  cardTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.black, marginBottom: 14 },
+  cardTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.text, marginBottom: 14 },
 
   // Items
   itemRow: {
@@ -180,13 +230,13 @@ const styles = StyleSheet.create({
   },
   itemLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 8 },
   itemQty: { fontSize: 14, fontWeight: 'bold', color: COLORS.primary },
-  itemName: { fontSize: 14, color: COLORS.black },
-  itemPrice: { fontSize: 14, color: COLORS.black, fontWeight: '500' },
+  itemName: { fontSize: 14, color: COLORS.text },
+  itemPrice: { fontSize: 14, color: COLORS.text, fontWeight: '500' },
 
   // Summary
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   summaryLabel: { fontSize: 13, color: COLORS.gray },
-  summaryValue: { fontSize: 13, color: COLORS.black },
+  summaryValue: { fontSize: 13, color: COLORS.text },
   totalDivider: { height: 1, backgroundColor: COLORS.borderWarm, marginVertical: 10 },
 
   // Address
@@ -199,11 +249,11 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: COLORS.iconBg,
+    backgroundColor: COLORS.primary + '20',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  riderName: { fontSize: 14, fontWeight: '600', color: COLORS.black },
+  riderName: { fontSize: 14, fontWeight: '600', color: COLORS.text },
   riderPhone: { fontSize: 12, color: COLORS.gray, marginTop: 2 },
 
   // Review
@@ -218,5 +268,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  reviewBtnText: { fontWeight: 'bold', fontSize: 15, color: COLORS.white },
+  reviewBtnText: { fontWeight: 'bold', fontSize: 15, color: COLORS.card },
 });

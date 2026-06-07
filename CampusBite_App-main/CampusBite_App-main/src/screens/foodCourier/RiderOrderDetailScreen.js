@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../../api';
 import { COLORS } from '../../constants';
 
@@ -43,23 +44,42 @@ export default function RiderOrderDetailScreen({ route }) {
   const advanceStatus = async () => {
     const next = NEXT_STATUS[order.status];
     if (!next) return;
-    Alert.alert('Update Status', `Mark order as "${next}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Confirm',
-        onPress: async () => {
-          setUpdating(true);
-          try {
-            await api.orders.updateStatus(orderId, next);
-            fetchOrder();
-          } catch (err) {
-            Alert.alert('Error', err.message);
-          } finally {
-            setUpdating(false);
-          }
-        },
-      },
-    ]);
+    setUpdating(true);
+    try {
+      const response = await api.orders.updateStatus(orderId, next);
+      // Update local state with the new status from response
+      if (response.data?.order?.status) {
+        setOrder({ ...order, status: response.data.order.status });
+        
+        // If delivery is completed, update profile stats
+        if (response.data.order.status === 'Delivered') {
+          await updateProfileStats();
+        }
+      } else {
+        // Fallback to fetchOrder if status not in response
+        fetchOrder();
+      }
+    } catch (err) {
+      Alert.alert('Error', err.message);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const updateProfileStats = async () => {
+    try {
+      const deliveryFee = parseFloat(order.delivery_fee || 0);
+      const currentDeliveries = await AsyncStorage.getItem('courierDeliveries') || '0';
+      const currentEarnings = await AsyncStorage.getItem('courierEarnings') || '0';
+      
+      const newDeliveries = parseInt(currentDeliveries) + 1;
+      const newEarnings = parseFloat(currentEarnings) + deliveryFee;
+      
+      await AsyncStorage.setItem('courierDeliveries', newDeliveries.toString());
+      await AsyncStorage.setItem('courierEarnings', newEarnings.toString());
+    } catch (err) {
+      console.error('Error updating profile stats:', err);
+    }
   };
 
   const handleCollectCash = () => {

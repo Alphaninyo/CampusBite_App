@@ -216,11 +216,11 @@ export default function VendorProfileScreen({ navigation }) {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Ionicons name="storefront-outline" size={22} color={COLORS.black} />
+          <Ionicons name="storefront-outline" size={22} color={COLORS.text} />
           <Text style={styles.headerTitle}>Vendor Profile</Text>
         </View>
         <TouchableOpacity>
-          <Ionicons name="settings-outline" size={22} color={COLORS.black} />
+          <Ionicons name="settings-outline" size={22} color={COLORS.text} />
         </TouchableOpacity>
       </View>
 
@@ -247,7 +247,7 @@ export default function VendorProfileScreen({ navigation }) {
         <Text style={styles.sectionTitle}>Store Settings</Text>
         <View style={styles.sectionCard}>
           <TouchableOpacity style={styles.settingRow} onPress={handleBusinessHours}>
-            <View style={[styles.settingIcon, { backgroundColor: COLORS.iconBg }]}>
+            <View style={[styles.settingIcon, { backgroundColor: COLORS.primary + '20' }]}>
               <Ionicons name="time-outline" size={20} color={COLORS.primary} />
             </View>
             <View style={styles.settingInfo}>
@@ -260,7 +260,7 @@ export default function VendorProfileScreen({ navigation }) {
           <View style={styles.settingDivider} />
 
           <TouchableOpacity style={styles.settingRow} onPress={handlePrepTime}>
-            <View style={[styles.settingIcon, { backgroundColor: COLORS.iconBg }]}>
+            <View style={[styles.settingIcon, { backgroundColor: COLORS.primary + '20' }]}>
               <Ionicons name="timer-outline" size={20} color={COLORS.primary} />
             </View>
             <View style={styles.settingInfo}>
@@ -273,7 +273,7 @@ export default function VendorProfileScreen({ navigation }) {
           <View style={styles.settingDivider} />
 
           <View style={styles.settingRow}>
-            <View style={[styles.settingIcon, { backgroundColor: COLORS.iconBg }]}>
+            <View style={[styles.settingIcon, { backgroundColor: COLORS.primary + '20' }]}>
               <Ionicons name="radio-outline" size={20} color={COLORS.primary} />
             </View>
             <View style={styles.settingInfo}>
@@ -296,7 +296,7 @@ export default function VendorProfileScreen({ navigation }) {
         <Text style={styles.sectionTitle}>Finance & Payouts</Text>
         <View style={styles.sectionCard}>
           <TouchableOpacity style={styles.settingRow} onPress={handleBankDetails}>
-            <View style={[styles.settingIcon, { backgroundColor: COLORS.iconBg }]}>
+            <View style={[styles.settingIcon, { backgroundColor: COLORS.primary + '20' }]}>
               <Ionicons name="card-outline" size={20} color={COLORS.primary} />
             </View>
             <View style={styles.settingInfo}>
@@ -309,7 +309,7 @@ export default function VendorProfileScreen({ navigation }) {
           <View style={styles.settingDivider} />
 
           <TouchableOpacity style={styles.settingRow} onPress={handlePayoutHistory}>
-            <View style={[styles.settingIcon, { backgroundColor: COLORS.iconBg }]}>
+            <View style={[styles.settingIcon, { backgroundColor: COLORS.primary + '20' }]}>
               <Ionicons name="wallet-outline" size={20} color={COLORS.primary} />
             </View>
             <View style={styles.settingInfo}>
@@ -322,7 +322,7 @@ export default function VendorProfileScreen({ navigation }) {
           <View style={styles.settingDivider} />
 
           <TouchableOpacity style={styles.settingRow} onPress={handleTaxInfo}>
-            <View style={[styles.settingIcon, { backgroundColor: COLORS.iconBg }]}>
+            <View style={[styles.settingIcon, { backgroundColor: COLORS.primary + '20' }]}>
               <Ionicons name="document-text-outline" size={20} color={COLORS.primary} />
             </View>
             <View style={styles.settingInfo}>
@@ -652,12 +652,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 12,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.black },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.text },
 
   scrollView: { flex: 1, paddingHorizontal: 16 },
 
@@ -676,18 +676,18 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 12,
     padding: 1,
   },
-  storeName: { fontSize: 22, fontWeight: 'bold', color: COLORS.black, marginBottom: 4 },
+  storeName: { fontSize: 22, fontWeight: 'bold', color: COLORS.text, marginBottom: 4 },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   ratingText: { fontSize: 13, color: COLORS.gray },
 
   // Section
-  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.black, marginTop: 20, marginBottom: 10, marginLeft: 2 },
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.text, marginTop: 20, marginBottom: 10, marginLeft: 2 },
   sectionCard: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: COLORS.borderWarm,
@@ -710,7 +710,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   settingInfo: { flex: 1 },
-  settingLabel: { fontSize: 14, fontWeight: '600', color: COLORS.black },
+  settingLabel: { fontSize: 14, fontWeight: '600', color: COLORS.text },
   settingValue: { fontSize: 12, color: COLORS.primary, marginTop: 2 },
   settingDivider: { height: 1, backgroundColor: COLORS.borderWarm, marginLeft: 64 },
 
@@ -744,7 +744,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.65)',
   },
   modalSheet: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: 24, paddingBottom: 44,
     maxHeight: '85%',
@@ -763,11 +763,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between',
     alignItems: 'center', marginBottom: 20,
   },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: COLORS.black },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: COLORS.text },
   modalLabel: { fontSize: 13, fontWeight: '600', color: COLORS.gray, marginBottom: 6, marginTop: 14 },
   modalInput: {
     backgroundColor: COLORS.inputBg, borderRadius: 10,
-    padding: 13, fontSize: 15, color: COLORS.black,
+    padding: 13, fontSize: 15, color: COLORS.text,
     borderWidth: 1, borderColor: COLORS.border,
   },
   modalSaveBtn: {
@@ -794,7 +794,7 @@ const styles = StyleSheet.create({
   securityTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: COLORS.black,
+    color: COLORS.text,
     marginBottom: 2,
   },
   securityDesc: {
@@ -826,7 +826,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

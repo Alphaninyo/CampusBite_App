@@ -169,12 +169,16 @@ export default function VendorDashboardScreen({ navigation }) {
         {/* Stats Row */}
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
-            <Ionicons name="receipt-outline" size={24} color="#5D4037" />
+            <View style={[styles.statIconBox, { backgroundColor: COLORS.primary + '20' }]}>
+              <Ionicons name="receipt-outline" size={24} color={COLORS.primary} />
+            </View>
             <Text style={styles.statLabel}>Active Orders</Text>
             <Text style={styles.statValue}>{activeOrderCount}</Text>
           </View>
           <View style={styles.statCard}>
-            <Ionicons name="star-outline" size={24} color="#00796B" />
+            <View style={[styles.statIconBox, { backgroundColor: COLORS.success + '20' }]}>
+              <Ionicons name="star-outline" size={24} color={COLORS.success} />
+            </View>
             <Text style={styles.statLabel}>Rating</Text>
             <Text style={styles.statValue}>4.8</Text>
           </View>
@@ -287,7 +291,7 @@ export default function VendorDashboardScreen({ navigation }) {
                 <Text style={styles.popularStats}>{item.count} orders • KES {item.revenue.toFixed(0)} revenue</Text>
               </View>
               <View style={styles.popularBadge}>
-                <Ionicons name="trending-up" size={16} color="#4CAF50" />
+                <Ionicons name="trending-up" size={16} color={COLORS.success} />
               </View>
             </View>
           ))
@@ -358,10 +362,10 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.black },
+  headerTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.text },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  openLabel: { fontWeight: 'bold', fontSize: 12, color: COLORS.black },
+  openLabel: { fontWeight: 'bold', fontSize: 12, color: COLORS.text },
   notifBtn: { padding: 4 },
   
   scrollView: { flex: 1, paddingHorizontal: 16 },
@@ -372,6 +376,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     marginTop: 16,
+    borderWidth: 1,
+    borderColor: COLORS.borderWarm,
   },
   revenueLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 13, marginBottom: 4 },
   revenueAmount: { color: COLORS.white, fontSize: 28, fontWeight: 'bold' },
@@ -381,14 +387,23 @@ const styles = StyleSheet.create({
   statsRow: { flexDirection: 'row', gap: 12, marginTop: 16 },
   statCard: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
     borderColor: COLORS.borderWarm,
+    alignItems: 'center',
   },
-  statLabel: { color: COLORS.gray, fontSize: 12, marginTop: 8 },
-  statValue: { fontSize: 22, fontWeight: 'bold', color: COLORS.black, marginTop: 2 },
+  statIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  statLabel: { color: COLORS.subtext, fontSize: 12, marginTop: 8 },
+  statValue: { fontSize: 22, fontWeight: 'bold', color: COLORS.text, marginTop: 2 },
   
   // Section
   sectionHeader: { 
@@ -398,9 +413,9 @@ const styles = StyleSheet.create({
     marginTop: 24, 
     marginBottom: 12,
   },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.black },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.text },
   newBadge: { 
-    backgroundColor: '#00796B', 
+    backgroundColor: COLORS.success, 
     paddingHorizontal: 10, 
     paddingVertical: 4, 
     borderRadius: 12,
@@ -409,10 +424,12 @@ const styles = StyleSheet.create({
   
   // Incoming Orders
   incomingCard: {
-    backgroundColor: COLORS.iconBg,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     padding: 16,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: COLORS.borderWarm,
   },
   incomingHeader: { 
     flexDirection: 'row', 
@@ -420,9 +437,9 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     marginBottom: 6,
   },
-  incomingOrderId: { fontSize: 16, fontWeight: 'bold', color: COLORS.black },
+  incomingOrderId: { fontSize: 16, fontWeight: 'bold', color: COLORS.text },
   incomingTime: { color: COLORS.gray, fontSize: 12 },
-  incomingItems: { color: '#555', fontSize: 13, marginBottom: 12 },
+  incomingItems: { color: COLORS.subtext, fontSize: 13, marginBottom: 12 },
   incomingActions: { flexDirection: 'row', gap: 10 },
   acceptBtn: {
     backgroundColor: COLORS.primary,
@@ -439,17 +456,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
   },
-  declineBtnText: { color: COLORS.black, fontWeight: '600', fontSize: 13 },
+  declineBtnText: { color: COLORS.text, fontWeight: '600', fontSize: 13 },
   
   // Progress Orders
   progressCard: {
-    backgroundColor: COLORS.iconBg,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     padding: 14,
     marginBottom: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.borderWarm,
   },
   progressLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   progressIcon: {
@@ -461,9 +480,9 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   progressStatus: { fontSize: 11, fontWeight: 'bold', marginBottom: 2 },
-  progressOrderId: { fontSize: 13, color: COLORS.black },
+  progressOrderId: { fontSize: 13, color: COLORS.text },
   readyBtn: {
-    backgroundColor: '#00796B',
+    backgroundColor: COLORS.success,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 16,
@@ -485,7 +504,7 @@ const styles = StyleSheet.create({
 
   // Popular Items
   popularCard: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 12,
     padding: 14,
     marginBottom: 8,
@@ -498,27 +517,27 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: COLORS.iconBg,
+    backgroundColor: COLORS.primary + '20',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
   popularRankText: { fontSize: 13, fontWeight: 'bold', color: COLORS.primary },
   popularInfo: { flex: 1 },
-  popularName: { fontSize: 14, fontWeight: '600', color: COLORS.black },
+  popularName: { fontSize: 14, fontWeight: '600', color: COLORS.text },
   popularStats: { fontSize: 12, color: COLORS.gray, marginTop: 2 },
   popularBadge: {
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: COLORS.successLight,
+    backgroundColor: COLORS.success + '20',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   // Reviews
   reviewCard: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
@@ -536,14 +555,14 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.primary + '20',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 8,
   },
-  reviewAvatarText: { color: COLORS.white, fontWeight: 'bold', fontSize: 13 },
-  reviewName: { fontSize: 13, fontWeight: '600', color: COLORS.black },
+  reviewAvatarText: { color: COLORS.primary, fontWeight: 'bold', fontSize: 13 },
+  reviewName: { fontSize: 13, fontWeight: '600', color: COLORS.text },
   reviewStars: { flexDirection: 'row', gap: 2 },
-  reviewComment: { fontSize: 13, color: '#555', lineHeight: 18 },
+  reviewComment: { fontSize: 13, color: COLORS.subtext, lineHeight: 18 },
   reviewDate: { fontSize: 11, color: COLORS.gray, marginTop: 6 },
 });

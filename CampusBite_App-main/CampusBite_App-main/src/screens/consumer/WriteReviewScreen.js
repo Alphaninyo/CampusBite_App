@@ -97,7 +97,7 @@ export default function WriteReviewScreen({ route, navigation }) {
       <TouchableOpacity style={styles.button} onPress={submit} disabled={loading}>
         {loading ? <ActivityIndicator color="#fff" /> : (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Ionicons name="send-outline" size={18} color={COLORS.white} />
+            <Ionicons name="send-outline" size={18} color={COLORS.card} />
             <Text style={styles.buttonText}>Submit Review</Text>
           </View>
         )}
@@ -113,19 +113,19 @@ const styles = StyleSheet.create({
   headerCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: COLORS.borderWarm,
   },
-  heading: { fontSize: 18, fontWeight: 'bold', color: COLORS.black },
+  heading: { fontSize: 18, fontWeight: 'bold', color: COLORS.text },
   sub: { color: COLORS.gray, fontSize: 13, marginTop: 2 },
 
   // Card
   card: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     padding: 16,
     marginBottom: 12,
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   // Comment
   label: { fontSize: 14, color: COLORS.gray, fontWeight: '500', marginBottom: 10 },
   inputWrap: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  input: { flex: 1, fontSize: 14, color: COLORS.black, minHeight: 80 },
+  input: { flex: 1, fontSize: 14, color: COLORS.text, minHeight: 80 },
 
   // Button
   button: {
@@ -153,5 +153,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 4,
   },
-  buttonText: { color: COLORS.white, fontWeight: 'bold', fontSize: 15 },
+  buttonText: { color: COLORS.card, fontWeight: 'bold', fontSize: 15 },
 });

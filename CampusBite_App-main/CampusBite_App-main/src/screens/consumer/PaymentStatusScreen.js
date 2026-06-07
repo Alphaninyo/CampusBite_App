@@ -105,7 +105,7 @@ export default function PaymentStatusScreen({ route, navigation }) {
             : 'Your order has been placed and is being prepared.'}
         </Text>
         <TouchableOpacity style={styles.button} onPress={goToOrder}>
-          <Ionicons name="receipt-outline" size={18} color={COLORS.white} />
+          <Ionicons name="receipt-outline" size={18} color={COLORS.card} />
           <Text style={styles.buttonText}>Track My Order</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.secondaryBtn} onPress={() => navigation.navigate('HomeTab')}>
@@ -124,7 +124,7 @@ export default function PaymentStatusScreen({ route, navigation }) {
         <Text style={styles.title}>Payment Failed</Text>
         <Text style={styles.subtitle}>The payment was cancelled or declined. Please try again.</Text>
         <TouchableOpacity style={styles.button} onPress={() => navigation.goBack()}>
-          <Ionicons name="refresh-outline" size={18} color={COLORS.white} />
+          <Ionicons name="refresh-outline" size={18} color={COLORS.card} />
           <Text style={styles.buttonText}>Try Again</Text>
         </TouchableOpacity>
       </View>
@@ -155,9 +155,9 @@ export default function PaymentStatusScreen({ route, navigation }) {
           disabled={simulating}
         >
           {simulating
-            ? <ActivityIndicator color={COLORS.white} size="small" />
+            ? <ActivityIndicator color={COLORS.card} size="small" />
             : <>
-                <Ionicons name="checkmark-circle-outline" size={20} color={COLORS.white} />
+                <Ionicons name="checkmark-circle-outline" size={20} color={COLORS.card} />
                 <Text style={styles.simulateBtnText}>Simulate M-Pesa Payment</Text>
               </>}
         </TouchableOpacity>
@@ -180,14 +180,14 @@ const styles = StyleSheet.create({
     width: 100, height: 100, borderRadius: 50,
     backgroundColor: COLORS.dangerBg, alignItems: 'center', justifyContent: 'center', marginBottom: 8,
   },
-  title:    { fontSize: 22, fontWeight: 'bold', color: COLORS.black, marginTop: 16, marginBottom: 8, textAlign: 'center' },
+  title:    { fontSize: 22, fontWeight: 'bold', color: COLORS.text, marginTop: 16, marginBottom: 8, textAlign: 'center' },
   subtitle: { fontSize: 14, color: COLORS.gray, textAlign: 'center', marginBottom: 32 },
   button: {
     backgroundColor: COLORS.primary, borderRadius: 14,
     paddingVertical: 14, paddingHorizontal: 32,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
   },
-  buttonText: { color: COLORS.white, fontWeight: 'bold', fontSize: 15 },
+  buttonText: { color: COLORS.card, fontWeight: 'bold', fontSize: 15 },
   cancelBtn:  { marginTop: 20 },
   cancelText: { color: COLORS.danger, fontSize: 14, fontWeight: '500' },
   secondaryBtn: { marginTop: 14, paddingVertical: 10, paddingHorizontal: 24 },
@@ -207,5 +207,5 @@ const styles = StyleSheet.create({
     paddingVertical: 14, paddingHorizontal: 28,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
   },
-  simulateBtnText: { color: COLORS.white, fontWeight: 'bold', fontSize: 15 },
+  simulateBtnText: { color: COLORS.card, fontWeight: 'bold', fontSize: 15 },
 });

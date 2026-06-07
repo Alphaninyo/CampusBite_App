@@ -114,7 +114,7 @@ export default function CheckoutScreen({ route, navigation }) {
       <TouchableOpacity style={styles.button} onPress={handleCheckout} disabled={loading}>
         {loading ? <ActivityIndicator color="#fff" /> : (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Ionicons name="phone-portrait-outline" size={18} color={COLORS.white} />
+            <Ionicons name="phone-portrait-outline" size={18} color={COLORS.card} />
             <Text style={styles.buttonText}>Pay KES {total.toFixed(2)} via M-Pesa</Text>
           </View>
         )}
@@ -130,37 +130,37 @@ const styles = StyleSheet.create({
   vendorCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: COLORS.borderWarm,
   },
-  heading: { fontSize: 18, fontWeight: 'bold', color: COLORS.black },
+  heading: { fontSize: 18, fontWeight: 'bold', color: COLORS.text },
   vendorName: { color: COLORS.gray, fontSize: 13, marginTop: 2 },
 
   // Card
   card: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: COLORS.borderWarm,
   },
-  cardTitle: { fontSize: 15, fontWeight: 'bold', color: COLORS.black, marginBottom: 12 },
+  cardTitle: { fontSize: 15, fontWeight: 'bold', color: COLORS.text, marginBottom: 12 },
 
   // Items
   itemRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
   itemQty: { fontSize: 14, fontWeight: 'bold', color: COLORS.primary },
-  itemName: { fontSize: 14, color: COLORS.black },
+  itemName: { fontSize: 14, color: COLORS.text },
 
   // Summary
   row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
   rowLabel: { color: COLORS.gray, fontSize: 13 },
-  rowValue: { color: COLORS.black, fontSize: 13 },
-  totalLabel: { fontWeight: 'bold', fontSize: 16, color: COLORS.black },
+  rowValue: { color: COLORS.text, fontSize: 13 },
+  totalLabel: { fontWeight: 'bold', fontSize: 16, color: COLORS.text },
   totalValue: { fontWeight: 'bold', fontSize: 16, color: COLORS.primary },
   divider: { height: 1, backgroundColor: COLORS.borderWarm, marginVertical: 10 },
 
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 8,
   },
-  input: { flex: 1, fontSize: 14, color: COLORS.black, minHeight: 50 },
+  input: { flex: 1, fontSize: 14, color: COLORS.text, minHeight: 50 },
 
   optionalHint: { fontSize: 11, color: COLORS.gray, marginTop: 6, alignSelf: 'flex-end' },
 
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
   mpesaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     padding: 14,
     marginBottom: 12,
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.borderWarm,
   },
   mpesaLabel: { fontSize: 11, color: COLORS.gray, fontWeight: '600', letterSpacing: 0.3 },
-  mpesaPhone: { fontSize: 15, fontWeight: '700', color: COLORS.black, marginTop: 2 },
+  mpesaPhone: { fontSize: 15, fontWeight: '700', color: COLORS.text, marginTop: 2 },
   mpesaEdit:  { fontSize: 13, color: COLORS.primary, fontWeight: '700' },
 
   // Button
@@ -198,5 +198,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 4,
   },
-  buttonText: { color: COLORS.white, fontWeight: 'bold', fontSize: 15 },
+  buttonText: { color: COLORS.card, fontWeight: 'bold', fontSize: 15 },
 });

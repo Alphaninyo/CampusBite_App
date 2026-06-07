@@ -225,12 +225,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 12,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.black },
+  headerTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.text },
 
   // Tabs
   tabRow: {
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
 
   // Order Card
   orderCard: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   orderNumber: { fontSize: 12, color: COLORS.gray, fontWeight: '600', letterSpacing: 0.5 },
-  customerName: { fontSize: 16, fontWeight: 'bold', color: COLORS.black, marginTop: 2 },
+  customerName: { fontSize: 16, fontWeight: 'bold', color: COLORS.text, marginTop: 2 },
   timeRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   timeText: { fontSize: 12, color: COLORS.primary, fontWeight: '500' },
 
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
   itemsList: { marginBottom: 16 },
   itemRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   itemQty: { fontSize: 15, fontWeight: 'bold', color: COLORS.primary, width: 28 },
-  itemName: { fontSize: 15, color: COLORS.black },
+  itemName: { fontSize: 15, color: COLORS.text },
 
   // Actions
   actionRow: { flexDirection: 'row', gap: 12 },

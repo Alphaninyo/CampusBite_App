@@ -5,6 +5,7 @@ import {
   TextInput, Modal, KeyboardAvoidingView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
 import { COLORS } from '../../constants';
@@ -45,8 +46,13 @@ export default function FoodCourierProfileScreen({ navigation }) {
       const profile = data.profile;
       setIsAvailable(profile.is_available);
       setVehicleType(profile.vehicle_type);
-      setTotalDeliveries(profile.total_deliveries);
-      setTotalEarnings(profile.total_earnings);
+      
+      // Use AsyncStorage values if available, otherwise use API values
+      const localDeliveries = await AsyncStorage.getItem('courierDeliveries');
+      const localEarnings = await AsyncStorage.getItem('courierEarnings');
+      
+      setTotalDeliveries(localDeliveries ? parseInt(localDeliveries) : profile.total_deliveries);
+      setTotalEarnings(localEarnings ? parseFloat(localEarnings) : profile.total_earnings);
       setRating(profile.rating);
     } catch (err) {
       console.error(err.message);
@@ -645,12 +651,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 12,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.black },
+  headerTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.text },
   notifBtn: { padding: 4 },
   badge: {
     position: 'absolute',
@@ -682,7 +688,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 2,
     right: -2,
-    backgroundColor: '#00796B',
+    backgroundColor: COLORS.success,
     borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
@@ -692,13 +698,13 @@ const styles = StyleSheet.create({
   },
   ratingBadgeText: { color: COLORS.white, fontSize: 11, fontWeight: 'bold' },
   nameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
-  name: { fontSize: 22, fontWeight: 'bold', color: COLORS.black },
+  name: { fontSize: 22, fontWeight: 'bold', color: COLORS.text },
   vehicleRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   vehicleText: { fontSize: 13, color: COLORS.gray },
 
   // Availability
   availabilityCard: {
-    backgroundColor: COLORS.iconBg,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     padding: 16,
     marginBottom: 12,
@@ -708,13 +714,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.borderWarm,
   },
-  availabilityTitle: { fontSize: 15, fontWeight: 'bold', color: COLORS.black, marginBottom: 2 },
+  availabilityTitle: { fontSize: 15, fontWeight: 'bold', color: COLORS.text, marginBottom: 2 },
   availabilityStatus: { fontSize: 13, fontWeight: '600' },
 
   // Stats 3-col
   statsRow: {
     flexDirection: 'row',
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     marginBottom: 12,
     borderWidth: 1,
@@ -728,11 +734,11 @@ const styles = StyleSheet.create({
     borderColor: COLORS.borderWarm,
   },
   statCaption: { fontSize: 10, fontWeight: '700', color: COLORS.gray, letterSpacing: 0.8, marginBottom: 4 },
-  statValue: { fontSize: 14, fontWeight: 'bold', color: COLORS.black },
+  statValue: { fontSize: 14, fontWeight: 'bold', color: COLORS.text },
 
   // Vehicle card
   featureCard: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     padding: 14,
     marginBottom: 12,
@@ -746,19 +752,19 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: COLORS.iconBg,
+    backgroundColor: COLORS.primary + '20',
     alignItems: 'center',
     justifyContent: 'center',
   },
   featureTextBlock: { flex: 1 },
-  featureTitle: { fontSize: 14, fontWeight: '600', color: COLORS.black, marginBottom: 2 },
+  featureTitle: { fontSize: 14, fontWeight: '600', color: COLORS.text, marginBottom: 2 },
   featureSub: { fontSize: 12, color: COLORS.gray },
 
   // Two col cards
   twoColRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
   twoColCard: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
@@ -772,7 +778,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 8,
   },
-  twoColTitle: { fontSize: 13, fontWeight: '600', color: COLORS.black, marginBottom: 2 },
+  twoColTitle: { fontSize: 13, fontWeight: '600', color: COLORS.text, marginBottom: 2 },
   twoColSub: { fontSize: 12, color: COLORS.gray },
 
   // Section label
@@ -786,7 +792,7 @@ const styles = StyleSheet.create({
 
   // Menu card
   menuCard: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     marginBottom: 16,
     borderWidth: 1,
@@ -805,27 +811,27 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 8,
-    backgroundColor: COLORS.iconBg,
+    backgroundColor: COLORS.primary + '20',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  menuText: { fontSize: 14, fontWeight: '600', color: COLORS.black },
+  menuText: { fontSize: 14, fontWeight: '600', color: COLORS.text },
   menuDivider: { height: 1, backgroundColor: COLORS.borderWarm, marginHorizontal: 16 },
 
   // Feedback tags
   feedbackTags: { flexDirection: 'row', gap: 6, marginTop: 4 },
   tag: {
-    backgroundColor: COLORS.iconBg,
+    backgroundColor: COLORS.primary + '20',
     borderRadius: 6,
     paddingHorizontal: 7,
     paddingVertical: 2,
   },
   tagText: { fontSize: 10, fontWeight: '700', color: COLORS.primary },
-  feedbackRating: { fontSize: 16, fontWeight: 'bold', color: COLORS.black },
+  feedbackRating: { fontSize: 16, fontWeight: 'bold', color: COLORS.text },
 
   // Logout
   logoutBtn: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     paddingVertical: 16,
     flexDirection: 'row',
@@ -838,6 +844,15 @@ const styles = StyleSheet.create({
   },
   logoutText: { fontSize: 15, fontWeight: 'bold', color: COLORS.primary },
   menuSub: { fontSize: 12, color: COLORS.gray, marginTop: 2 },
+
+  // Empty state
+  emptySection: { 
+    alignItems: 'center', 
+    paddingVertical: 24, 
+    backgroundColor: COLORS.card, 
+    borderRadius: 14,
+  },
+  emptyText: { color: COLORS.gray, marginTop: 8, fontSize: 13 },
 
   // Security Modal
   modalOverlay: {

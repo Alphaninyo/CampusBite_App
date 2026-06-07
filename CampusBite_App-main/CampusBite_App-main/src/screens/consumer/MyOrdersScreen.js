@@ -92,7 +92,7 @@ export default function MyOrdersScreen({ navigation }) {
           <Text style={styles.orderDate}>{formatOrderTime(item.created_at)}</Text>
         </View>
         <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status] || COLORS.gray }]}>
-          <Ionicons name={getOrderStatusIcon(item.status)} size={12} color={COLORS.white} />
+          <Ionicons name={getOrderStatusIcon(item.status)} size={12} color={COLORS.card} />
           <Text style={styles.statusText}>{item.status}</Text>
         </View>
       </View>
@@ -127,7 +127,7 @@ export default function MyOrdersScreen({ navigation }) {
       {/* Action Footer */}
       <View style={styles.cardFooter}>
         <TouchableOpacity style={styles.trackBtn}>
-          <Ionicons name="locate-outline" size={14} color={COLORS.white} />
+          <Ionicons name="locate-outline" size={14} color={COLORS.card} />
           <Text style={styles.trackBtnText}>Track Order</Text>
         </TouchableOpacity>
       </View>
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     margin: 16,
     marginBottom: 12,
     paddingHorizontal: 14,
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: COLORS.black,
+    color: COLORS.text,
   },
   
   // Filters
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   filterBtn: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   filterTextActive: {
-    color: COLORS.white,
+    color: COLORS.card,
   },
   
   // Orders List
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
   
   // Order Card - Compact Design
   card: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     marginBottom: 12,
     borderWidth: 1,
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
   orderNumber: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: COLORS.black,
+    color: COLORS.text,
     marginBottom: 2,
   },
   orderDate: {
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   statusText: {
-    color: COLORS.white,
+    color: COLORS.card,
     fontSize: 10,
     fontWeight: 'bold',
     marginLeft: 3,
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
   vendorName: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: COLORS.black,
+    color: COLORS.text,
     marginBottom: 6,
   },
   itemsSummary: {
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   trackBtnText: {
-    color: COLORS.white,
+    color: COLORS.card,
     fontSize: 11,
     fontWeight: '600',
   },
@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.black,
+    color: COLORS.text,
     marginTop: 16,
     marginBottom: 8,
     textAlign: 'center',
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   shopBtnText: {
-    color: COLORS.white,
+    color: COLORS.card,
     fontWeight: 'bold',
     fontSize: 16,
   },

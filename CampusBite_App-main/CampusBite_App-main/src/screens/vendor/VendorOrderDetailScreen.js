@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
 
   // Cards
   card: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     marginHorizontal: 16,
     marginBottom: 12,
     borderRadius: 14,
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.borderWarm,
   },
-  cardTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.black, marginBottom: 14 },
+  cardTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.text, marginBottom: 14 },
 
   // Info rows
   infoRow: {
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   infoLabel: { fontSize: 13, color: COLORS.gray, flex: 1 },
-  infoValue: { fontSize: 13, color: COLORS.black, fontWeight: '500' },
+  infoValue: { fontSize: 13, color: COLORS.text, fontWeight: '500' },
 
   // Items
   itemRow: {
@@ -258,8 +258,8 @@ const styles = StyleSheet.create({
   },
   itemLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 8 },
   itemQty: { fontSize: 14, fontWeight: 'bold', color: COLORS.primary },
-  itemName: { fontSize: 14, color: COLORS.black },
-  itemPrice: { fontSize: 14, color: COLORS.black, fontWeight: '500' },
+  itemName: { fontSize: 14, color: COLORS.text },
+  itemPrice: { fontSize: 14, color: COLORS.text, fontWeight: '500' },
 
   // Totals
   totalDivider: { height: 1, backgroundColor: COLORS.borderWarm, marginVertical: 10 },
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   totalLabel: { fontSize: 13, color: COLORS.gray },
-  totalValue: { fontSize: 13, color: COLORS.black },
+  totalValue: { fontSize: 13, color: COLORS.text },
 
   // Special instructions
   instructionsBox: {
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
   },
-  instructionsText: { flex: 1, fontSize: 13, color: COLORS.black, lineHeight: 18 },
+  instructionsText: { flex: 1, fontSize: 13, color: COLORS.text, lineHeight: 18 },
 
   // Rider
   riderRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -289,11 +289,11 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: COLORS.iconBg,
+    backgroundColor: COLORS.primary + '20',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  riderName: { fontSize: 14, fontWeight: '600', color: COLORS.black },
+  riderName: { fontSize: 14, fontWeight: '600', color: COLORS.text },
   riderPhone: { fontSize: 12, color: COLORS.gray, marginTop: 2 },
 
   // Action Buttons

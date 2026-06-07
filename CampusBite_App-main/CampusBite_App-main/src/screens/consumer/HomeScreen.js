@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 12,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
   logo: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.black,
+    color: COLORS.text,
   },
   notificationBtn: {
     padding: 6,
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: COLORS.borderWarm,
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   categoryBtn: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: COLORS.black,
+    color: COLORS.text,
   },
   viewAllText: {
     color: COLORS.primary,
@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
   },
   featuredCard: {
     width: 200,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     marginRight: 12,
     borderWidth: 1,
@@ -489,7 +489,7 @@ const styles = StyleSheet.create({
   vendorName: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: COLORS.black,
+    color: COLORS.text,
     paddingHorizontal: 12,
     paddingTop: 8,
   },
@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
   },
   trendingCard: {
     width: '48%',
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     marginBottom: 14,
     borderWidth: 1,
@@ -536,7 +536,7 @@ const styles = StyleSheet.create({
   itemName: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: COLORS.black,
+    color: COLORS.text,
     paddingHorizontal: 12,
   },
   priceContainer: {
@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
   itemPrice: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: COLORS.black,
+    color: COLORS.text,
   },
   addButton: {
     width: 24,
@@ -576,7 +576,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   notificationModal: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '70%',
@@ -592,7 +592,7 @@ const styles = StyleSheet.create({
   notificationModalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: COLORS.black,
+    color: COLORS.text,
   },
   notificationList: {
     flex: 1,
@@ -610,7 +610,7 @@ const styles = StyleSheet.create({
   notificationTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.black,
+    color: COLORS.text,
     marginBottom: 4,
   },
   notificationMessage: {
