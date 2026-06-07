@@ -140,7 +140,7 @@ export default function MyOrdersScreen({ navigation }) {
 
       {/* Action Footer */}
       <View style={styles.cardFooter}>
-        <TouchableOpacity style={styles.trackBtn}>
+        <TouchableOpacity style={styles.trackBtn} onPress={() => navigation.navigate('OrderDetail', { orderId: item.id })}>
           <Ionicons name="locate-outline" size={14} color={COLORS.card} />
           <Text style={styles.trackBtnText}>Track Order</Text>
         </TouchableOpacity>
