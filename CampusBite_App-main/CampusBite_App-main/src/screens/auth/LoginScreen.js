@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
-  ScrollView, Animated,
+  ScrollView, Animated, Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import useAuthStore from '../../stores/authStore';
@@ -201,11 +201,17 @@ export default function LoginScreen({ navigation }) {
           {/* ── Social ── */}
           <View style={styles.socialRow}>
             <TouchableOpacity style={styles.socialBtn} onPress={() => handleSocialLogin('Google')} activeOpacity={0.8}>
-              <Ionicons name="logo-google" size={18} color="#EA4335" style={{ marginRight: 8 }} />
+              <Image 
+                source={{ uri: 'https://cdn-icons-png.flaticon.com/512/300/300221.png' }} 
+                style={styles.socialIcon} 
+              />
               <Text style={styles.socialText}>Google</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.socialBtn} onPress={() => handleSocialLogin('Apple')} activeOpacity={0.8}>
-              <Ionicons name="logo-apple" size={18} color={COLORS.text} />
+              <Image 
+                source={{ uri: 'https://cdn-icons-png.flaticon.com/512/179/179309.png' }} 
+                style={[styles.socialIcon, { tintColor: '#000000' }]} 
+              />
               <Text style={styles.socialText}>Apple</Text>
             </TouchableOpacity>
           </View>
@@ -313,6 +319,12 @@ const styles = StyleSheet.create({
     borderRadius: 14, borderWidth: 1.5, borderColor: COLORS.border,
     paddingVertical: 13, backgroundColor: COLORS.card,
     shadowColor: COLORS.black, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
+  },
+  socialIcon: {
+    width: 18,
+    height: 18,
+    marginRight: 8,
+    resizeMode: 'contain',
   },
   socialText: { fontSize: 14, fontWeight: '700', color: COLORS.text },
 
