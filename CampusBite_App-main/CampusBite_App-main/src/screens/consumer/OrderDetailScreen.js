@@ -75,24 +75,40 @@ export default function OrderDetailScreen({ route, navigation }) {
       {/* Order Timeline */}
       <View style={styles.timelineCard}>
         <Text style={styles.timelineTitle}>Order Progress</Text>
-        <View style={styles.timeline}>
-          {STEPS.map((step, index) => {
-            const isPast = index < stepIndex;
-            const isCurrent = index === stepIndex;
-            const isFuture = index > stepIndex;
-            return (
-              <View key={step} style={styles.timelineStep}>
+        {STEPS.map((step, index) => {
+          const isPast = index < stepIndex;
+          const isCurrent = index === stepIndex;
+          const isLast = index === STEPS.length - 1;
+          return (
+            <View key={step} style={styles.timelineRow}>
+              <View style={styles.timelineLeft}>
                 <View style={[styles.stepDot, isPast && styles.stepDotDone, isCurrent && styles.stepDotCurrent]}>
-                  {isPast ? <Ionicons name="checkmark" size={12} color="#fff" /> : null}
+                  {isPast
+                    ? <Ionicons name="checkmark" size={13} color="#fff" />
+                    : isCurrent
+                      ? <View style={styles.stepDotInner} />
+                      : null}
                 </View>
-                <Text style={[styles.stepLabel, isPast && styles.stepLabelDone, isCurrent && styles.stepLabelCurrent]}>
+                {!isLast && <View style={[styles.stepConnector, isPast && styles.stepConnectorDone]} />}
+              </View>
+              <View style={styles.timelineContent}>
+                <Text style={[
+                  styles.stepLabel,
+                  isPast && styles.stepLabelDone,
+                  isCurrent && styles.stepLabelCurrent,
+                ]}>
                   {step}
                 </Text>
-                {index < STEPS.length - 1 && <View style={[styles.stepLine, isPast && styles.stepLineDone]} />}
+                {isCurrent && (
+                  <Text style={styles.stepSubLabel}>In progress</Text>
+                )}
+                {isPast && (
+                  <Text style={styles.stepSubLabel}>Completed</Text>
+                )}
               </View>
-            );
-          })}
-        </View>
+            </View>
+          );
+        })}
       </View>
 
       {/* Order Items */}
@@ -193,33 +209,38 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.borderWarm,
   },
-  timelineTitle: { fontSize: 15, fontWeight: 'bold', color: COLORS.text, marginBottom: 16 },
-  timeline: { flexDirection: 'row', justifyContent: 'space-between' },
-  timelineStep: { alignItems: 'center', flex: 1 },
+  timelineTitle: { fontSize: 15, fontWeight: 'bold', color: COLORS.text, marginBottom: 12 },
+  timelineRow: { flexDirection: 'row', alignItems: 'flex-start' },
+  timelineLeft: { alignItems: 'center', width: 40 },
+  timelineContent: { flex: 1, paddingBottom: 16, paddingTop: 2 },
   stepDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: COLORS.border,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
+  },
+  stepDotInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: COLORS.card,
   },
   stepDotDone: { backgroundColor: '#388E3C' },
   stepDotCurrent: { backgroundColor: COLORS.primary },
-  stepLabel: { fontSize: 11, color: COLORS.gray, textAlign: 'center' },
+  stepConnector: {
+    width: 2,
+    flex: 1,
+    minHeight: 24,
+    backgroundColor: COLORS.border,
+    marginVertical: 2,
+  },
+  stepConnectorDone: { backgroundColor: '#388E3C' },
+  stepLabel: { fontSize: 14, color: COLORS.gray, fontWeight: '500' },
   stepLabelDone: { color: '#388E3C', fontWeight: '600' },
   stepLabelCurrent: { color: COLORS.primary, fontWeight: 'bold' },
-  stepLine: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    right: -12,
-    height: 2,
-    backgroundColor: COLORS.border,
-    zIndex: -1,
-  },
-  stepLineDone: { backgroundColor: '#388E3C' },
+  stepSubLabel: { fontSize: 11, color: COLORS.gray, marginTop: 2 },
 
   // Cards
   card: {
