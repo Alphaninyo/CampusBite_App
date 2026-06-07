@@ -31,6 +31,7 @@ export default function WriteReviewScreen({ route, navigation }) {
   const [riderRating, setRiderRating]   = useState(0);
   const [comment, setComment]           = useState('');
   const [loading, setLoading]           = useState(false);
+  const [submitted, setSubmitted]       = useState(false);
 
   const submit = async () => {
     if (vendorRating === 0) return Alert.alert('Error', 'Please rate the vendor.');
@@ -43,15 +44,48 @@ export default function WriteReviewScreen({ route, navigation }) {
         rider_rating:  hasRider ? riderRating : undefined,
         comment:       comment.trim() || undefined,
       });
-      Alert.alert('Thanks!', 'Your review has been submitted.', [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
+      setSubmitted(true);
     } catch (err) {
-      Alert.alert('Error', err.message);
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to submit review';
+      Alert.alert('Error', errorMsg);
     } finally {
       setLoading(false);
     }
   };
+
+  if (submitted) {
+    return (
+      <View style={styles.successContainer}>
+        <View style={styles.successIconWrap}>
+          <Ionicons name="checkmark-circle" size={72} color="#388E3C" />
+        </View>
+        <Text style={styles.successTitle}>Review Submitted!</Text>
+        <Text style={styles.successSub}>
+          Thank you for your feedback on your order from{' '}
+          <Text style={{ fontWeight: 'bold' }}>{order.vendor?.business_name}</Text>.
+        </Text>
+        <View style={styles.successStars}>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <Ionicons
+              key={n}
+              name={n <= vendorRating ? 'star' : 'star-outline'}
+              size={28}
+              color={n <= vendorRating ? '#F59E0B' : '#ddd'}
+            />
+          ))}
+        </View>
+        {comment.trim() ? (
+          <View style={styles.successComment}>
+            <Ionicons name="chatbubble-outline" size={14} color={COLORS.gray} />
+            <Text style={styles.successCommentText}>"{comment.trim()}"</Text>
+          </View>
+        ) : null}
+        <TouchableOpacity style={styles.successBtn} onPress={() => navigation.goBack()}>
+          <Text style={styles.successBtnText}>Back to Order</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16 }}>
@@ -143,6 +177,48 @@ const styles = StyleSheet.create({
   label: { fontSize: 14, color: COLORS.gray, fontWeight: '500', marginBottom: 10 },
   inputWrap: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   input: { flex: 1, fontSize: 14, color: COLORS.text, minHeight: 80 },
+
+  // Success screen
+  successContainer: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+  },
+  successIconWrap: {
+    backgroundColor: '#e8f5e9',
+    borderRadius: 60,
+    width: 120,
+    height: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  successTitle: { fontSize: 24, fontWeight: 'bold', color: COLORS.text, marginBottom: 10, textAlign: 'center' },
+  successSub: { fontSize: 14, color: COLORS.gray, textAlign: 'center', marginBottom: 20, lineHeight: 22 },
+  successStars: { flexDirection: 'row', gap: 6, marginBottom: 20 },
+  successComment: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: COLORS.card,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 28,
+    borderWidth: 1,
+    borderColor: COLORS.borderWarm,
+    maxWidth: '100%',
+  },
+  successCommentText: { fontSize: 13, color: COLORS.gray, fontStyle: 'italic', flex: 1 },
+  successBtn: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    alignItems: 'center',
+  },
+  successBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
 
   // Button
   button: {

@@ -698,3 +698,34 @@ exports.collectCash = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
+
+// ─── Rider Location Update ────────────────────────────────────────────────────
+
+exports.updateRiderLocation = async (req, res) => {
+  try {
+    const { lat, lng } = req.body;
+    if (!lat || !lng) {
+      return res.status(400).json({ success: false, message: 'lat and lng are required.' });
+    }
+
+    const order = await Order.findByPk(req.params.id);
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found.' });
+    if (order.rider_id !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'You are not assigned to this order.' });
+    }
+    if (!['Collected', 'In Transit'].includes(order.status)) {
+      return res.status(400).json({ success: false, message: 'Location tracking only active when order is in transit.' });
+    }
+
+    await order.update({
+      rider_lat: parseFloat(lat),
+      rider_lng: parseFloat(lng),
+      location_updated_at: new Date(),
+    });
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('[ORDER] updateRiderLocation error:', error);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};

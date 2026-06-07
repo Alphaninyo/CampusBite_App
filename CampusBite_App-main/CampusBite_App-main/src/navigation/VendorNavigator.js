@@ -1,7 +1,8 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Text } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import VendorDashboardScreen from '../screens/vendor/VendorDashboardScreen';
@@ -46,8 +47,20 @@ function MenuStack() {
 }
 
 export default function VendorNavigator() {
+  const insets = useSafeAreaInsets();
+
   return (
-    <Tab.Navigator screenOptions={{ tabBarActiveTintColor: COLORS.primary, headerShown: false }}>
+    <Tab.Navigator
+      screenOptions={{
+        headerShown:              false,
+        tabBarShowLabel:          true,
+        tabBarActiveTintColor:    COLORS.primary,
+        tabBarInactiveTintColor:  COLORS.gray,
+        tabBarStyle:              [styles.tabBar, { height: 64 + (insets.bottom || 12), paddingBottom: insets.bottom || 0 }],
+        tabBarLabelStyle:         styles.tabLabel,
+        tabBarItemStyle:          styles.tabItem,
+      }}
+    >
       <Tab.Screen name="HomeTab"    component={HomeStack}    options={{ title: 'Home',    tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} /> }} />
       <Tab.Screen name="OrdersTab"  component={OrdersStack}  options={{ title: 'Orders',  tabBarIcon: ({ color, size }) => <Ionicons name="bag-outline" size={size} color={color} /> }} />
       <Tab.Screen name="MenuTab"    component={MenuStack}    options={{ title: 'Menu',    tabBarIcon: ({ color, size }) => <Ionicons name="restaurant-outline" size={size} color={color} /> }} />
@@ -55,3 +68,24 @@ export default function VendorNavigator() {
     </Tab.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBar: {
+    backgroundColor:  COLORS.white,
+    borderTopColor:   COLORS.borderWarm,
+    borderTopWidth:   1,
+    elevation:        12,
+    shadowColor:      '#000',
+    shadowOffset:     { width: 0, height: -2 },
+    shadowOpacity:    0.06,
+    shadowRadius:     8,
+  },
+  tabLabel: {
+    fontSize:   11,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  tabItem: {
+    paddingVertical: 4,
+  },
+});

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../api';
 import { COLORS, STATUS_COLORS } from '../../constants';
+import RiderMapView from '../../components/RiderMapView';
 
 const STEPS = ['Received', 'Preparing', 'Ready', 'Collected', 'In Transit', 'Delivered'];
 
@@ -18,22 +19,33 @@ const STEP_ICONS = {
 
 export default function OrderDetailScreen({ route, navigation }) {
   const { orderId } = route.params;
-  const [order, setOrder]     = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [order, setOrder]         = useState(null);
+  const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [hasReviewed, setHasReviewed] = useState(false);
   const intervalRef = useRef(null);
+
+  const checkReview = useCallback(async () => {
+    try {
+      await api.reviews.getOrderReview(orderId);
+      setHasReviewed(true);
+    } catch {
+      setHasReviewed(false);
+    }
+  }, [orderId]);
 
   const fetchOrder = useCallback(async () => {
     try {
       const { data } = await api.orders.getById(orderId);
       setOrder(data.order);
+      if (data.order?.status === 'Delivered') checkReview();
     } catch (err) {
       console.error(err.message);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [orderId]);
+  }, [orderId, checkReview]);
 
   // Poll for order updates every 5 seconds when screen is focused
   useFocusEffect(
@@ -170,12 +182,40 @@ export default function OrderDetailScreen({ route, navigation }) {
         </View>
       )}
 
+      {/* Live Rider Map */}
+      {['Collected', 'In Transit'].includes(order.status) && (
+        <View style={styles.card}>
+          <View style={styles.mapHeader}>
+            <Ionicons name="navigate-circle-outline" size={20} color={COLORS.primary} />
+            <Text style={styles.cardTitle}>Live Rider Location</Text>
+            {order.rider_lat && order.rider_lng && (
+              <View style={styles.liveChip}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveText}>LIVE</Text>
+              </View>
+            )}
+          </View>
+          <RiderMapView
+            lat={order.rider_lat}
+            lng={order.rider_lng}
+            locationUpdatedAt={order.location_updated_at}
+          />
+        </View>
+      )}
+
       {/* Review Button */}
       {order.status === 'Delivered' && (
-        <TouchableOpacity style={styles.reviewBtn} onPress={() => navigation.navigate('WriteReview', { order })}>
-          <Ionicons name="star-outline" size={18} color={COLORS.card} />
-          <Text style={styles.reviewBtnText}>Write a Review</Text>
-        </TouchableOpacity>
+        hasReviewed ? (
+          <View style={styles.reviewedBadge}>
+            <Ionicons name="checkmark-circle" size={18} color="#388E3C" />
+            <Text style={styles.reviewedText}>You have reviewed this order</Text>
+          </View>
+        ) : (
+          <TouchableOpacity style={styles.reviewBtn} onPress={() => navigation.navigate('WriteReview', { order })}>
+            <Ionicons name="star-outline" size={18} color={COLORS.card} />
+            <Text style={styles.reviewBtnText}>Write a Review</Text>
+          </TouchableOpacity>
+        )
       )}
 
       <View style={{ height: 30 }} />
@@ -291,6 +331,26 @@ const styles = StyleSheet.create({
   riderName: { fontSize: 14, fontWeight: '600', color: COLORS.text },
   riderPhone: { fontSize: 12, color: COLORS.gray, marginTop: 2 },
 
+  // Map
+  mapHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  liveChip: {
+    marginLeft: 'auto',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e8f5e9',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 20,
+    gap: 4,
+  },
+  liveDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#388E3C',
+  },
+  liveText: { fontSize: 11, color: '#388E3C', fontWeight: '800' },
+
   // Review
   reviewBtn: {
     marginHorizontal: 16,
@@ -304,4 +364,19 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   reviewBtnText: { fontWeight: 'bold', fontSize: 15, color: COLORS.card },
+
+  reviewedBadge: {
+    marginHorizontal: 16,
+    marginTop: 4,
+    backgroundColor: '#e8f5e9',
+    borderRadius: 14,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#a5d6a7',
+  },
+  reviewedText: { color: '#388E3C', fontWeight: '600', fontSize: 14 },
 });

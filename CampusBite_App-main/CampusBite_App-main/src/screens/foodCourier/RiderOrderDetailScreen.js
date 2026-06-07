@@ -1,9 +1,11 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Location from 'expo-location';
 import { api } from '../../api';
 import { COLORS } from '../../constants';
+import RiderMapView from '../../components/RiderMapView';
 
 const STATUS_STEPS = ['Ready', 'Collected', 'In Transit', 'Delivered'];
 
@@ -26,6 +28,34 @@ export default function RiderOrderDetailScreen({ route }) {
   const [refreshing, setRefreshing] = useState(false);
   const [updating, setUpdating]     = useState(false);
   const [collectingCash, setCollectingCash] = useState(false);
+  const [myLocation, setMyLocation] = useState(null);
+  const locationIntervalRef = useRef(null);
+
+  const startLocationTracking = useCallback(async (activeOrderId) => {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') return;
+
+    const sendLocation = async () => {
+      try {
+        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+        const { latitude, longitude } = loc.coords;
+        setMyLocation({ lat: latitude, lng: longitude, updatedAt: new Date().toISOString() });
+        await api.orders.updateRiderLocation(activeOrderId, { lat: latitude, lng: longitude });
+      } catch (err) {
+        console.error('[LOCATION] Failed to send location:', err.message);
+      }
+    };
+
+    sendLocation(); // fire immediately on start
+    locationIntervalRef.current = setInterval(sendLocation, 10000);
+  }, []);
+
+  const stopLocationTracking = useCallback(() => {
+    if (locationIntervalRef.current) {
+      clearInterval(locationIntervalRef.current);
+      locationIntervalRef.current = null;
+    }
+  }, []);
 
   const fetchOrder = useCallback(async () => {
     try {
@@ -41,23 +71,30 @@ export default function RiderOrderDetailScreen({ route }) {
 
   useEffect(() => { fetchOrder(); }, [fetchOrder]);
 
+  // Start/stop location tracking based on order status
+  useEffect(() => {
+    if (order && ['Collected', 'In Transit'].includes(order.status)) {
+      if (!locationIntervalRef.current) {
+        startLocationTracking(orderId);
+      }
+    } else {
+      stopLocationTracking();
+    }
+    return () => stopLocationTracking();
+  }, [order?.status, orderId, startLocationTracking, stopLocationTracking]);
+
   const advanceStatus = async () => {
     const next = NEXT_STATUS[order.status];
     if (!next) return;
     setUpdating(true);
     try {
       const response = await api.orders.updateStatus(orderId, next);
-      // Update local state with the new status from response
-      if (response.data?.order?.status) {
-        setOrder({ ...order, status: response.data.order.status });
-        
-        // If delivery is completed, update profile stats
-        if (response.data.order.status === 'Delivered') {
-          await updateProfileStats();
-        }
-      } else {
-        // Fallback to fetchOrder if status not in response
-        fetchOrder();
+      const newStatus = response.data?.new_status || next;
+      setOrder(prev => ({ ...prev, status: newStatus }));
+
+      if (newStatus === 'Delivered') {
+        stopLocationTracking();
+        await updateProfileStats();
       }
     } catch (err) {
       Alert.alert('Error', err.message);
@@ -195,6 +232,30 @@ export default function RiderOrderDetailScreen({ route }) {
           <Text style={styles.infoText}>{order.consumer?.phone}</Text>
         </View>
       </View>
+
+      {/* ── Live Location Map ── */}
+      {['Collected', 'In Transit'].includes(order.status) && (
+        <View style={styles.card}>
+          <View style={styles.mapHeader}>
+            <Ionicons name="navigate-circle-outline" size={20} color={COLORS.primary} />
+            <Text style={styles.cardTitle}>Your Live Location</Text>
+            {myLocation && (
+              <View style={styles.liveChip}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveText}>LIVE</Text>
+              </View>
+            )}
+          </View>
+          <Text style={styles.mapSub}>
+            This location is being shared with the consumer in real-time.
+          </Text>
+          <RiderMapView
+            lat={myLocation?.lat}
+            lng={myLocation?.lng}
+            locationUpdatedAt={myLocation?.updatedAt}
+          />
+        </View>
+      )}
 
       {/* ── Order Items ── */}
       <View style={styles.card}>
@@ -363,6 +424,22 @@ const styles = StyleSheet.create({
   },
   earningsLabel: { fontSize: 13, fontWeight: '600', color: COLORS.gray },
   earningsValue: { fontSize: 15, fontWeight: 'bold', color: COLORS.primary },
+
+  // Live map
+  mapHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  mapSub: { fontSize: 12, color: COLORS.gray, marginBottom: 12 },
+  liveChip: {
+    marginLeft: 'auto',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e8f5e9',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 20,
+    gap: 4,
+  },
+  liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#388E3C' },
+  liveText: { fontSize: 11, color: '#388E3C', fontWeight: '800' },
 
   // Cash collection card
   cashCard: {

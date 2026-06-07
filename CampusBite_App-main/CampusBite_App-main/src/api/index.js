@@ -68,6 +68,7 @@ export const api = {
     acceptDelivery:      (id)     => client.patch(`/orders/${id}/assign-food-courier`),
     getFoodCourierOrders:      ()       => client.get('/orders/food-courier/mine'),
     collectCash:         (id)     => client.patch(`/orders/${id}/collect-cash`),
+    updateRiderLocation: (id, data) => client.patch(`/orders/${id}/location`, data),
   },
 
   // ─── Payments ───────────────────────────────────────────────────────────────

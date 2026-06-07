@@ -2,9 +2,11 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import HomeScreen          from '../screens/consumer/HomeScreen';
+import ExploreScreen       from '../screens/consumer/ExploreScreen';
 import VendorDetailScreen  from '../screens/consumer/VendorDetailScreen';
 import CheckoutScreen      from '../screens/consumer/CheckoutScreen';
 import PaymentStatusScreen from '../screens/consumer/PaymentStatusScreen';
@@ -63,6 +65,17 @@ function HomeStack() {
   );
 }
 
+function ExploreStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerTintColor: COLORS.primary }}>
+      <Stack.Screen name="ExploreMain"  component={ExploreScreen}      options={{ headerShown: false }} />
+      <Stack.Screen name="VendorDetail" component={VendorDetailScreen} options={{ title: 'Menu' }} />
+      <Stack.Screen name="Checkout"     component={CheckoutScreen}     options={{ title: 'Checkout' }} />
+      <Stack.Screen name="PaymentStatus" component={PaymentStatusScreen} options={{ title: 'Payment', headerBackVisible: false }} />
+    </Stack.Navigator>
+  );
+}
+
 function CartStack() {
   return (
     <Stack.Navigator screenOptions={{ headerTintColor: COLORS.primary }}>
@@ -85,13 +98,16 @@ function OrdersStack() {
 // ── Navigator ─────────────────────────────────────────────────────────────────
 
 export default function ConsumerNavigator() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown:              false,
+        tabBarShowLabel:          true,
         tabBarActiveTintColor:    COLORS.primary,
         tabBarInactiveTintColor:  COLORS.gray,
-        tabBarStyle:              styles.tabBar,
+        tabBarStyle:              [styles.tabBar, { height: 64 + (insets.bottom || 12), paddingBottom: insets.bottom || 0 }],
         tabBarLabelStyle:         styles.tabLabel,
         tabBarItemStyle:          styles.tabItem,
       }}
@@ -103,6 +119,17 @@ export default function ConsumerNavigator() {
           title: 'Home',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home-outline" size={size} color={color} />
+          ),
+        }}
+      />
+
+      <Tab.Screen
+        name="ExploreTab"
+        component={ExploreStack}
+        options={{
+          title: 'Explore',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="compass-outline" size={size} color={color} />
           ),
         }}
       />
@@ -148,17 +175,19 @@ const styles = StyleSheet.create({
     backgroundColor:  COLORS.white,
     borderTopColor:   COLORS.borderWarm,
     borderTopWidth:   1,
-    height:           68,
-    paddingBottom:    10,
-    paddingTop:       8,
+    elevation:        12,
+    shadowColor:      '#000',
+    shadowOffset:     { width: 0, height: -2 },
+    shadowOpacity:    0.06,
+    shadowRadius:     8,
   },
   tabLabel: {
     fontSize:   11,
     fontWeight: '500',
-    marginTop:  2,
+    marginBottom: 4,
   },
   tabItem: {
-    paddingTop: 4,
+    paddingVertical: 4,
   },
 
   // Floating cart button

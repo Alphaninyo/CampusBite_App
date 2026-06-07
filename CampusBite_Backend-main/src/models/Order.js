@@ -85,6 +85,20 @@ const Order = sequelize.define(
       allowNull: true,
       comment: 'NULL = deliver ASAP.',
     },
+    rider_lat: {
+      type: DataTypes.DECIMAL(10, 7),
+      allowNull: true,
+      comment: 'Rider live latitude, updated while In Transit.',
+    },
+    rider_lng: {
+      type: DataTypes.DECIMAL(10, 7),
+      allowNull: true,
+      comment: 'Rider live longitude, updated while In Transit.',
+    },
+    location_updated_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     tableName: 'orders',

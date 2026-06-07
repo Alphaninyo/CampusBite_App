@@ -16,26 +16,26 @@ console.log('Please make sure PostgreSQL is installed and running');
 // Function to check if a port is in use
 function checkPort(port) {
     return new Promise((resolve) => {
-        const req = http.request({
-            hostname: 'localhost',
-            port: port,
-            path: '/',
-            method: 'HEAD',
-            timeout: 2000
-        }, (res) => {
+        const net = require('net');
+        const socket = new net.Socket();
+
+        socket.setTimeout(2000);
+
+        socket.on('connect', () => {
+            socket.destroy();
             resolve(true);
         });
-        
-        req.on('error', () => {
+
+        socket.on('error', () => {
             resolve(false);
         });
-        
-        req.on('timeout', () => {
-            req.destroy();
+
+        socket.on('timeout', () => {
+            socket.destroy();
             resolve(false);
         });
-        
-        req.end();
+
+        socket.connect(port, 'localhost');
     });
 }
 
@@ -43,27 +43,28 @@ function checkPort(port) {
 function startProcess(command, args, cwd, name, port, waitTime = 10000) {
     return new Promise((resolve, reject) => {
         console.log(`\n[${name}] Starting ${name}...`);
-        
+
         const process = spawn(command, args, {
             cwd: cwd,
             stdio: 'pipe',
-            shell: true
+            shell: true,
+            windowsHide: true
         });
-        
+
         let output = '';
         process.stdout.on('data', (data) => {
             output += data.toString();
         });
-        
+
         process.stderr.on('data', (data) => {
             output += data.toString();
         });
-        
+
         process.on('error', (error) => {
             console.error(`❌ Failed to start ${name}:`, error.message);
             reject(error);
         });
-        
+
         setTimeout(async () => {
             const isRunning = await checkPort(port);
             if (isRunning) {
