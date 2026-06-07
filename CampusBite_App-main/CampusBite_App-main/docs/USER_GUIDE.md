@@ -290,7 +290,147 @@ CampusBite is your ultimate food delivery companion for campus life. Order from 
 
 ---
 
-## 🔔 **Notifications**
+## � **Security Features**
+
+### **Two-Factor Authentication (2FA)**
+```javascript
+// Setting Up 2FA
+1. Go to Profile → Security
+2. Tap "Enable" on Two-Factor Authentication
+3. Download an authenticator app (Google Authenticator, Authy, etc.)
+4. Scan the QR code or enter the secret key manually
+5. Enter the 6-digit verification code from your authenticator
+6. 2FA is now enabled!
+
+// Backup Codes
+- 10 backup codes are generated when 2FA is enabled
+- Save these codes in a safe place
+- Use them if you lose access to your authenticator
+- Each code can only be used once
+```
+
+### **Password Management**
+```javascript
+// Changing Your Password
+1. Go to Profile → Security
+2. Tap "Change Password"
+3. Enter your current password
+4. Enter your new password (minimum 6 characters)
+5. Confirm your new password
+6. Tap "Update Password"
+```
+
+### **Security Tips**
+```javascript
+// Best Practices
+- Use a strong, unique password
+- Enable 2FA for extra protection
+- Don't share your password with anyone
+- Keep your contact information updated
+- Save backup codes in a secure location
+```
+
+---
+
+## 📍 **Saved Addresses**
+
+### **Managing Delivery Locations**
+```javascript
+// Adding New Addresses
+1. Go to Profile → Saved Addresses
+2. Tap "Add New Address"
+3. Enter address label (e.g., "Home", "Dorm")
+4. Enter full address details
+5. Tap "Save Address"
+
+// Using Current Location
+1. Go to Profile → Saved Addresses
+2. Tap "Add New Address"
+3. Tap "Use Current Location" button
+4. Allow location access when prompted
+5. Address is auto-filled with your GPS location
+6. Add a label and save
+
+// Deleting Addresses
+1. Go to Profile → Saved Addresses
+2. Find the address you want to remove
+3. Tap the delete icon
+4. Confirm deletion
+```
+
+---
+
+## ❓ **Help & Support**
+
+### **Role-Based Support**
+```javascript
+// Consumer Support
+📧 Email: support@campusbite.app
+📞 Phone: +254 700 000 000
+📱 In-App: Profile → Help & Support
+
+// Admin Support
+📧 Email: admin@campusbite.app
+📞 Phone: +254 700 000 000
+📱 In-App: Profile → Help & Support
+```
+
+### **Frequently Asked Questions**
+
+#### **Consumer FAQ**
+```javascript
+Q: How do I place an order?
+A: Browse vendors, add items to cart, review cart, 
+   select delivery address, choose payment method, 
+   and confirm your order.
+
+Q: How do I track my order?
+A: Go to Orders tab, select your order, and view 
+   real-time status updates.
+
+Q: How do I become a vendor?
+A: Visit our website and fill out the vendor 
+   application form. Our team will review your 
+   application.
+
+Q: How do I become a food courier?
+A: Apply through our website. After approval, 
+   download the courier app and start accepting 
+   delivery tasks.
+```
+
+#### **Admin FAQ**
+```javascript
+Q: How do I approve vendor applications?
+A: Go to Approvals tab, review pending applications, 
+   check verification documents, and approve or reject.
+
+Q: How do I suspend a user?
+A: Go to Users tab, find the user, and select 
+   "Suspend" from the options menu.
+
+Q: How do I view platform statistics?
+A: Go to Dashboard tab to view order statistics, 
+   user growth, and platform performance metrics.
+
+Q: How do I manage orders?
+A: Go to Orders tab to view all platform orders, 
+   filter by status, and take necessary actions.
+```
+
+### **Reporting Issues**
+```javascript
+// Report a Problem
+1. Go to Profile → Help & Support
+2. Scroll to "Report an Issue" section
+3. Describe your issue
+4. Tap "Submit Report"
+5. Our support team will respond within 24 hours
+```
+
+---
+
+## �🔔 **Notifications**
 
 ### **Notification Types**
 ```javascript

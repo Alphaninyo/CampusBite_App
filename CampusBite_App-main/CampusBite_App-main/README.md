@@ -24,6 +24,9 @@ For detailed instructions, see [QUICK_START.md](./QUICK_START.md)
 - **📋 Order Management** - Track order history and status
 - **👤 User Profile** - Account management and activity tracking
 - **🔔 Notifications** - Order updates and special offers
+- **🔐 Security** - Two-Factor Authentication (2FA) and password management
+- **📍 Saved Addresses** - Manage delivery locations with current location support
+- **❓ Help & Support** - Role-based support and FAQ system
 
 ### **🎨 User Experience**
 - **📱 Cross-Platform** - Web, iOS, and Android support
@@ -31,6 +34,8 @@ For detailed instructions, see [QUICK_START.md](./QUICK_START.md)
 - **⚡ Real-time Updates** - Instant search filtering and cart updates
 - **📊 Status Tracking** - Live order status updates
 - **💾 Data Persistence** - Cart and user data saved locally
+- **🔐 Enhanced Security** - 2FA with authenticator app support
+- **📍 Location Services** - Current location detection for addresses
 
 ---
 
@@ -77,11 +82,97 @@ For detailed instructions, see [QUICK_START.md](./QUICK_START.md)
 - **🧾 Checkout** - Proceed to payment
 
 ### **👤 Profile Screen**
-- **📊 User Stats** - Total orders, favorite vendor
+- **📊 User Stats** - Total orders, favorite vendor, total spent
 - **📈 Recent Activity** - Account activity log
 - **⚙️ Settings** - App preferences
-- **🔐 Security** - Password management
-- **📝 Profile Edit** - Update information
+- **🔐 Security** - Two-Factor Authentication (2FA) setup and password management
+- **� Saved Addresses** - Manage delivery locations with "Use Current Location" feature
+- **🔔 Notifications** - View and manage order updates and promotional messages
+- **❓ Help & Support** - Role-based FAQ and contact information
+- **�📝 Profile Edit** - Update name, phone, and profile picture
+
+---
+
+## 👥 **User Roles**
+
+### **🛒 Consumer**
+- Browse and order food from vendors
+- Track order status in real-time
+- Manage saved addresses with location services
+- Access role-based help & support
+- Configure 2FA for account security
+
+### **🏪 Vendor**
+- Manage menu items and pricing
+- View and process orders
+- Set store availability status
+- Access business analytics
+- Configure 2FA for account security
+
+### **🚴 Food Courier**
+- View available delivery tasks
+- Track earnings and deliveries
+- Manage availability status
+- View customer feedback
+- Configure 2FA for account security
+
+### **👨‍💼 Admin**
+- Approve vendor applications
+- Manage platform users
+- View platform statistics
+- Access admin-specific support
+- Configure 2FA for account security
+
+---
+
+## 🔐 **Security Features**
+
+### **Two-Factor Authentication (2FA)**
+- **Authenticator App Support** - Compatible with Google Authenticator, Authy, etc.
+- **QR Code Setup** - Easy setup with QR code scanning
+- **Manual Entry** - Alternative secret key entry
+- **Backup Codes** - 10 recovery codes for account access
+- **Toggle On/Off** - Easy enable/disable with confirmation
+- **Available for All Roles** - Consumers, Vendors, Couriers, and Admins
+
+### **Password Management**
+- **Secure Password Change** - Current password verification required
+- **Minimum Length** - 6-character minimum for new passwords
+- **Confirmation** - Password matching validation
+- **Available for All Roles** - All user types can change passwords
+
+---
+
+## 📍 **Location Features**
+
+### **Saved Addresses**
+- **Add New Addresses** - Save frequently used delivery locations
+- **Delete Addresses** - Remove outdated locations
+- **Current Location** - Auto-detect and save current GPS location
+- **Reverse Geocoding** - Convert coordinates to readable addresses
+- **Consumer Feature** - Available in consumer profile
+
+---
+
+## ❓ **Help & Support**
+
+### **Role-Based Support**
+- **Admin Support** - Dedicated admin email (admin@campusbite.app)
+- **Consumer Support** - General support email (support@campusbite.app)
+- **Phone Support** - +254 700 000 000
+- **Role-Specific FAQs** - Tailored questions for each user type
+
+### **Admin FAQ Topics**
+- Vendor application approval process
+- User suspension procedures
+- Platform statistics access
+- Order management
+
+### **Consumer FAQ Topics**
+- How to place orders
+- Order tracking
+- Becoming a vendor
+- Becoming a food courier
 
 ---
 

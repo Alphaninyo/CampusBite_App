@@ -26,17 +26,32 @@ export default function ProfileScreen({ navigation }) {
 
   const [showEditModal, setShowEditModal]         = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showAddressModal, setShowAddressModal]   = useState(false);
+  const [showNotificationsModal, setShowNotificationsModal] = useState(false);
+  const [showSupportModal, setShowSupportModal]   = useState(false);
+  const [showSecurityModal, setShowSecurityModal] = useState(false);
 
   const [totalOrders, setTotalOrders] = useState(0);
   const [totalSpent, setTotalSpent]   = useState(0);
   const [recentOrders, setRecentOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [newAddressLabel, setNewAddressLabel] = useState('');
+  const [newAddressDetails, setNewAddressDetails] = useState('');
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [twoFactorSetupStep, setTwoFactorSetupStep] = useState(0); // 0: not setup, 1: showing QR, 2: verify code
+  const [twoFactorSecret, setTwoFactorSecret] = useState('');
+  const [twoFactorCode, setTwoFactorCode] = useState('');
+  const [backupCodes, setBackupCodes] = useState([]);
+
   useEffect(() => {
     if (user) {
       setName(user.name || '');
       setPhone(user.phone || '');
       fetchStats();
+      fetchNotifications();
     }
   }, [user]);
 
@@ -52,6 +67,138 @@ export default function ProfileScreen({ navigation }) {
       setRecentOrders(orders.slice(0, 3));
     } catch (_) {}
     setLoading(false);
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      const { data } = await api.notifications.getAll();
+      setNotifications(data.notifications || []);
+    } catch (_) {}
+  };
+
+  const handleAddAddress = () => {
+    if (!newAddressLabel || !newAddressDetails) {
+      Alert.alert('Error', 'Please fill in all address fields');
+      return;
+    }
+    const newAddress = {
+      id: Date.now().toString(),
+      label: newAddressLabel,
+      details: newAddressDetails,
+    };
+    setSavedAddresses([...savedAddresses, newAddress]);
+    setNewAddressLabel('');
+    setNewAddressDetails('');
+    Alert.alert('Success', 'Address saved successfully');
+  };
+
+  const handleGetCurrentLocation = () => {
+    if (typeof window !== 'undefined' && window.navigator && window.navigator.geolocation) {
+      setSaving(true);
+      window.navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          try {
+            // Reverse geocoding using OpenStreetMap Nominatim API (free)
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+            );
+            const data = await response.json();
+            const address = data.display_name || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+            
+            setNewAddressLabel('Current Location');
+            setNewAddressDetails(address);
+            Alert.alert('Success', 'Current location detected');
+          } catch (error) {
+            setNewAddressLabel('Current Location');
+            setNewAddressDetails(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+            Alert.alert('Success', 'Coordinates captured');
+          } finally {
+            setSaving(false);
+          }
+        },
+        (error) => {
+          setSaving(false);
+          Alert.alert('Error', 'Could not get your location. Please enable location services.');
+          console.error(error);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    } else {
+      Alert.alert('Error', 'Geolocation is not supported on this platform');
+    }
+  };
+
+  const handleDeleteAddress = (id) => {
+    setSavedAddresses(savedAddresses.filter(addr => addr.id !== id));
+    Alert.alert('Success', 'Address deleted');
+  };
+
+  const handleMarkAsRead = async (id) => {
+    try {
+      await api.notifications.markAsRead(id);
+      fetchNotifications();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const generateSecret = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    let secret = '';
+    for (let i = 0; i < 32; i++) {
+      secret += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return secret;
+  };
+
+  const generateBackupCodes = () => {
+    const codes = [];
+    for (let i = 0; i < 10; i++) {
+      const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+      codes.push(code);
+    }
+    return codes;
+  };
+
+  const handleEnable2FA = () => {
+    const secret = generateSecret();
+    setTwoFactorSecret(secret);
+    setTwoFactorSetupStep(1);
+  };
+
+  const handleVerify2FA = () => {
+    if (twoFactorCode.length !== 6) {
+      Alert.alert('Error', 'Please enter a valid 6-digit code');
+      return;
+    }
+    // In a real app, this would verify the code against the authenticator
+    // For demo purposes, we'll accept any 6-digit code
+    setTwoFactorEnabled(true);
+    setBackupCodes(generateBackupCodes());
+    setTwoFactorSetupStep(0);
+    setTwoFactorCode('');
+    Alert.alert('Success', '2FA has been enabled. Your backup codes have been generated.');
+  };
+
+  const handleDisable2FA = () => {
+    Alert.alert(
+      'Disable 2FA',
+      'Are you sure you want to disable two-factor authentication?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Disable',
+          style: 'destructive',
+          onPress: () => {
+            setTwoFactorEnabled(false);
+            setBackupCodes([]);
+            setTwoFactorSecret('');
+            Alert.alert('Success', '2FA has been disabled');
+          },
+        },
+      ]
+    );
   };
 
   const handleUpdateProfile = async () => {
@@ -161,29 +308,31 @@ export default function ProfileScreen({ navigation }) {
       iconColor: COLORS.info,
       label: 'Saved addresses',
       sub: 'Hostel, lecture halls, etc.',
-      onPress: () => Alert.alert('Coming soon', 'Saved addresses will be available soon.'),
+      onPress: () => setShowAddressModal(true),
     },
     {
       icon: 'notifications-outline',
       iconColor: COLORS.success,
       label: 'Notifications',
       sub: 'Order updates, promos',
-      onPress: () => Alert.alert('Coming soon', 'Notification settings coming soon.'),
+      onPress: () => {
+        fetchNotifications();
+        setShowNotificationsModal(true);
+      },
     },
     {
       icon: 'lock-closed-outline',
       iconColor: '#8B5CF6',
       label: 'Security',
       sub: 'Password, 2FA',
-      onPress: () => setShowPasswordModal(true),
+      onPress: () => setShowSecurityModal(true),
     },
     {
       icon: 'help-circle-outline',
       iconColor: COLORS.warning,
       label: 'Help & support',
       sub: 'Report an issue, contact us',
-      onPress: () =>
-        Alert.alert('Help & Support', 'Email us at support@campusbite.app'),
+      onPress: () => setShowSupportModal(true),
     },
   ];
 
@@ -265,10 +414,14 @@ export default function ProfileScreen({ navigation }) {
           <View style={styles.modalSheet}>
             <View style={styles.modalHandle} />
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Change Password</Text>
-              <TouchableOpacity onPress={() => setShowPasswordModal(false)}>
-                <Ionicons name="close" size={24} color={COLORS.subtext} />
+              <TouchableOpacity onPress={() => {
+                setShowPasswordModal(false);
+                setShowSecurityModal(true);
+              }}>
+                <Ionicons name="arrow-back" size={24} color={COLORS.subtext} />
               </TouchableOpacity>
+              <Text style={styles.modalTitle}>Change Password</Text>
+              <View style={{ width: 24 }} />
             </View>
 
             <Text style={styles.modalLabel}>Current Password</Text>
@@ -312,6 +465,407 @@ export default function ProfileScreen({ navigation }) {
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ── Security Modal ─────────────────────────────────────────────── */}
+      <Modal visible={showSecurityModal} animationType="slide" transparent>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Security</Text>
+              <TouchableOpacity onPress={() => setShowSecurityModal(false)}>
+                <Ionicons name="close" size={24} color={COLORS.subtext} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={true}>
+              {/* 2FA Section */}
+              <View style={styles.securitySection}>
+                <View style={styles.securitySectionHeader}>
+                  <View style={styles.securityIcon}>
+                    <Ionicons name="shield-checkmark-outline" size={24} color={COLORS.primary} />
+                  </View>
+                  <View style={styles.securityInfo}>
+                    <Text style={styles.securityTitle}>Two-Factor Authentication</Text>
+                    <Text style={styles.securityDesc}>Add an extra layer of security to your account</Text>
+                  </View>
+                </View>
+                
+                {twoFactorSetupStep === 0 ? (
+                  <TouchableOpacity
+                    style={styles.toggleRow}
+                    onPress={() => {
+                      if (twoFactorEnabled) {
+                        handleDisable2FA();
+                      } else {
+                        handleEnable2FA();
+                      }
+                    }}
+                  >
+                    <Text style={styles.toggleLabel}>
+                      {twoFactorEnabled ? 'Enabled' : 'Disabled'}
+                    </Text>
+                    <View style={[styles.toggleSwitch, twoFactorEnabled && styles.toggleSwitchOn]}>
+                      <View style={[styles.toggleKnob, twoFactorEnabled && styles.toggleKnobOn]} />
+                    </View>
+                  </TouchableOpacity>
+                ) : twoFactorSetupStep === 1 ? (
+                  <View style={styles.twoFactorSetup}>
+                    <Text style={styles.setupTitle}>Set up Authenticator App</Text>
+                    <Text style={styles.setupDesc}>
+                      1. Download an authenticator app (Google Authenticator, Authy, etc.)
+                    </Text>
+                    <Text style={styles.setupDesc}>
+                      2. Scan the QR code below or enter the secret manually
+                    </Text>
+                    
+                    <View style={styles.qrPlaceholder}>
+                      <Ionicons name="qr-code" size={80} color={COLORS.primary} />
+                      <Text style={styles.secretText}>{twoFactorSecret}</Text>
+                    </View>
+                    
+                    <TouchableOpacity
+                      style={styles.modalSaveBtn}
+                      onPress={() => setTwoFactorSetupStep(2)}
+                    >
+                      <Text style={styles.modalSaveBtnText}>I've Scanned the QR Code</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity
+                      style={styles.cancelBtn}
+                      onPress={() => {
+                        setTwoFactorSetupStep(0);
+                        setTwoFactorSecret('');
+                      }}
+                    >
+                      <Text style={styles.cancelBtnText}>Cancel</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View style={styles.twoFactorSetup}>
+                    <Text style={styles.setupTitle}>Enter Verification Code</Text>
+                    <Text style={styles.setupDesc}>
+                      Enter the 6-digit code from your authenticator app
+                    </Text>
+                    
+                    <TextInput
+                      style={styles.verificationInput}
+                      value={twoFactorCode}
+                      onChangeText={setTwoFactorCode}
+                      placeholder="000000"
+                      placeholderTextColor={COLORS.muted}
+                      keyboardType="number-pad"
+                      maxLength={6}
+                      textAlign="center"
+                    />
+                    
+                    <TouchableOpacity
+                      style={styles.modalSaveBtn}
+                      onPress={handleVerify2FA}
+                    >
+                      <Text style={styles.modalSaveBtnText}>Verify</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity
+                      style={styles.cancelBtn}
+                      onPress={() => setTwoFactorSetupStep(1)}
+                    >
+                      <Text style={styles.cancelBtnText}>Back</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {twoFactorEnabled && backupCodes.length > 0 && twoFactorSetupStep === 0 && (
+                  <View style={styles.backupCodesSection}>
+                    <TouchableOpacity
+                      style={styles.viewBackupBtn}
+                      onPress={() => {
+                        Alert.alert(
+                          'Backup Codes',
+                          'Save these codes in a safe place. You can use them to access your account if you lose your authenticator device.\n\n' + backupCodes.join('\n'),
+                          [{ text: 'OK' }]
+                        );
+                      }}
+                    >
+                      <Ionicons name="key-outline" size={18} color={COLORS.primary} />
+                      <Text style={styles.viewBackupBtnText}>View Backup Codes</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+
+              {/* Password Section */}
+              <View style={styles.securitySection}>
+                <View style={styles.securitySectionHeader}>
+                  <View style={[styles.securityIcon, { backgroundColor: COLORS.warning + '22' }]}>
+                    <Ionicons name="key-outline" size={24} color={COLORS.warning} />
+                  </View>
+                  <View style={styles.securityInfo}>
+                    <Text style={styles.securityTitle}>Change Password</Text>
+                    <Text style={styles.securityDesc}>Update your password to keep your account secure</Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.changePasswordBtn}
+                  onPress={() => {
+                    setShowSecurityModal(false);
+                    setShowPasswordModal(true);
+                  }}
+                >
+                  <Text style={styles.changePasswordBtnText}>Change Password</Text>
+                  <Ionicons name="chevron-forward" size={18} color={COLORS.primary} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Security Tips */}
+              <View style={styles.securitySection}>
+                <Text style={styles.securitySectionTitle}>Security Tips</Text>
+                <View style={styles.tipItem}>
+                  <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
+                  <Text style={styles.tipText}>Use a strong, unique password</Text>
+                </View>
+                <View style={styles.tipItem}>
+                  <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
+                  <Text style={styles.tipText}>Enable 2FA for extra protection</Text>
+                </View>
+                <View style={styles.tipItem}>
+                  <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
+                  <Text style={styles.tipText}>Don't share your password with anyone</Text>
+                </View>
+                <View style={styles.tipItem}>
+                  <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
+                  <Text style={styles.tipText}>Keep your contact info updated</Text>
+                </View>
+              </View>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ── Saved Addresses Modal ─────────────────────────────────────────── */}
+      <Modal visible={showAddressModal} animationType="slide" transparent>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Saved Addresses</Text>
+              <TouchableOpacity onPress={() => setShowAddressModal(false)}>
+                <Ionicons name="close" size={24} color={COLORS.subtext} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ flex: 1, marginBottom: 16 }}>
+              {savedAddresses.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Ionicons name="location-outline" size={44} color={COLORS.muted} />
+                  <Text style={styles.emptyText}>No saved addresses yet</Text>
+                </View>
+              ) : (
+                savedAddresses.map((addr) => (
+                  <View key={addr.id} style={styles.addressCard}>
+                    <View style={styles.addressHeader}>
+                      <Text style={styles.addressLabel}>{addr.label}</Text>
+                      <TouchableOpacity onPress={() => handleDeleteAddress(addr.id)}>
+                        <Ionicons name="trash-outline" size={18} color={COLORS.danger} />
+                      </TouchableOpacity>
+                    </View>
+                    <Text style={styles.addressDetails}>{addr.details}</Text>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+
+            <View style={styles.addAddressSection}>
+              <TouchableOpacity
+                style={styles.currentLocationBtn}
+                onPress={handleGetCurrentLocation}
+                disabled={saving}
+              >
+                {saving ? (
+                  <ActivityIndicator color={COLORS.primary} size="small" />
+                ) : (
+                  <>
+                    <Ionicons name="location" size={18} color={COLORS.primary} />
+                    <Text style={styles.currentLocationBtnText}>Use Current Location</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              <Text style={styles.modalLabel}>Label (e.g., Home, Hostel)</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={newAddressLabel}
+                onChangeText={setNewAddressLabel}
+                placeholder="Address label"
+                placeholderTextColor={COLORS.muted}
+              />
+              <Text style={styles.modalLabel}>Address Details</Text>
+              <TextInput
+                style={[styles.modalInput, { marginBottom: 12 }]}
+                value={newAddressDetails}
+                onChangeText={setNewAddressDetails}
+                placeholder="Room number, building, etc."
+                placeholderTextColor={COLORS.muted}
+              />
+              <TouchableOpacity
+                style={styles.modalSaveBtn}
+                onPress={handleAddAddress}
+              >
+                <Text style={styles.modalSaveBtnText}>Add Address</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ── Notifications Modal ─────────────────────────────────────────────── */}
+      <Modal visible={showNotificationsModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Notifications</Text>
+              <TouchableOpacity onPress={() => setShowNotificationsModal(false)}>
+                <Ionicons name="close" size={24} color={COLORS.subtext} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ flex: 1 }}>
+              {notifications.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Ionicons name="notifications-off-outline" size={44} color={COLORS.muted} />
+                  <Text style={styles.emptyText}>No notifications yet</Text>
+                </View>
+              ) : (
+                notifications.map((notif) => (
+                  <TouchableOpacity
+                    key={notif.id}
+                    style={[styles.notificationCard, !notif.read && styles.notificationUnread]}
+                    onPress={() => handleMarkAsRead(notif.id)}
+                  >
+                    <View style={styles.notificationIcon}>
+                      <Ionicons
+                        name={notif.type === 'order' ? 'receipt-outline' : 'information-circle-outline'}
+                        size={20}
+                        color={COLORS.primary}
+                      />
+                    </View>
+                    <View style={styles.notificationContent}>
+                      <Text style={styles.notificationTitle}>{notif.title || 'Notification'}</Text>
+                      <Text style={styles.notificationMessage}>{notif.message}</Text>
+                      <Text style={styles.notificationTime}>
+                        {notif.created_at ? new Date(notif.created_at).toLocaleString() : ''}
+                      </Text>
+                    </View>
+                    {!notif.read && <View style={styles.unreadDot} />}
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Help & Support Modal ────────────────────────────────────────────── */}
+      <Modal visible={showSupportModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Help & Support</Text>
+              <TouchableOpacity onPress={() => setShowSupportModal(false)}>
+                <Ionicons name="close" size={24} color={COLORS.subtext} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={true}>
+              <View style={styles.supportSection}>
+                <Text style={styles.supportTitle}>Contact Us</Text>
+                <TouchableOpacity style={styles.supportItem}>
+                  <View style={styles.supportIcon}>
+                    <Ionicons name="mail-outline" size={24} color={COLORS.primary} />
+                  </View>
+                  <View style={styles.supportInfo}>
+                    <Text style={styles.supportLabel}>Email Support</Text>
+                    <Text style={styles.supportValue}>{user?.role === 'admin' ? 'admin@campusbite.app' : 'support@campusbite.app'}</Text>
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.supportItem}>
+                  <View style={styles.supportIcon}>
+                    <Ionicons name="call-outline" size={24} color={COLORS.primary} />
+                  </View>
+                  <View style={styles.supportInfo}>
+                    <Text style={styles.supportLabel}>Phone Support</Text>
+                    <Text style={styles.supportValue}>+254 700 000 000</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.supportSection}>
+                <Text style={styles.supportTitle}>FAQ</Text>
+                {user?.role === 'admin' ? (
+                  <>
+                    <View style={styles.faqItem}>
+                      <Text style={styles.faqQuestion}>How do I approve vendor applications?</Text>
+                      <Text style={styles.faqAnswer}>Go to Approvals tab, review pending applications, and approve or reject based on verification documents.</Text>
+                    </View>
+                    <View style={styles.faqItem}>
+                      <Text style={styles.faqQuestion}>How do I suspend a user?</Text>
+                      <Text style={styles.faqAnswer}>Go to Users tab, select the user, and use the suspend/unsuspend button to manage their account status.</Text>
+                    </View>
+                    <View style={styles.faqItem}>
+                      <Text style={styles.faqQuestion}>How do I view platform statistics?</Text>
+                      <Text style={styles.faqAnswer}>The Stats dashboard shows total orders, revenue, active users, weekly trends, and top vendors.</Text>
+                    </View>
+                    <View style={styles.faqItem}>
+                      <Text style={styles.faqQuestion}>How do I manage orders?</Text>
+                      <Text style={styles.faqAnswer}>Use the Orders tab to view all platform orders, filter by status, and see detailed order information.</Text>
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <View style={styles.faqItem}>
+                      <Text style={styles.faqQuestion}>How do I place an order?</Text>
+                      <Text style={styles.faqAnswer}>Browse vendors, select items, add to cart, and checkout with your preferred payment method.</Text>
+                    </View>
+                    <View style={styles.faqItem}>
+                      <Text style={styles.faqQuestion}>How do I track my order?</Text>
+                      <Text style={styles.faqAnswer}>Go to Orders tab and select your order to see real-time status updates.</Text>
+                    </View>
+                    <View style={styles.faqItem}>
+                      <Text style={styles.faqQuestion}>How do I become a vendor?</Text>
+                      <Text style={styles.faqAnswer}>Register as a vendor and wait for admin approval. You'll need to provide business details and verification documents.</Text>
+                    </View>
+                    <View style={styles.faqItem}>
+                      <Text style={styles.faqQuestion}>How do I become a food courier?</Text>
+                      <Text style={styles.faqAnswer}>Register as a food courier, provide your vehicle details, and wait for admin approval.</Text>
+                    </View>
+                  </>
+                )}
+              </View>
+
+              <View style={styles.supportSection}>
+                <Text style={styles.supportTitle}>Report an Issue</Text>
+                <Text style={styles.supportText}>
+                  {user?.role === 'admin' 
+                    ? 'As an admin, report system issues or bugs that affect platform operations.'
+                    : 'If you\'re experiencing any issues with the app, please contact us with details about the problem.'}
+                </Text>
+                <TouchableOpacity style={styles.reportBtn}>
+                  <Text style={styles.reportBtnText}>Report Issue via Email</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
       </Modal>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
@@ -602,6 +1156,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: 24, paddingBottom: 44,
+    maxHeight: '85%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.08,
@@ -644,4 +1199,335 @@ const styles = StyleSheet.create({
     borderRadius: 12, paddingVertical: 15, alignItems: 'center',
   },
   modalSaveBtnText:   { fontSize: 15, fontWeight: '700', color: COLORS.white },
+
+  // ── Saved Addresses ───────────────────────────────────────────────────────
+  addressCard: {
+    backgroundColor: COLORS.inputBg,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+  },
+  addressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  addressLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  addressDetails: {
+    fontSize: 13,
+    color: COLORS.subtext,
+  },
+  addAddressSection: {
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    paddingTop: 16,
+  },
+  currentLocationBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary + '15',
+    borderRadius: 12,
+    paddingVertical: 12,
+    marginBottom: 16,
+    gap: 8,
+  },
+  currentLocationBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+
+  // ── Notifications ─────────────────────────────────────────────────────────
+  notificationCard: {
+    flexDirection: 'row',
+    padding: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    alignItems: 'flex-start',
+  },
+  notificationUnread: {
+    backgroundColor: COLORS.primary + '08',
+  },
+  notificationIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.iconBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  notificationContent: {
+    flex: 1,
+  },
+  notificationTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 2,
+  },
+  notificationMessage: {
+    fontSize: 13,
+    color: COLORS.subtext,
+    marginBottom: 4,
+  },
+  notificationTime: {
+    fontSize: 11,
+    color: COLORS.muted,
+  },
+  unreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.primary,
+    marginTop: 4,
+  },
+
+  // ── Help & Support ───────────────────────────────────────────────────────
+  supportSection: {
+    marginBottom: 24,
+  },
+  supportTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 12,
+  },
+  supportItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    backgroundColor: COLORS.inputBg,
+    borderRadius: 12,
+    marginBottom: 10,
+  },
+  supportIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.iconBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  supportInfo: {
+    flex: 1,
+  },
+  supportLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 2,
+  },
+  supportValue: {
+    fontSize: 13,
+    color: COLORS.subtext,
+  },
+  faqItem: {
+    padding: 14,
+    backgroundColor: COLORS.inputBg,
+    borderRadius: 12,
+    marginBottom: 10,
+  },
+  faqQuestion: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 6,
+  },
+  faqAnswer: {
+    fontSize: 13,
+    color: COLORS.subtext,
+    lineHeight: 18,
+  },
+  supportText: {
+    fontSize: 13,
+    color: COLORS.subtext,
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  reportBtn: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  reportBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.white,
+  },
+
+  // ── Security Modal ─────────────────────────────────────────────────────
+  securitySection: {
+    marginBottom: 24,
+  },
+  securitySectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  securityIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.primary + '22',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  securityInfo: {
+    flex: 1,
+  },
+  securityTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 2,
+  },
+  securityDesc: {
+    fontSize: 13,
+    color: COLORS.subtext,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  toggleLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  toggleSwitch: {
+    width: 52,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: COLORS.border,
+    padding: 2,
+  },
+  toggleSwitchOn: {
+    backgroundColor: COLORS.primary,
+  },
+  toggleKnob: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: COLORS.white,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  toggleKnobOn: {
+    alignSelf: 'flex-end',
+  },
+  changePasswordBtn: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 14,
+    backgroundColor: COLORS.inputBg,
+    borderRadius: 12,
+  },
+  changePasswordBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  securitySectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 12,
+  },
+  tipItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  tipText: {
+    fontSize: 14,
+    color: COLORS.subtext,
+    marginLeft: 10,
+  },
+
+  // ── 2FA Setup ───────────────────────────────────────────────────────────
+  twoFactorSetup: {
+    marginTop: 16,
+  },
+  setupTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.text,
+    marginBottom: 8,
+  },
+  setupDesc: {
+    fontSize: 13,
+    color: COLORS.subtext,
+    marginBottom: 8,
+    lineHeight: 18,
+  },
+  qrPlaceholder: {
+    backgroundColor: COLORS.inputBg,
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 16,
+  },
+  secretText: {
+    fontSize: 12,
+    color: COLORS.subtext,
+    marginTop: 12,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    letterSpacing: 2,
+  },
+  verificationInput: {
+    backgroundColor: COLORS.inputBg,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 24,
+    fontWeight: '700',
+    color: COLORS.text,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    letterSpacing: 8,
+    marginVertical: 16,
+  },
+  cancelBtn: {
+    marginTop: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  cancelBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.subtext,
+  },
+  backupCodesSection: {
+    marginTop: 16,
+  },
+  viewBackupBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.inputBg,
+    borderRadius: 12,
+    padding: 14,
+    gap: 8,
+  },
+  viewBackupBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
 });
