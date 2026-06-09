@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, Animated,
-  Alert, ScrollView, ActivityIndicator,
+  Alert, ScrollView, ActivityIndicator, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import useAuthStore from '../../stores/authStore';
@@ -46,6 +46,12 @@ export default function PendingApprovalScreen({ navigation }) {
   };
 
   const handleLogout = () => {
+    if (Platform.OS === 'web') {
+      // React Native's Alert with buttons does not work on web, so use window.confirm
+      const confirmed = typeof window !== 'undefined' ? window.confirm('Are you sure you want to log out?') : true;
+      if (confirmed) logout();
+      return;
+    }
     Alert.alert('Logout', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Logout', style: 'destructive', onPress: () => logout() },
