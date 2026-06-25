@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
 import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
 import { COLORS } from '../../constants';
@@ -17,7 +18,8 @@ function getMockEarnings(total) {
 }
 
 export default function FoodCourierProfileScreen({ navigation }) {
-  const { user, logout } = useAuthStore();
+  const { user, logout, updateUser } = useAuthStore();
+  const API_BASE = 'http://localhost:5000';
   const [isAvailable, setIsAvailable]     = useState(true);
   const [vehicleType, setVehicleType]     = useState('Electric Bicycle');
   const [totalDeliveries, setTotalDeliveries] = useState(0);
@@ -74,6 +76,56 @@ export default function FoodCourierProfileScreen({ navigation }) {
   }, []);
 
   useEffect(() => { fetchUnreadCount(); }, [fetchUnreadCount]);
+
+  const _uploadAvatar = async (uri) => {
+    setSaving(true);
+    try {
+      const { data } = await api.auth.updateProfile({ name: user?.name, phone: user?.phone, avatar: uri });
+      updateUser({ profile_photo: data.user.profile_photo, _photo_ts: Date.now() });
+      Alert.alert('Success', 'Profile photo updated.');
+    } catch (err) {
+      Alert.alert('Error', err?.response?.data?.message || err.message || 'Failed to upload photo.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleImageUpload = async () => {
+    if (Platform.OS === 'web') {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Allow photo library access.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 1,
+      });
+      if (!result.canceled && result.assets?.[0]?.uri)
+        await _uploadAvatar(result.assets[0].uri);
+      return;
+    }
+    Alert.alert('Profile Picture', 'Choose an option', [
+      {
+        text: 'Take Photo',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+          if (status !== 'granted') { Alert.alert('Permission needed', 'Allow camera access.'); return; }
+          const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [1, 1], quality: 1 });
+          if (!result.canceled && result.assets?.[0]?.uri) await _uploadAvatar(result.assets[0].uri);
+        },
+      },
+      {
+        text: 'Choose from Gallery',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== 'granted') { Alert.alert('Permission needed', 'Allow photo library access.'); return; }
+          const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 1 });
+          if (!result.canceled && result.assets?.[0]?.uri) await _uploadAvatar(result.assets[0].uri);
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
 
   const handleLogout = async () => {
     if (Platform.OS === 'web') {
@@ -231,28 +283,41 @@ export default function FoodCourierProfileScreen({ navigation }) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchProfile(); }} colors={[COLORS.primary]} />}
       >
         {/* ── Avatar + Name ── */}
-        <TouchableOpacity style={styles.avatarSection} onPress={() => navigation.navigate('EditProfile', { user })}>
-          <View style={styles.avatarWrapper}>
-            <Image
-              source={{ uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'FC')}&background=E85D04&color=fff&size=200&bold=true` }}
-              style={styles.avatarImg}
-            />
+        <View style={styles.avatarSection}>
+          <TouchableOpacity style={styles.avatarWrapper} onPress={handleImageUpload}>
+            {saving ? (
+              <View style={[styles.avatarImg, styles.avatarPlaceholder]}>
+                <ActivityIndicator color={COLORS.primary} />
+              </View>
+            ) : user?.profile_photo ? (
+              <Image source={{ uri: `${API_BASE}${user.profile_photo}?t=${user._photo_ts || 0}` }} style={styles.avatarImg} resizeMode="cover" />
+            ) : (
+              <Image
+                source={{ uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'FC')}&background=E85D04&color=fff&size=200&bold=true` }}
+                style={styles.avatarImg}
+              />
+            )}
             <View style={styles.ratingBadge}>
               <Ionicons name="shield-checkmark" size={10} color="#fff" />
               <Text style={styles.ratingBadgeText}>{rating.toFixed(1)}</Text>
             </View>
-          </View>
+            <View style={styles.cameraIcon}>
+              <Ionicons name="camera" size={11} color={COLORS.white} />
+            </View>
+          </TouchableOpacity>
 
-          <View style={styles.nameRow}>
-            <Text style={styles.name}>{user?.name || 'Food Courier'}</Text>
-            <Ionicons name="checkmark-circle" size={20} color={COLORS.primary} style={{ marginLeft: 6 }} />
-          </View>
-          <View style={styles.vehicleRow}>
-            <Ionicons name="bicycle-outline" size={14} color={COLORS.gray} />
-            <Text style={styles.vehicleText}>{vehicleType}</Text>
-            <Ionicons name="create-outline" size={14} color={COLORS.gray} style={{ marginLeft: 6 }} />
-          </View>
-        </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('EditProfile', { user })}>
+            <View style={styles.nameRow}>
+              <Text style={styles.name}>{user?.name || 'Food Courier'}</Text>
+              <Ionicons name="checkmark-circle" size={20} color={COLORS.primary} style={{ marginLeft: 6 }} />
+            </View>
+            <View style={styles.vehicleRow}>
+              <Ionicons name="bicycle-outline" size={14} color={COLORS.gray} />
+              <Text style={styles.vehicleText}>{vehicleType}</Text>
+              <Ionicons name="create-outline" size={14} color={COLORS.gray} style={{ marginLeft: 6 }} />
+            </View>
+          </TouchableOpacity>
+        </View>
 
         {/* ── Availability Toggle ── */}
         <View style={styles.availabilityCard}>
@@ -678,11 +743,33 @@ const styles = StyleSheet.create({
   avatarSection: { alignItems: 'center', paddingTop: 24, paddingBottom: 16 },
   avatarWrapper: { position: 'relative', marginBottom: 12 },
   avatarImg: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 114,
+    height: 114,
+    borderRadius: 57,
     borderWidth: 3,
     borderColor: COLORS.white,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15, shadowRadius: 10, elevation: 6,
+  },
+  avatarPlaceholder: {
+    backgroundColor: COLORS.primary + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cameraIcon: {
+    position: 'absolute',
+    bottom: 2,
+    left: 2,
+    backgroundColor: COLORS.primary,
+    borderRadius: 13,
+    width: 26,
+    height: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2.5,
+    borderColor: COLORS.white,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2, shadowRadius: 4, elevation: 4,
   },
   ratingBadge: {
     position: 'absolute',

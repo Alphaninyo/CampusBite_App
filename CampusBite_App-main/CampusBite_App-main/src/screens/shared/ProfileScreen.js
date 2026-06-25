@@ -15,9 +15,10 @@ import { COLORS } from '../../constants';
 export default function ProfileScreen({ navigation }) {
   const { user, logout, updateUser } = useAuthStore();
 
+  const API_BASE = 'http://localhost:5000';
+
   const [name, setName]   = useState(user?.name || '');
   const [phone, setPhone] = useState(user?.phone || '');
-  const [profileImage, setProfileImage] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const [currentPw, setCurrentPw] = useState('');
@@ -205,7 +206,7 @@ export default function ProfileScreen({ navigation }) {
     setSaving(true);
     try {
       const { data } = await api.auth.updateProfile({ name, phone });
-      updateUser({ name: data.user.name, phone: data.user.phone });
+      updateUser({ name: data.user.name, phone: data.user.phone, profile_photo: data.user.profile_photo });
       Alert.alert('Success', 'Profile updated.');
       setShowEditModal(false);
     } catch (err) {
@@ -235,7 +236,33 @@ export default function ProfileScreen({ navigation }) {
     }
   };
 
-  const handleImageUpload = () => {
+  const _uploadAvatar = async (uri) => {
+    setSaving(true);
+    try {
+      const { data } = await api.auth.updateProfile({ name, phone, avatar: uri });
+      updateUser({ profile_photo: data.user.profile_photo, _photo_ts: Date.now() });
+      Alert.alert('Success', 'Profile photo updated.');
+    } catch (err) {
+      Alert.alert('Error', err?.response?.data?.message || err.message || 'Failed to upload photo.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleImageUpload = async () => {
+    if (Platform.OS === 'web') {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Allow photo library access.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 1,
+      });
+      if (!result.canceled && result.assets?.[0]?.uri)
+        await _uploadAvatar(result.assets[0].uri);
+      return;
+    }
     Alert.alert('Profile Picture', 'Choose an option', [
       {
         text: 'Take Photo',
@@ -246,10 +273,10 @@ export default function ProfileScreen({ navigation }) {
             return;
           }
           const result = await ImagePicker.launchCameraAsync({
-            allowsEditing: true, aspect: [1, 1], quality: 0.8,
+            allowsEditing: true, aspect: [1, 1], quality: 1,
           });
           if (!result.canceled && result.assets?.[0]?.uri)
-            setProfileImage({ uri: result.assets[0].uri });
+            await _uploadAvatar(result.assets[0].uri);
         },
       },
       {
@@ -261,10 +288,10 @@ export default function ProfileScreen({ navigation }) {
             return;
           }
           const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.8,
+            mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 1,
           });
           if (!result.canceled && result.assets?.[0]?.uri)
-            setProfileImage({ uri: result.assets[0].uri });
+            await _uploadAvatar(result.assets[0].uri);
         },
       },
       { text: 'Cancel', style: 'cancel' },
@@ -281,6 +308,9 @@ export default function ProfileScreen({ navigation }) {
       ]);
     }
   };
+
+  const isWeb   = Platform.OS === 'web';
+  const isAdmin = user?.role === 'admin';
 
   const initials = (user?.name || 'U')
     .split(' ')
@@ -303,13 +333,13 @@ export default function ProfileScreen({ navigation }) {
       sub: 'Name, photo, phone number',
       onPress: () => setShowEditModal(true),
     },
-    {
+    ...(!isAdmin ? [{
       icon: 'location-outline',
       iconColor: COLORS.info,
       label: 'Saved addresses',
       sub: 'Hostel, lecture halls, etc.',
       onPress: () => setShowAddressModal(true),
-    },
+    }] : []),
     {
       icon: 'notifications-outline',
       iconColor: COLORS.success,
@@ -339,13 +369,13 @@ export default function ProfileScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.root}>
       {/* ── Edit Profile Modal ──────────────────────────────────────────── */}
-      <Modal visible={showEditModal} animationType="slide" transparent>
+      <Modal visible={showEditModal} animationType={isWeb ? 'fade' : 'slide'} transparent>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalOverlay}
+          style={[styles.modalOverlay, isWeb && styles.modalOverlayWeb]}
         >
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHandle} />
+          <View style={[styles.modalSheet, isWeb && styles.modalSheetWeb]}>
+            {!isWeb && <View style={styles.modalHandle} />}
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Edit Profile</Text>
               <TouchableOpacity onPress={() => setShowEditModal(false)}>
@@ -353,66 +383,76 @@ export default function ProfileScreen({ navigation }) {
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.modalAvatar} onPress={handleImageUpload}>
-              {profileImage ? (
-                <Image source={profileImage} style={styles.modalAvatarImg} />
-              ) : (
-                <View style={styles.modalAvatarCircle}>
-                  <Text style={styles.modalAvatarInitials}>{initials}</Text>
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <TouchableOpacity style={styles.modalAvatar} onPress={handleImageUpload}>
+                {saving ? (
+                  <View style={styles.modalAvatarCircle}>
+                    <ActivityIndicator color={COLORS.white} />
+                  </View>
+                ) : user?.profile_photo ? (
+                  <Image
+                    source={{ uri: `${API_BASE}${user.profile_photo}?t=${user._photo_ts || 0}` }}
+                    style={styles.modalAvatarImg}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={styles.modalAvatarCircle}>
+                    <Text style={styles.modalAvatarInitials}>{initials}</Text>
+                  </View>
+                )}
+                <View style={styles.modalCameraIcon}>
+                  <Ionicons name="camera" size={13} color={COLORS.white} />
                 </View>
-              )}
-              <View style={styles.modalCameraIcon}>
-                <Ionicons name="camera" size={13} color={COLORS.white} />
-              </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
 
-            <Text style={styles.modalLabel}>Full Name</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={name}
-              onChangeText={setName}
-              placeholder="Enter your name"
-              placeholderTextColor={COLORS.muted}
-            />
+              <Text style={styles.modalLabel}>Full Name</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={name}
+                onChangeText={setName}
+                placeholder="Enter your name"
+                placeholderTextColor={COLORS.muted}
+              />
 
-            <Text style={styles.modalLabel}>Phone Number</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-              placeholder="e.g. 0712345678"
-              placeholderTextColor={COLORS.muted}
-            />
+              <Text style={styles.modalLabel}>Phone Number</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+                placeholder="e.g. 0712345678"
+                placeholderTextColor={COLORS.muted}
+              />
 
-            <Text style={styles.modalLabel}>Email</Text>
-            <TextInput
-              style={[styles.modalInput, styles.modalInputDisabled]}
-              value={user?.email || ''}
-              editable={false}
-            />
+              <Text style={styles.modalLabel}>Email</Text>
+              <TextInput
+                style={[styles.modalInput, styles.modalInputDisabled]}
+                value={user?.email || ''}
+                editable={false}
+              />
 
-            <TouchableOpacity
-              style={styles.modalSaveBtn}
-              onPress={handleUpdateProfile}
-              disabled={saving}
-            >
-              {saving
-                ? <ActivityIndicator color={COLORS.white} />
-                : <Text style={styles.modalSaveBtnText}>Save Changes</Text>}
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalSaveBtn}
+                onPress={handleUpdateProfile}
+                disabled={saving}
+              >
+                {saving
+                  ? <ActivityIndicator color={COLORS.white} />
+                  : <Text style={styles.modalSaveBtnText}>Save Changes</Text>}
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </KeyboardAvoidingView>
       </Modal>
 
       {/* ── Password Modal ──────────────────────────────────────────────── */}
-      <Modal visible={showPasswordModal} animationType="slide" transparent>
+      <Modal visible={showPasswordModal} animationType={isWeb ? 'fade' : 'slide'} transparent>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalOverlay}
+          style={[styles.modalOverlay, isWeb && styles.modalOverlayWeb]}
         >
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHandle} />
+          <View style={[styles.modalSheet, isWeb && styles.modalSheetWeb]}>
+            {!isWeb && <View style={styles.modalHandle} />}
             <View style={styles.modalHeader}>
               <TouchableOpacity onPress={() => {
                 setShowPasswordModal(false);
@@ -468,13 +508,13 @@ export default function ProfileScreen({ navigation }) {
       </Modal>
 
       {/* ── Security Modal ─────────────────────────────────────────────── */}
-      <Modal visible={showSecurityModal} animationType="slide" transparent>
+      <Modal visible={showSecurityModal} animationType={isWeb ? 'fade' : 'slide'} transparent>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalOverlay}
+          style={[styles.modalOverlay, isWeb && styles.modalOverlayWeb]}
         >
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHandle} />
+          <View style={[styles.modalSheet, isWeb && styles.modalSheetWeb]}>
+            {!isWeb && <View style={styles.modalHandle} />}
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Security</Text>
               <TouchableOpacity onPress={() => setShowSecurityModal(false)}>
@@ -648,13 +688,13 @@ export default function ProfileScreen({ navigation }) {
       </Modal>
 
       {/* ── Saved Addresses Modal ─────────────────────────────────────────── */}
-      <Modal visible={showAddressModal} animationType="slide" transparent>
+      <Modal visible={showAddressModal} animationType={isWeb ? 'fade' : 'slide'} transparent>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalOverlay}
+          style={[styles.modalOverlay, isWeb && styles.modalOverlayWeb]}
         >
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHandle} />
+          <View style={[styles.modalSheet, isWeb && styles.modalSheetWeb]}>
+            {!isWeb && <View style={styles.modalHandle} />}
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Saved Addresses</Text>
               <TouchableOpacity onPress={() => setShowAddressModal(false)}>
@@ -727,10 +767,10 @@ export default function ProfileScreen({ navigation }) {
       </Modal>
 
       {/* ── Notifications Modal ─────────────────────────────────────────────── */}
-      <Modal visible={showNotificationsModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHandle} />
+      <Modal visible={showNotificationsModal} animationType={isWeb ? 'fade' : 'slide'} transparent>
+        <View style={[styles.modalOverlay, isWeb && styles.modalOverlayWeb]}>
+          <View style={[styles.modalSheet, isWeb && styles.modalSheetWeb]}>
+            {!isWeb && <View style={styles.modalHandle} />}
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Notifications</Text>
               <TouchableOpacity onPress={() => setShowNotificationsModal(false)}>
@@ -775,10 +815,10 @@ export default function ProfileScreen({ navigation }) {
       </Modal>
 
       {/* ── Help & Support Modal ────────────────────────────────────────────── */}
-      <Modal visible={showSupportModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHandle} />
+      <Modal visible={showSupportModal} animationType={isWeb ? 'fade' : 'slide'} transparent>
+        <View style={[styles.modalOverlay, isWeb && styles.modalOverlayWeb]}>
+          <View style={[styles.modalSheet, isWeb && styles.modalSheetWeb]}>
+            {!isWeb && <View style={styles.modalHandle} />}
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Help & Support</Text>
               <TouchableOpacity onPress={() => setShowSupportModal(false)}>
@@ -873,8 +913,12 @@ export default function ProfileScreen({ navigation }) {
         {/* ── Profile Header ──────────────────────────────────────────────── */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.avatarWrap} onPress={handleImageUpload}>
-            {profileImage ? (
-              <Image source={profileImage} style={styles.avatarImg} />
+            {user?.profile_photo ? (
+              <Image
+                source={{ uri: `${API_BASE}${user.profile_photo}?t=${user._photo_ts || 0}` }}
+                style={styles.avatarImg}
+                resizeMode="cover"
+              />
             ) : (
               <View style={styles.avatarCircle}>
                 <Text style={styles.avatarInitials}>{initials}</Text>
@@ -909,94 +953,100 @@ export default function ProfileScreen({ navigation }) {
           </View>
         </View>
 
-        {/* ── Stats Row ───────────────────────────────────────────────────── */}
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{totalOrders}</Text>
-            <Text style={styles.statLabel}>Total orders</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: COLORS.primary }]}>
-              KES {totalSpent > 0 ? totalSpent.toLocaleString() : '0'}
-            </Text>
-            <Text style={styles.statLabel}>Total spent</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>—</Text>
-            <Text style={styles.statLabel}>Favourites</Text>
-          </View>
-        </View>
-
-        {/* ── Recent Orders ───────────────────────────────────────────────── */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>RECENT ORDERS</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('OrdersTab')}>
-              <Text style={styles.seeAll}>See all</Text>
-            </TouchableOpacity>
-          </View>
-
-          {loading ? (
-            <ActivityIndicator color={COLORS.primary} style={{ marginVertical: 24 }} />
-          ) : recentOrders.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="bag-outline" size={44} color={COLORS.muted} />
-              <Text style={styles.emptyText}>
-                No orders yet. Start exploring vendors on campus!
+        {/* ── Stats Row (consumer only) ────────────────────────────────────── */}
+        {!isAdmin && (
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{totalOrders}</Text>
+              <Text style={styles.statLabel}>Total orders</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: COLORS.primary }]}>
+                KES {totalSpent > 0 ? totalSpent.toLocaleString() : '0'}
               </Text>
-              <TouchableOpacity
-                style={styles.emptyBtn}
-                onPress={() => navigation.navigate('HomeTab')}
-              >
-                <Text style={styles.emptyBtnText}>Browse vendors</Text>
+              <Text style={styles.statLabel}>Total spent</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>—</Text>
+              <Text style={styles.statLabel}>Favourites</Text>
+            </View>
+          </View>
+        )}
+
+        {/* ── Recent Orders (consumer only) ───────────────────────────────── */}
+        {!isAdmin && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>RECENT ORDERS</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('OrdersTab')}>
+                <Text style={styles.seeAll}>See all</Text>
               </TouchableOpacity>
             </View>
-          ) : (
-            recentOrders.map((order, i) => (
-              <TouchableOpacity
-                key={order.id}
-                style={[styles.orderRow, i === 0 && { borderTopWidth: 0 }]}
-                onPress={() =>
-                  navigation.navigate('OrdersTab', {
-                    screen: 'OrderDetail',
-                    params: { orderId: order.id },
-                  })
-                }
-              >
-                <View style={styles.orderIconWrap}>
-                  <Ionicons name="receipt-outline" size={20} color={COLORS.primary} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.orderVendor}>
-                    {order.vendor?.business_name || 'Order'}
-                  </Text>
-                  <Text style={styles.orderMeta}>
-                    KES {order.total_amount} · {order.status}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={COLORS.muted} />
-              </TouchableOpacity>
-            ))
-          )}
-        </View>
 
-        {/* ── Favourite Items ──────────────────────────────────────────────── */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>FAVOURITE ITEMS</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAll}>See all</Text>
-            </TouchableOpacity>
+            {loading ? (
+              <ActivityIndicator color={COLORS.primary} style={{ marginVertical: 24 }} />
+            ) : recentOrders.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Ionicons name="bag-outline" size={44} color={COLORS.muted} />
+                <Text style={styles.emptyText}>
+                  No orders yet. Start exploring vendors on campus!
+                </Text>
+                <TouchableOpacity
+                  style={styles.emptyBtn}
+                  onPress={() => navigation.navigate('HomeTab')}
+                >
+                  <Text style={styles.emptyBtnText}>Browse vendors</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              recentOrders.map((order, i) => (
+                <TouchableOpacity
+                  key={order.id}
+                  style={[styles.orderRow, i === 0 && { borderTopWidth: 0 }]}
+                  onPress={() =>
+                    navigation.navigate('OrdersTab', {
+                      screen: 'OrderDetail',
+                      params: { orderId: order.id },
+                    })
+                  }
+                >
+                  <View style={styles.orderIconWrap}>
+                    <Ionicons name="receipt-outline" size={20} color={COLORS.primary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.orderVendor}>
+                      {order.vendor?.business_name || 'Order'}
+                    </Text>
+                    <Text style={styles.orderMeta}>
+                      KES {order.total_amount} · {order.status}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={COLORS.muted} />
+                </TouchableOpacity>
+              ))
+            )}
           </View>
-          <View style={styles.emptyState}>
-            <Ionicons name="heart-outline" size={44} color={COLORS.muted} />
-            <Text style={styles.emptyText}>
-              Tap the heart on any item to save it here for quick reordering.
-            </Text>
+        )}
+
+        {/* ── Favourite Items (consumer only) ─────────────────────────────── */}
+        {!isAdmin && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>FAVOURITE ITEMS</Text>
+              <TouchableOpacity>
+                <Text style={styles.seeAll}>See all</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.emptyState}>
+              <Ionicons name="heart-outline" size={44} color={COLORS.muted} />
+              <Text style={styles.emptyText}>
+                Tap the heart on any item to save it here for quick reordering.
+              </Text>
+            </View>
           </View>
-        </View>
+        )}
 
         {/* ── Account Menu ────────────────────────────────────────────────── */}
         <View style={styles.section}>
@@ -1050,18 +1100,28 @@ const styles = StyleSheet.create({
   },
   avatarWrap:    { position: 'relative', marginBottom: 14 },
   avatarCircle:  {
-    width: 90, height: 90, borderRadius: 45,
+    width: 114, height: 114, borderRadius: 57,
     backgroundColor: COLORS.primary,
     alignItems: 'center', justifyContent: 'center',
+    borderWidth: 3, borderColor: COLORS.white,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15, shadowRadius: 10, elevation: 6,
   },
-  avatarImg:     { width: 90, height: 90, borderRadius: 45 },
-  avatarInitials:{ fontSize: 32, fontWeight: '700', color: COLORS.white },
+  avatarImg:     {
+    width: 114, height: 114, borderRadius: 57,
+    borderWidth: 3, borderColor: COLORS.white,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15, shadowRadius: 10, elevation: 6,
+  },
+  avatarInitials:{ fontSize: 38, fontWeight: '700', color: COLORS.white },
   cameraIcon:    {
-    position: 'absolute', bottom: 2, right: 2,
-    width: 26, height: 26, borderRadius: 13,
+    position: 'absolute', bottom: 4, right: 4,
+    width: 30, height: 30, borderRadius: 15,
     backgroundColor: COLORS.primary,
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: COLORS.card,
+    borderWidth: 2.5, borderColor: COLORS.white,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2, shadowRadius: 4, elevation: 4,
   },
   headerName:   { fontSize: 22, fontWeight: '700', color: COLORS.text, marginBottom: 2 },
   headerRole:   { fontSize: 14, color: COLORS.primary, fontWeight: '600', marginBottom: 4 },
@@ -1152,6 +1212,10 @@ const styles = StyleSheet.create({
     flex: 1, justifyContent: 'flex-end',
     backgroundColor: 'rgba(0,0,0,0.65)',
   },
+  modalOverlayWeb: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   modalSheet: {
     backgroundColor: COLORS.card,
     borderTopLeftRadius: 24, borderTopRightRadius: 24,
@@ -1162,6 +1226,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 10,
+  },
+  modalSheetWeb: {
+    borderRadius: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    width: '100%',
+    maxWidth: 480,
+    maxHeight: '88%',
+    paddingBottom: 24,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
   },
   modalHandle: {
     width: 40, height: 4, borderRadius: 2,
@@ -1174,18 +1250,27 @@ const styles = StyleSheet.create({
   },
   modalTitle:          { fontSize: 18, fontWeight: '700', color: COLORS.text },
   modalAvatar:         { alignSelf: 'center', position: 'relative', marginBottom: 20 },
-  modalAvatarImg:      { width: 72, height: 72, borderRadius: 36 },
-  modalAvatarCircle:   {
-    width: 72, height: 72, borderRadius: 36,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center', justifyContent: 'center',
+  modalAvatarImg:      {
+    width: 90, height: 90, borderRadius: 45,
+    borderWidth: 3, borderColor: COLORS.white,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12, shadowRadius: 8, elevation: 5,
   },
-  modalAvatarInitials: { fontSize: 26, fontWeight: '700', color: COLORS.white },
-  modalCameraIcon:     {
-    position: 'absolute', bottom: 0, right: 0,
-    width: 24, height: 24, borderRadius: 12,
+  modalAvatarCircle:   {
+    width: 90, height: 90, borderRadius: 45,
     backgroundColor: COLORS.primary,
     alignItems: 'center', justifyContent: 'center',
+    borderWidth: 3, borderColor: COLORS.white,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12, shadowRadius: 8, elevation: 5,
+  },
+  modalAvatarInitials: { fontSize: 32, fontWeight: '700', color: COLORS.white },
+  modalCameraIcon:     {
+    position: 'absolute', bottom: 2, right: 2,
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2.5, borderColor: COLORS.white,
   },
   modalLabel:         { fontSize: 13, fontWeight: '600', color: COLORS.subtext, marginBottom: 6, marginTop: 14 },
   modalInput:         {

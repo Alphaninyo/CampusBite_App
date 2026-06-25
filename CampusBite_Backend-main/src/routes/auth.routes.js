@@ -23,7 +23,7 @@ router.post('/reset-password',  authController.resetPassword);
 
 // ── Protected routes (valid JWT required) ─────────────────────────────────────
 router.get( '/me',           protect, authController.getMe);
-router.put( '/profile',      protect, authController.updateProfile);
+router.put( '/profile',      protect, authController.uploadAvatar, authController.updateProfile);
 router.put( '/password',     protect, authController.updatePassword);
 router.put( '/device-token', protect, authController.updateDeviceToken);
 

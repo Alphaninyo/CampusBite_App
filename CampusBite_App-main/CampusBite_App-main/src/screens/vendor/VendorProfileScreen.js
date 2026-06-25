@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Switch, Image, Platform, TextInput, Modal, KeyboardAvoidingView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
 import { COLORS } from '../../constants';
 
 export default function VendorProfileScreen({ navigation = {} }) {
-  const { user, logout } = useAuthStore();
+  const { user, logout, updateUser } = useAuthStore();
+  const API_BASE = 'http://localhost:5000';
   console.log('VendorProfileScreen: user state =', user);
   const [vendor, setVendor] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -171,6 +173,56 @@ export default function VendorProfileScreen({ navigation = {} }) {
     }
   };
 
+  const _uploadAvatar = async (uri) => {
+    setSaving(true);
+    try {
+      const { data } = await api.auth.updateProfile({ name: user?.name, phone: user?.phone, avatar: uri });
+      updateUser({ profile_photo: data.user.profile_photo, _photo_ts: Date.now() });
+      Alert.alert('Success', 'Profile photo updated.');
+    } catch (err) {
+      Alert.alert('Error', err?.response?.data?.message || err.message || 'Failed to upload photo.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleImageUpload = async () => {
+    if (Platform.OS === 'web') {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Allow photo library access.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 1,
+      });
+      if (!result.canceled && result.assets?.[0]?.uri)
+        await _uploadAvatar(result.assets[0].uri);
+      return;
+    }
+    Alert.alert('Profile Picture', 'Choose an option', [
+      {
+        text: 'Take Photo',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+          if (status !== 'granted') { Alert.alert('Permission needed', 'Allow camera access.'); return; }
+          const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [1, 1], quality: 1 });
+          if (!result.canceled && result.assets?.[0]?.uri) await _uploadAvatar(result.assets[0].uri);
+        },
+      },
+      {
+        text: 'Choose from Gallery',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== 'granted') { Alert.alert('Permission needed', 'Allow photo library access.'); return; }
+          const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 1 });
+          if (!result.canceled && result.assets?.[0]?.uri) await _uploadAvatar(result.assets[0].uri);
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
   const handleLogout = async () => {
     console.log('VendorProfileScreen: handleLogout called');
     
@@ -227,15 +279,22 @@ export default function VendorProfileScreen({ navigation = {} }) {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Profile Section */}
         <View style={styles.profileSection}>
-          <View style={styles.avatarContainer}>
-            <Image
-              source={{ uri: vendor?.logo || `https://via.placeholder.com/90x90/E85D04/FFFFFF?text=${storeInitial}` }}
-              style={styles.avatar}
-            />
-            <View style={styles.verifiedBadge}>
-              <Ionicons name="checkmark-circle" size={22} color="#4CAF50" />
+          <TouchableOpacity style={styles.avatarContainer} onPress={handleImageUpload}>
+            {saving ? (
+              <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                <ActivityIndicator color={COLORS.primary} />
+              </View>
+            ) : user?.profile_photo ? (
+              <Image source={{ uri: `${API_BASE}${user.profile_photo}?t=${user._photo_ts || 0}` }} style={styles.avatar} resizeMode="cover" />
+            ) : (
+              <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                <Text style={styles.avatarInitial}>{storeInitial}</Text>
+              </View>
+            )}
+            <View style={styles.cameraIcon}>
+              <Ionicons name="camera" size={13} color={COLORS.white} />
             </View>
-          </View>
+          </TouchableOpacity>
           <Text style={styles.storeName}>{storeName}</Text>
           <View style={styles.ratingRow}>
             <Ionicons name="star" size={14} color="#FFB300" />
@@ -665,20 +724,34 @@ const styles = StyleSheet.create({
   profileSection: { alignItems: 'center', paddingVertical: 24 },
   avatarContainer: { position: 'relative', marginBottom: 12 },
   avatar: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: COLORS.iconBg,
+    width: 114,
+    height: 114,
+    borderRadius: 57,
     borderWidth: 3,
-    borderColor: COLORS.borderWarm,
+    borderColor: COLORS.white,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15, shadowRadius: 10, elevation: 6,
   },
-  verifiedBadge: {
+  avatarPlaceholder: {
+    backgroundColor: COLORS.primary + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInitial: { fontSize: 38, fontWeight: 'bold', color: COLORS.primary },
+  cameraIcon: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: COLORS.card,
-    borderRadius: 12,
-    padding: 1,
+    bottom: 4,
+    right: 4,
+    backgroundColor: COLORS.primary,
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2.5,
+    borderColor: COLORS.white,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2, shadowRadius: 4, elevation: 4,
   },
   storeName: { fontSize: 22, fontWeight: 'bold', color: COLORS.text, marginBottom: 4 },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },

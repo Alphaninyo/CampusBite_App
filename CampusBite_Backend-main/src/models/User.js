@@ -106,6 +106,11 @@ const User = sequelize.define(
       defaultValue: false,
       comment:      'Admin can suspend any user account to block login.',
     },
+    profile_photo: {
+      type:      DataTypes.STRING(500),
+      allowNull: true,
+      comment:   'File path to the user\'s profile picture (distinct from verification passport_photo).',
+    },
   },
   {
     tableName: 'users',

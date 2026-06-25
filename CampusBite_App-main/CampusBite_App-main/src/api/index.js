@@ -10,7 +10,16 @@ export const api = {
     forgotPassword:    (data)           => client.post('/auth/forgot-password', data),
     resetPassword:    (data)           => client.post('/auth/reset-password', data),
     getMe:            ()               => client.get('/auth/me'),
-    updateProfile:    (data)           => client.put('/auth/profile', data),
+    updateProfile: async (data) => {
+      if (data.avatar) {
+        const form = new FormData();
+        if (data.name  !== undefined) form.append('name',  data.name);
+        if (data.phone !== undefined) form.append('phone', data.phone);
+        await _appendImage(form, data.avatar, 'avatar');
+        return client.put('/auth/profile', form, _multipartHeaders());
+      }
+      return client.put('/auth/profile', data);
+    },
     updatePassword:   (data)           => client.put('/auth/password', data),
     updateDeviceToken:(data)           => client.put('/auth/device-token', data),
   },
@@ -149,18 +158,18 @@ function _multipartHeaders() {
 //   Web   — ImagePicker returns a blob: URL; fetch it to get a real Blob.
 //   Native — ImagePicker returns a file: / content: URI; use RN's { uri } notation.
 // Server-side paths (/uploads/...) are skipped — backend keeps the existing image.
-async function _appendImage(form, uri) {
+async function _appendImage(form, uri, fieldName = 'image') {
   if (!uri || uri.startsWith('/uploads/') || uri.startsWith('http')) return;
 
   if (Platform.OS === 'web') {
     try {
       const res  = await fetch(uri);
       const blob = await res.blob();
-      form.append('image', blob, 'item.jpg');
+      form.append(fieldName, blob, `${fieldName}.jpg`);
     } catch { /* ignore — upload without image */ }
   } else {
     const ext  = (uri.split('.').pop() || 'jpg').toLowerCase();
     const type = ext === 'jpg' ? 'image/jpeg' : `image/${ext}`;
-    form.append('image', { uri, name: `item.${ext}`, type });
+    form.append(fieldName, { uri, name: `${fieldName}.${ext}`, type });
   }
 }

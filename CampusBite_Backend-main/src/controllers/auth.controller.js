@@ -1,9 +1,36 @@
 const crypto  = require('crypto');
 const bcrypt  = require('bcryptjs');
 const jwt     = require('jsonwebtoken');
+const path    = require('path');
+const fs      = require('fs');
+const multer  = require('multer');
 const { Op }  = require('sequelize');
 const { User, Vendor, FoodCourierProfile, sequelize } = require('../models');
 const emailService = require('../services/email.service');
+
+// ─── Avatar upload ────────────────────────────────────────────────────────────
+
+const AVATAR_DIR = path.join(__dirname, '../../uploads/avatars');
+if (!fs.existsSync(AVATAR_DIR)) fs.mkdirSync(AVATAR_DIR, { recursive: true });
+
+const _avatarStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, AVATAR_DIR),
+  filename:    (req, file, cb) => {
+    const ext = path.extname(file.originalname) || '.jpg';
+    cb(null, `${req.user.id}_avatar${ext}`);
+  },
+});
+
+exports.uploadAvatar = multer({
+  storage:    _avatarStorage,
+  fileFilter: (_req, file, cb) => {
+    if (['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.mimetype))
+      cb(null, true);
+    else
+      cb(new Error('Only JPEG, PNG, or WEBP images are accepted.'), false);
+  },
+  limits: { fileSize: 5 * 1024 * 1024 },
+}).single('avatar');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -24,13 +51,14 @@ const sendTokenResponse = (user, statusCode, res) => {
     success: true,
     token,
     user: {
-      id:          user.id,
-      name:        user.name,
-      email:       user.email,
-      phone:       user.phone,
-      role:        user.role,
-      is_approved: user.is_approved,
-      created_at:  user.created_at,
+      id:            user.id,
+      name:          user.name,
+      email:         user.email,
+      phone:         user.phone,
+      role:          user.role,
+      is_approved:   user.is_approved,
+      created_at:    user.created_at,
+      profile_photo: user.profile_photo || null,
     },
   });
 };
@@ -408,8 +436,11 @@ exports.updateProfile = async (req, res) => {
     const { name, phone } = req.body;
 
     const updates = {};
-    if (name !== undefined) updates.name = name.trim();
-    if (phone !== undefined) updates.phone = phone.trim();
+    if (name  !== undefined && name.trim())  updates.name  = name.trim();
+    if (phone !== undefined && phone.trim()) updates.phone = phone.trim();
+    if (req.file) {
+      updates.profile_photo = `/uploads/avatars/${req.file.filename}`;
+    }
 
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ success: false, message: 'No fields to update.' });
@@ -418,7 +449,7 @@ exports.updateProfile = async (req, res) => {
     await User.update(updates, { where: { id: req.user.id } });
 
     const updatedUser = await User.findByPk(req.user.id, {
-      attributes: ['id', 'name', 'email', 'phone', 'role', 'is_approved', 'created_at'],
+      attributes: ['id', 'name', 'email', 'phone', 'role', 'is_approved', 'created_at', 'profile_photo'],
     });
 
     res.status(200).json({ success: true, message: 'Profile updated successfully.', user: updatedUser });
