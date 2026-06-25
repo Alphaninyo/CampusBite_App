@@ -36,6 +36,13 @@ async function startServer() {
       `ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount_amount DECIMAL(10,2) DEFAULT 0`,
       `ALTER TABLE orders ADD COLUMN IF NOT EXISTS promo_code VARCHAR(50)`,
       `ALTER TABLE orders ADD COLUMN IF NOT EXISTS scheduled_time TIMESTAMP`,
+      // Verification info-request flow
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS passport_photo VARCHAR(500)`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_note TEXT`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS requested_docs TEXT`,
+      `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel='info_requested' AND enumtypid=(SELECT oid FROM pg_type WHERE typname='enum_users_verification_status')) THEN ALTER TYPE "enum_users_verification_status" ADD VALUE 'info_requested'; END IF; END $$`,
+      // User suspension
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN NOT NULL DEFAULT false`,
     ];
     for (const sql of migrations) {
       await sequelize.query(sql).catch((e) => console.warn('[MIGRATION]', sql.slice(0, 60), e.message));

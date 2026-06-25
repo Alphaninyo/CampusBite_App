@@ -1,12 +1,14 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet,
+  View, Text, TouchableOpacity, StyleSheet,
   ActivityIndicator, RefreshControl, ScrollView, TextInput,
-  Alert, Modal,
+  Alert, Modal, Image, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
-import { COLORS } from '../../constants';
+import { COLORS, API_BASE_URL } from '../../constants';
+
+const docUrl = (path) => (path ? `${API_BASE_URL}${path}` : null);
 
 const TABS = ['All', 'Active', 'Pending', 'Suspended'];
 
@@ -22,6 +24,10 @@ export default function AdminVendorsScreen() {
   const [activeCount, setActiveCount] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
   const [suspendedCount, setSuspendedCount] = useState(0);
+  const [docActing, setDocActing] = useState(null);
+  const [rejectMode, setRejectMode] = useState(false);
+  const [rejectNote, setRejectNote] = useState('');
+  const [actionMsg, setActionMsg] = useState(null);
 
   const fetchVendors = useCallback(async () => {
     try {
@@ -77,8 +83,53 @@ export default function AdminVendorsScreen() {
       .slice(0, 2);
   };
 
+  const showMsg = (text, isError = false) => {
+    setActionMsg({ text, isError });
+    setTimeout(() => setActionMsg(null), 4000);
+  };
+
+  const handleApproveDocs = async () => {
+    const userId = selectedVendor?.owner?.id;
+    if (!userId) return;
+    setDocActing('approve');
+    try {
+      await api.admin.approveUserDocs(userId);
+      showMsg(`${selectedVendor.owner.name}'s documents approved.`);
+      setSelectedVendor(v => ({ ...v, owner: { ...v.owner, verification_status: 'approved' } }));
+      fetchVendors();
+    } catch (err) {
+      showMsg(err.message || 'Failed to approve.', true);
+    } finally {
+      setDocActing(null);
+    }
+  };
+
+  const handleRejectDocs = async () => {
+    const userId = selectedVendor?.owner?.id;
+    if (!userId) return;
+    if (!rejectNote.trim()) {
+      showMsg('Please add a note explaining the issue.', true);
+      return;
+    }
+    setDocActing('reject');
+    try {
+      await api.admin.rejectUserDocs(userId, rejectNote.trim());
+      showMsg(`${selectedVendor.owner.name}'s documents rejected. They have been notified.`);
+      setSelectedVendor(v => ({ ...v, owner: { ...v.owner, verification_status: 'info_requested' } }));
+      setRejectMode(false);
+      setRejectNote('');
+      fetchVendors();
+    } catch (err) {
+      showMsg(err.message || 'Failed to reject.', true);
+    } finally {
+      setDocActing(null);
+    }
+  };
+
   const openVendorDetail = (vendor) => {
     setSelectedVendor(vendor);
+    setRejectMode(false);
+    setRejectNote('');
     setShowDetailModal(true);
   };
 
@@ -155,7 +206,17 @@ export default function AdminVendorsScreen() {
             </View>
           ) : (
             filteredVendors.map((vendor) => (
-              <TouchableOpacity key={vendor.id} style={styles.vendorCard} onPress={() => openVendorDetail(vendor)}>
+              <TouchableOpacity
+                key={vendor.id}
+                style={[styles.vendorCard, vendor.owner?.verification_status === 'pending' && styles.vendorCardPending]}
+                onPress={() => openVendorDetail(vendor)}
+              >
+                {vendor.owner?.verification_status === 'pending' && (
+                  <View style={styles.docPendingBanner}>
+                    <Ionicons name="time-outline" size={13} color="#92400E" />
+                    <Text style={styles.docPendingBannerText}>Documents pending review — tap to approve or reject</Text>
+                  </View>
+                )}
                 <View style={styles.vendorHeader}>
                   <View style={styles.avatar}>
                     <Text style={styles.avatarText}>{getInitials(vendor.business_name)}</Text>
@@ -189,6 +250,43 @@ export default function AdminVendorsScreen() {
                   <View style={styles.detailRow}>
                     <Ionicons name="mail-outline" size={16} color={COLORS.subtext} />
                     <Text style={styles.detailText}>{vendor.owner?.email || 'N/A'}</Text>
+                  </View>
+
+                  {/* Document thumbnails */}
+                  <View style={styles.docsDivider} />
+                  <View style={styles.docsRow}>
+                    <View style={styles.docThumbBox}>
+                      <Text style={styles.docThumbLabel}>
+                        {vendor.owner?.verification_type === 'passport' ? 'Passport' : 'ID Document'}
+                      </Text>
+                      {docUrl(vendor.owner?.verification_document) ? (
+                        <Image
+                          source={{ uri: docUrl(vendor.owner.verification_document) }}
+                          style={styles.docThumb}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View style={[styles.docThumb, styles.docThumbEmpty]}>
+                          <Ionicons name="document-outline" size={24} color={COLORS.muted} />
+                          <Text style={styles.docThumbEmptyText}>Not uploaded</Text>
+                        </View>
+                      )}
+                    </View>
+                    <View style={styles.docThumbBox}>
+                      <Text style={styles.docThumbLabel}>Passport Sized Photo</Text>
+                      {docUrl(vendor.owner?.passport_photo) ? (
+                        <Image
+                          source={{ uri: docUrl(vendor.owner.passport_photo) }}
+                          style={styles.docThumb}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View style={[styles.docThumb, styles.docThumbEmpty]}>
+                          <Ionicons name="person-circle-outline" size={24} color={COLORS.muted} />
+                          <Text style={styles.docThumbEmptyText}>Not uploaded</Text>
+                        </View>
+                      )}
+                    </View>
                   </View>
                 </View>
               </TouchableOpacity>
@@ -265,7 +363,121 @@ export default function AdminVendorsScreen() {
                   </View>
                 )}
               </View>
+
+              <View style={styles.detailSection}>
+                <View style={styles.docSectionHeader}>
+                  <Text style={styles.detailSectionTitle}>Verification Documents</Text>
+                  {selectedVendor?.owner?.verification_status === 'approved' && (
+                    <View style={styles.docStatusBadgeApproved}>
+                      <Ionicons name="checkmark-circle" size={13} color={COLORS.success} />
+                      <Text style={styles.docStatusBadgeTextApproved}>Approved</Text>
+                    </View>
+                  )}
+                  {selectedVendor?.owner?.verification_status === 'pending' && (
+                    <View style={styles.docStatusBadgePending}>
+                      <Ionicons name="time-outline" size={13} color="#92400E" />
+                      <Text style={styles.docStatusBadgeTextPending}>Pending Review</Text>
+                    </View>
+                  )}
+                  {selectedVendor?.owner?.verification_status === 'info_requested' && (
+                    <View style={styles.docStatusBadgeRejected}>
+                      <Ionicons name="close-circle" size={13} color={COLORS.danger} />
+                      <Text style={styles.docStatusBadgeTextRejected}>Info Requested</Text>
+                    </View>
+                  )}
+                </View>
+
+                <View style={styles.modalDocsRow}>
+                  <View style={styles.modalDocBox}>
+                    <Text style={styles.modalDocLabel}>
+                      {selectedVendor?.owner?.verification_type === 'passport' ? 'Passport (ID)' : 'ID Document'}
+                    </Text>
+                    {docUrl(selectedVendor?.owner?.verification_document) ? (
+                      <Image source={{ uri: docUrl(selectedVendor.owner.verification_document) }} style={styles.modalDocImage} resizeMode="cover" />
+                    ) : (
+                      <View style={[styles.modalDocImage, styles.modalDocEmpty]}>
+                        <Ionicons name="document-outline" size={32} color={COLORS.muted} />
+                        <Text style={styles.docThumbEmptyText}>Not uploaded</Text>
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.modalDocBox}>
+                    <Text style={styles.modalDocLabel}>Passport Sized Photo</Text>
+                    {docUrl(selectedVendor?.owner?.passport_photo) ? (
+                      <Image source={{ uri: docUrl(selectedVendor.owner.passport_photo) }} style={styles.modalDocImage} resizeMode="cover" />
+                    ) : (
+                      <View style={[styles.modalDocImage, styles.modalDocEmpty]}>
+                        <Ionicons name="person-circle-outline" size={32} color={COLORS.muted} />
+                        <Text style={styles.docThumbEmptyText}>Not uploaded</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+
+                {/* Approve / Reject — only when pending */}
+                {selectedVendor?.owner?.verification_status === 'pending' && (
+                  <>
+                    {rejectMode ? (
+                      <View style={styles.rejectPanel}>
+                        <Text style={styles.rejectPanelLabel}>REASON (SENT TO VENDOR)</Text>
+                        <TextInput
+                          style={styles.rejectInput}
+                          placeholder="e.g. The ID image is too blurry. Please resubmit a clear photo."
+                          placeholderTextColor={COLORS.muted}
+                          value={rejectNote}
+                          onChangeText={setRejectNote}
+                          multiline
+                          numberOfLines={3}
+                          textAlignVertical="top"
+                        />
+                        <View style={styles.rejectPanelActions}>
+                          <TouchableOpacity style={styles.cancelBtn} onPress={() => { setRejectMode(false); setRejectNote(''); }}>
+                            <Text style={styles.cancelBtnText}>Cancel</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.confirmRejectBtn, docActing && { opacity: 0.6 }]}
+                            onPress={handleRejectDocs}
+                            disabled={!!docActing}
+                          >
+                            {docActing === 'reject'
+                              ? <ActivityIndicator color={COLORS.white} size="small" />
+                              : <Text style={styles.confirmRejectBtnText}>Confirm Reject</Text>}
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ) : (
+                      <View style={styles.docActionRow}>
+                        <TouchableOpacity
+                          style={[styles.rejectDocBtn, docActing && { opacity: 0.6 }]}
+                          onPress={() => setRejectMode(true)}
+                          disabled={!!docActing}
+                        >
+                          <Ionicons name="close-circle-outline" size={16} color={COLORS.danger} />
+                          <Text style={styles.rejectDocBtnText}>Reject</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.approveDocBtn, docActing && { opacity: 0.6 }]}
+                          onPress={handleApproveDocs}
+                          disabled={!!docActing}
+                        >
+                          {docActing === 'approve'
+                            ? <ActivityIndicator color={COLORS.white} size="small" />
+                            : <><Ionicons name="checkmark-circle-outline" size={16} color={COLORS.white} /><Text style={styles.approveDocBtnText}>Approve Documents</Text></>}
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </>
+                )}
+              </View>
             </ScrollView>
+
+            {/* Action message inside modal */}
+            {actionMsg && (
+              <View style={[styles.actionBanner, actionMsg.isError ? styles.actionBannerError : styles.actionBannerSuccess]}>
+                <Ionicons name={actionMsg.isError ? 'alert-circle-outline' : 'checkmark-circle-outline'} size={16} color={actionMsg.isError ? COLORS.danger : COLORS.success} />
+                <Text style={[styles.actionBannerText, { color: actionMsg.isError ? COLORS.danger : COLORS.success }]}>{actionMsg.text}</Text>
+              </View>
+            )}
           </View>
         </View>
       </Modal>
@@ -505,5 +717,130 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: COLORS.text,
+  },
+
+  // Pending doc banner on card
+  vendorCardPending: { borderColor: '#FDE68A', borderWidth: 1.5 },
+  docPendingBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: '#FFFBEB', borderRadius: 8,
+    paddingHorizontal: 10, paddingVertical: 7,
+    marginBottom: 10, borderWidth: 1, borderColor: '#FDE68A',
+  },
+  docPendingBannerText: { fontSize: 12, color: '#92400E', fontWeight: '600', flex: 1 },
+
+  // Document thumbnails in card
+  docsDivider: {
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginVertical: 10,
+  },
+  docsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  docThumbBox: {
+    flex: 1,
+  },
+  docThumbLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.subtext,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  docThumb: {
+    width: '100%',
+    height: 90,
+    borderRadius: 8,
+    backgroundColor: COLORS.background,
+  },
+  docThumbEmpty: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderStyle: 'dashed',
+    gap: 4,
+  },
+  docThumbEmptyText: {
+    fontSize: 10,
+    color: COLORS.muted,
+  },
+
+  // Doc status badges in modal header
+  docSectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  docStatusBadgeApproved: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.successLight, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4 },
+  docStatusBadgeTextApproved: { fontSize: 11, fontWeight: '700', color: COLORS.success },
+  docStatusBadgePending: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FFFBEB', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: '#FDE68A' },
+  docStatusBadgeTextPending: { fontSize: 11, fontWeight: '700', color: '#92400E' },
+  docStatusBadgeRejected: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FEF2F2', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4 },
+  docStatusBadgeTextRejected: { fontSize: 11, fontWeight: '700', color: COLORS.danger },
+
+  // Approve / reject controls in modal
+  docActionRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
+  rejectDocBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    paddingVertical: 13, borderRadius: 10, borderWidth: 1.5, borderColor: COLORS.danger,
+    backgroundColor: COLORS.white,
+  },
+  rejectDocBtnText: { fontSize: 14, fontWeight: '700', color: COLORS.danger },
+  approveDocBtn: {
+    flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    paddingVertical: 13, borderRadius: 10, backgroundColor: COLORS.primary,
+  },
+  approveDocBtnText: { fontSize: 14, fontWeight: '700', color: COLORS.white },
+
+  // Reject note panel
+  rejectPanel: { backgroundColor: '#FEF2F2', borderRadius: 10, padding: 12, marginTop: 14, borderWidth: 1, borderColor: '#FCA5A5' },
+  rejectPanelLabel: { fontSize: 10, fontWeight: '800', color: COLORS.danger, letterSpacing: 1, marginBottom: 8 },
+  rejectInput: {
+    backgroundColor: COLORS.white, borderRadius: 8, borderWidth: 1, borderColor: '#FCA5A5',
+    padding: 10, fontSize: 13, color: COLORS.text, minHeight: 72, marginBottom: 10,
+    ...Platform.select({ web: { outlineStyle: 'none' } }),
+  },
+  rejectPanelActions: { flexDirection: 'row', gap: 8 },
+  cancelBtn: { flex: 1, paddingVertical: 10, borderRadius: 8, borderWidth: 1.5, borderColor: COLORS.border, alignItems: 'center', backgroundColor: COLORS.white },
+  cancelBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.subtext },
+  confirmRejectBtn: { flex: 2, paddingVertical: 10, borderRadius: 8, backgroundColor: COLORS.danger, alignItems: 'center', justifyContent: 'center' },
+  confirmRejectBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.white },
+
+  // Action message banner
+  actionBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1, borderTopColor: COLORS.border },
+  actionBannerSuccess: { backgroundColor: '#F0FDF4' },
+  actionBannerError:   { backgroundColor: '#FEF2F2' },
+  actionBannerText:    { flex: 1, fontSize: 13, fontWeight: '600' },
+
+  // Document images in modal
+  modalDocsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 4,
+  },
+  modalDocBox: {
+    flex: 1,
+  },
+  modalDocLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.subtext,
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  modalDocImage: {
+    width: '100%',
+    height: 160,
+    borderRadius: 10,
+    backgroundColor: COLORS.background,
+  },
+  modalDocEmpty: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderStyle: 'dashed',
+    gap: 6,
   },
 });

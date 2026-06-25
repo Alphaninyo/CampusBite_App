@@ -6,6 +6,7 @@ export const api = {
   auth: {
     register:         (data)           => client.post('/auth/register', data),
     login:            (data)           => client.post('/auth/login', data),
+    checkStatus:      (data)           => client.post('/auth/check-status', data),
     forgotPassword:    (data)           => client.post('/auth/forgot-password', data),
     resetPassword:    (data)           => client.post('/auth/reset-password', data),
     getMe:            ()               => client.get('/auth/me'),
@@ -103,8 +104,9 @@ export const api = {
 
   // ─── Verification ───────────────────────────────────────────────────────────
   verification: {
-    upload:    (formData) => client.post('/verification/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
-    getStatus: ()         => client.get('/verification/status'),
+    upload:     (formData) => client.post('/verification/upload',      formData, _multipartHeaders()),
+    getStatus:  ()         => client.get('/verification/status'),
+    submitInfo: (formData) => client.post('/verification/submit-info', formData, _multipartHeaders()),
   },
 
   // ─── Admin ──────────────────────────────────────────────────────────────────
@@ -115,6 +117,12 @@ export const api = {
     getOrders:       (params) => client.get('/admin/orders', { params }),
     getUsers:        (params) => client.get('/admin/users', { params }),
     getVendors:      (params) => client.get('/admin/vendors', { params }),
+    requestInfo:     (userId, note, requestedDocs) => client.patch(`/admin/users/${userId}/request-info`, { note, requestedDocs }),
+    suspendUser:     (userId) => client.patch(`/admin/users/${userId}/suspend`),
+    // Document reviews (already-approved users who resubmitted docs)
+    getPendingDocUsers: ()           => client.get('/admin/users/pending-docs'),
+    approveUserDocs:    (userId)     => client.patch(`/admin/users/${userId}/approve-docs`),
+    rejectUserDocs:     (userId, note) => client.patch(`/admin/users/${userId}/reject-docs`, { note }),
     // Vendor approvals
     getPendingVendors:       ()   => client.get('/vendors/admin/pending'),
     approveVendor:           (id) => client.patch(`/vendors/admin/${id}/approve`),

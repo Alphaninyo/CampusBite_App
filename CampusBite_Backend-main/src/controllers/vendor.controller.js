@@ -224,7 +224,7 @@ exports.getPendingVendors = async (req, res) => {
     // Primary: vendor profiles not yet approved or rejected
     const profilePending = await Vendor.findAll({
       where: { approved_at: null, rejected_at: null },
-      include: [{ model: User, as: 'owner', attributes: ['name', 'email', 'phone', 'is_approved', 'created_at'] }],
+      include: [{ model: User, as: 'owner', attributes: ['name', 'email', 'phone', 'is_approved', 'created_at', 'verification_status', 'verification_type', 'verification_document', 'passport_photo'] }],
       order: [['created_at', 'ASC']],
     });
 
@@ -250,7 +250,7 @@ exports.getPendingVendors = async (req, res) => {
     // Re-fetch after auto-creating any missing profiles
     const vendors = await Vendor.findAll({
       where: { approved_at: null, rejected_at: null },
-      include: [{ model: User, as: 'owner', attributes: ['name', 'email', 'phone', 'is_approved', 'created_at'] }],
+      include: [{ model: User, as: 'owner', attributes: ['name', 'email', 'phone', 'is_approved', 'created_at', 'verification_status', 'verification_type', 'verification_document', 'passport_photo'] }],
       order: [['created_at', 'ASC']],
     });
 

@@ -1,30 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  Switch, Alert, Modal, ActivityIndicator, Image,
-  Platform, KeyboardAvoidingView,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+  Alert, ActivityIndicator, Image, Platform, Modal,
+  KeyboardAvoidingView, Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { api } from '../../api';
 import { COLORS, API_BASE_URL } from '../../constants';
-import useAuthStore from '../../stores/authStore';
 
 // updateMode: 'id' | 'photo' | null
-export default function AppSettingsScreen({ navigation }) {
-  const { user, logout } = useAuthStore();
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [locationEnabled, setLocationEnabled] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
-
+export default function VendorSettingsScreen({ navigation }) {
   const [verification, setVerification] = useState(null);
-  const [updateMode, setUpdateMode] = useState(null);
+  const [updateMode, setUpdateMode] = useState(null); // which doc to update
   const [file, setFile] = useState(null);
   const [docType, setDocType] = useState('national_id');
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [uploadSuccess, setUploadSuccess] = useState(false);
-  const [viewUrl, setViewUrl] = useState(null);
+  const [viewUrl, setViewUrl] = useState(null); // full-screen viewer
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
   useEffect(() => {
     api.verification.getStatus()
@@ -68,6 +63,7 @@ export default function AppSettingsScreen({ navigation }) {
       const formData = new FormData();
       const fieldName = updateMode === 'id' ? 'document' : 'passport_photo';
       if (updateMode === 'id') formData.append('document_type', docType);
+
       if (Platform.OS === 'web') {
         const res = await fetch(file.uri);
         const blob = await res.blob();
@@ -75,6 +71,7 @@ export default function AppSettingsScreen({ navigation }) {
       } else {
         formData.append(fieldName, { uri: file.uri, name: `${fieldName}_${Date.now()}.jpg`, type: 'image/jpeg' });
       }
+
       await api.verification.upload(formData);
       setVerification(v => ({ ...v, verification_status: 'pending' }));
       setUploadSuccess(true);
@@ -84,20 +81,6 @@ export default function AppSettingsScreen({ navigation }) {
     } finally {
       setUploading(false);
     }
-  };
-
-  const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', style: 'destructive', onPress: async () => await logout() },
-    ]);
-  };
-
-  const handleDeleteAccount = () => {
-    Alert.alert('Delete Account', 'This action cannot be undone. Are you sure?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => Alert.alert('Info', 'Account deletion requires contacting support.') },
-    ]);
   };
 
   const statusColor = (s) =>
@@ -111,67 +94,30 @@ export default function AppSettingsScreen({ navigation }) {
     s === 'info_requested' ? 'Admin requested info' : 'Not submitted';
 
   const idDocLabel = verification?.verification_type === 'passport' ? 'Passport (ID Document)' : 'National ID';
-  const idDocUrl   = verification?.verification_document ? `${API_BASE_URL}${verification.verification_document}` : null;
-  const photoUrl   = verification?.passport_photo        ? `${API_BASE_URL}${verification.passport_photo}`        : null;
-  const modalTitle = updateMode === 'id' ? `Update ${idDocLabel}` : 'Update Passport Sized Photo';
+  const idDocUrl = verification?.verification_document ? `${API_BASE_URL}${verification.verification_document}` : null;
+  const photoUrl = verification?.passport_photo ? `${API_BASE_URL}${verification.passport_photo}` : null;
 
-  const settingsSections = [
-    {
-      title: 'Notifications',
-      items: [
-        { icon: 'notifications-outline', label: 'Push Notifications', value: notificationsEnabled, onToggle: setNotificationsEnabled },
-        { icon: 'mail-outline', label: 'Email Notifications', value: true, onToggle: () => Alert.alert('Info', 'Email notifications are managed in your account settings.') },
-      ],
-    },
-    {
-      title: 'Location',
-      items: [
-        { icon: 'location-outline', label: 'Location Services', value: locationEnabled, onToggle: setLocationEnabled },
-      ],
-    },
-    {
-      title: 'Appearance',
-      items: [
-        { icon: 'moon-outline', label: 'Dark Mode', value: darkMode, onToggle: setDarkMode },
-      ],
-    },
-    {
-      title: 'Account',
-      items: [
-        { icon: 'person-outline', label: 'Edit Profile', onPress: () => navigation.navigate('EditProfile', { user }), showArrow: true },
-        { icon: 'lock-closed-outline', label: 'Change Password', onPress: () => Alert.alert('Change Password', 'Password reset link will be sent to your email.'), showArrow: true },
-      ],
-    },
-    {
-      title: 'About',
-      items: [
-        { icon: 'information-circle-outline', label: 'App Version', value: '1.0.0', showArrow: false },
-        { icon: 'document-text-outline', label: 'Terms of Service', onPress: () => Alert.alert('Terms', 'Terms of Service content here.'), showArrow: true },
-        { icon: 'shield-checkmark-outline', label: 'Privacy Policy', onPress: () => Alert.alert('Privacy', 'Privacy Policy content here.'), showArrow: true },
-      ],
-    },
-  ];
+  const modalTitle = updateMode === 'id' ? `Update ${idDocLabel}` : 'Update Passport Sized Photo';
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.black} />
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>App Settings</Text>
-        <View style={{ width: 24 }} />
+        <Text style={styles.headerTitle}>Settings</Text>
+        <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 32 }}>
+      <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 32 }}>
 
-        {/* ── Verification Documents ── */}
-        <Text style={styles.sectionTitle} onStartShouldSetResponder={() => true}>VERIFICATION DOCUMENTS</Text>
+        {/* ── Overall Status ── */}
+        <Text style={styles.sectionLabel}>VERIFICATION DOCUMENTS</Text>
 
-        {/* Status banner */}
         <View style={styles.statusBanner}>
           <View style={[styles.statusDot, { backgroundColor: statusColor(verification?.verification_status) }]} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.statusTitleText}>Document Status</Text>
+            <Text style={styles.statusTitle}>Document Status</Text>
             <Text style={[styles.statusValue, { color: statusColor(verification?.verification_status) }]}>
               {statusLabel(verification?.verification_status)}
             </Text>
@@ -185,7 +131,7 @@ export default function AppSettingsScreen({ navigation }) {
           </View>
         )}
 
-        {/* ID / Passport card */}
+        {/* ── ID / Passport Document card ── */}
         <View style={styles.docCard}>
           <View style={styles.docCardHeader}>
             <Ionicons name="card-outline" size={18} color={COLORS.primary} />
@@ -213,7 +159,7 @@ export default function AppSettingsScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* Passport Sized Photo card */}
+        {/* ── Passport Sized Photo card ── */}
         <View style={styles.docCard}>
           <View style={styles.docCardHeader}>
             <Ionicons name="person-circle-outline" size={18} color={COLORS.primary} />
@@ -244,55 +190,59 @@ export default function AppSettingsScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* ── Other settings sections ── */}
-        {settingsSections.map((section, sectionIndex) => (
-          <View key={sectionIndex} style={styles.section}>
-            <Text style={styles.sectionTitle}>{section.title}</Text>
-            <View style={styles.sectionCard}>
-              {section.items.map((item, itemIndex) => (
-                <TouchableOpacity
-                  key={itemIndex}
-                  style={[styles.item, itemIndex < section.items.length - 1 && styles.itemBorder]}
-                  onPress={item.onPress}
-                  disabled={!item.onPress && item.onToggle === undefined}
-                  activeOpacity={item.onPress ? 0.7 : 1}
-                >
-                  <View style={styles.itemLeft}>
-                    <View style={styles.iconBox}>
-                      <Ionicons name={item.icon} size={20} color={COLORS.primary} />
-                    </View>
-                    <Text style={styles.itemLabel}>{item.label}</Text>
-                  </View>
-                  {item.onToggle !== undefined ? (
-                    <Switch
-                      value={item.value}
-                      onValueChange={item.onToggle}
-                      trackColor={{ false: COLORS.border, true: COLORS.primary }}
-                      thumbColor={COLORS.white}
-                    />
-                  ) : item.showArrow !== false ? (
-                    <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
-                  ) : (
-                    <Text style={styles.itemValue}>{item.value}</Text>
-                  )}
-                </TouchableOpacity>
-              ))}
+        {/* ── Preferences ── */}
+        <Text style={styles.sectionLabel}>PREFERENCES</Text>
+        <View style={styles.card}>
+          <View style={styles.prefRow}>
+            <View style={styles.prefLeft}>
+              <View style={styles.prefIcon}>
+                <Ionicons name="notifications-outline" size={18} color={COLORS.primary} />
+              </View>
+              <Text style={styles.prefLabel}>Push Notifications</Text>
             </View>
+            <Switch
+              value={notificationsEnabled}
+              onValueChange={setNotificationsEnabled}
+              trackColor={{ false: COLORS.border, true: COLORS.primary }}
+              thumbColor={COLORS.white}
+            />
           </View>
-        ))}
+        </View>
 
-        {/* Danger Zone */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>DANGER ZONE</Text>
-          <TouchableOpacity style={styles.dangerBtn} onPress={handleLogout}>
-            <Ionicons name="log-out-outline" size={20} color={COLORS.primary} />
-            <Text style={styles.dangerText}>Logout</Text>
+        {/* ── About ── */}
+        <Text style={styles.sectionLabel}>ABOUT</Text>
+        <View style={styles.card}>
+          <View style={styles.prefRow}>
+            <View style={styles.prefLeft}>
+              <View style={styles.prefIcon}>
+                <Ionicons name="information-circle-outline" size={18} color={COLORS.primary} />
+              </View>
+              <Text style={styles.prefLabel}>App Version</Text>
+            </View>
+            <Text style={styles.prefValue}>1.0.0</Text>
+          </View>
+          <View style={styles.divider} />
+          <TouchableOpacity style={styles.prefRow} onPress={() => Alert.alert('Terms', 'Terms of Service content here.')}>
+            <View style={styles.prefLeft}>
+              <View style={styles.prefIcon}>
+                <Ionicons name="document-text-outline" size={18} color={COLORS.primary} />
+              </View>
+              <Text style={styles.prefLabel}>Terms of Service</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={COLORS.subtext} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.dangerBtn} onPress={handleDeleteAccount}>
-            <Ionicons name="trash-outline" size={20} color="#DC2626" />
-            <Text style={[styles.dangerText, { color: COLORS.danger }]}>Delete Account</Text>
+          <View style={styles.divider} />
+          <TouchableOpacity style={styles.prefRow} onPress={() => Alert.alert('Privacy', 'Privacy Policy content here.')}>
+            <View style={styles.prefLeft}>
+              <View style={styles.prefIcon}>
+                <Ionicons name="shield-checkmark-outline" size={18} color={COLORS.primary} />
+              </View>
+              <Text style={styles.prefLabel}>Privacy Policy</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={COLORS.subtext} />
           </TouchableOpacity>
         </View>
+
       </ScrollView>
 
       {/* ── Full-screen image viewer ── */}
@@ -334,9 +284,10 @@ export default function AppSettingsScreen({ navigation }) {
                 </View>
               ) : (
                 <>
+                  {/* ID type selector — only for ID doc */}
                   {updateMode === 'id' && (
                     <>
-                      <Text style={styles.inputLabel}>Document Type</Text>
+                      <Text style={styles.modalLabel}>Document Type</Text>
                       <View style={styles.docTypeRow}>
                         {['national_id', 'passport'].map(t => (
                           <TouchableOpacity
@@ -362,7 +313,7 @@ export default function AppSettingsScreen({ navigation }) {
                     </View>
                   )}
 
-                  <Text style={styles.inputLabel}>
+                  <Text style={styles.modalLabel}>
                     {updateMode === 'id' ? 'Select Document' : 'Select Photo'}
                   </Text>
 
@@ -418,31 +369,31 @@ export default function AppSettingsScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
+
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingVertical: 12,
-    backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.borderWarm,
+    backgroundColor: COLORS.card, borderBottomWidth: 1, borderBottomColor: COLORS.border,
   },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.black },
-  scrollView: { flex: 1 },
+  backBtn: { padding: 4, minWidth: 40 },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.text },
 
-  // Section label
-  sectionTitle: {
+  scroll: { flex: 1 },
+  sectionLabel: {
     fontSize: 11, fontWeight: '800', color: COLORS.subtext, letterSpacing: 1.2,
-    marginTop: 20, marginBottom: 8, paddingHorizontal: 16, textTransform: 'uppercase',
+    marginTop: 20, marginBottom: 8, marginHorizontal: 16,
   },
 
-  // Status banner
   statusBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: COLORS.white, borderRadius: 14, marginHorizontal: 16,
-    padding: 14, borderWidth: 1, borderColor: COLORS.borderWarm, marginBottom: 10,
+    backgroundColor: COLORS.card, borderRadius: 14, marginHorizontal: 16,
+    padding: 14, borderWidth: 1, borderColor: COLORS.borderWarm,
+    marginBottom: 10,
   },
   statusDot: { width: 10, height: 10, borderRadius: 5 },
-  statusTitleText: { fontSize: 12, color: COLORS.subtext, marginBottom: 2 },
+  statusTitle: { fontSize: 12, color: COLORS.subtext, marginBottom: 2 },
   statusValue: { fontSize: 14, fontWeight: '700' },
 
-  // Admin note
   adminNote: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
     backgroundColor: '#FFFBEB', borderRadius: 10, marginHorizontal: 16,
@@ -450,9 +401,9 @@ const styles = StyleSheet.create({
   },
   adminNoteText: { flex: 1, fontSize: 13, color: '#92400E', lineHeight: 18 },
 
-  // Document cards
+  // Individual doc cards
   docCard: {
-    backgroundColor: COLORS.white, borderRadius: 14, marginHorizontal: 16,
+    backgroundColor: COLORS.card, borderRadius: 14, marginHorizontal: 16,
     marginBottom: 12, borderWidth: 1, borderColor: COLORS.borderWarm, overflow: 'hidden',
   },
   docCardHeader: {
@@ -489,23 +440,17 @@ const styles = StyleSheet.create({
   },
   updateDocBtnText: { fontSize: 14, fontWeight: '700', color: COLORS.primary },
 
-  // Settings list sections
-  section: { paddingHorizontal: 16 },
-  sectionCard: { backgroundColor: COLORS.white, borderRadius: 12, borderWidth: 1, borderColor: COLORS.borderWarm },
-  item: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
-  itemBorder: { borderBottomWidth: 1, borderBottomColor: COLORS.borderWarm },
-  itemLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  iconBox: { width: 36, height: 36, borderRadius: 8, backgroundColor: COLORS.iconBg, alignItems: 'center', justifyContent: 'center' },
-  itemLabel: { fontSize: 15, color: COLORS.black },
-  itemValue: { fontSize: 14, color: COLORS.gray },
-
-  // Danger zone
-  dangerBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: COLORS.white, borderRadius: 10, padding: 14, marginBottom: 8,
-    borderWidth: 1, borderColor: COLORS.borderWarm,
+  // Generic card (preferences / about)
+  card: {
+    backgroundColor: COLORS.card, borderRadius: 14,
+    marginHorizontal: 16, borderWidth: 1, borderColor: COLORS.borderWarm, overflow: 'hidden',
   },
-  dangerText: { fontSize: 15, fontWeight: '600', color: COLORS.primary },
+  divider: { height: 1, backgroundColor: COLORS.borderWarm, marginHorizontal: 16 },
+  prefRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
+  prefLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  prefIcon: { width: 34, height: 34, borderRadius: 8, backgroundColor: COLORS.primary + '18', alignItems: 'center', justifyContent: 'center' },
+  prefLabel: { fontSize: 15, color: COLORS.text, fontWeight: '500' },
+  prefValue: { fontSize: 14, color: COLORS.subtext },
 
   // Full-screen viewer
   viewerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', justifyContent: 'center', alignItems: 'center' },
@@ -515,13 +460,13 @@ const styles = StyleSheet.create({
   // Update modal
   modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.55)' },
   modalSheet: {
-    backgroundColor: COLORS.white, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    backgroundColor: COLORS.card, borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: 24, paddingBottom: 40, maxHeight: '85%',
   },
   modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: COLORS.border, alignSelf: 'center', marginBottom: 16 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   modalTitle: { fontSize: 17, fontWeight: '700', color: COLORS.text },
-  inputLabel: { fontSize: 13, fontWeight: '600', color: COLORS.subtext, marginBottom: 10, marginTop: 4 },
+  modalLabel: { fontSize: 13, fontWeight: '600', color: COLORS.subtext, marginBottom: 10, marginTop: 4 },
 
   photoHint: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
@@ -540,7 +485,7 @@ const styles = StyleSheet.create({
   filePick: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     paddingVertical: 16, borderRadius: 12, borderWidth: 1.5, borderColor: COLORS.primary,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
   },
   filePickText: { fontSize: 14, fontWeight: '600', color: COLORS.primary },
 

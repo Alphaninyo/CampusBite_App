@@ -69,12 +69,15 @@ export default function RegisterScreen({ navigation }) {
     name: '', email: '', phone: '', password: '',
     role: 'consumer', business_name: '', vendor_type: 'home_based', location: '',
   });
-  const [step, setStep]           = useState(1);
-  const [loading, setLoading]     = useState(false);
-  const [docType, setDocType]     = useState('national_id');
+  const [step, setStep]             = useState(1);
+  const [loading, setLoading]       = useState(false);
+  const [docType, setDocType]       = useState('national_id');
   const [pickedFile, setPickedFile] = useState(null);
+  const [selfieFile, setSelfieFile] = useState(null);
   const [pendingToken, setPendingToken] = useState(null);
   const [pendingUser,  setPendingUser]  = useState(null);
+  const [step1Error, setStep1Error]     = useState('');
+  const [step2Error, setStep2Error]     = useState('');
   const btnScale                  = useRef(new Animated.Value(1)).current;
   const setSession                = useAuthStore((s) => s.setSession);
 
@@ -85,10 +88,15 @@ export default function RegisterScreen({ navigation }) {
   const needsVerification = form.role === 'vendor' || form.role === 'food_courier';
 
   const handleStep1 = async () => {
-    if (!form.name || !form.email || !form.phone || !form.password)
-      return Alert.alert('Missing fields', 'Please fill in all required fields.');
-    if (form.role === 'vendor' && !form.business_name)
-      return Alert.alert('Missing fields', 'Business name is required for vendors.');
+    if (!form.name || !form.email || !form.phone || !form.password) {
+      setStep1Error('Please fill in all required fields.');
+      return;
+    }
+    if (form.role === 'vendor' && !form.business_name) {
+      setStep1Error('Business name is required for vendors.');
+      return;
+    }
+    setStep1Error('');
     setLoading(true);
     try {
       const { data } = await api.auth.register(form);
@@ -103,47 +111,54 @@ export default function RegisterScreen({ navigation }) {
         await setSession(data.token, data.user);
       }
     } catch (err) {
-      Alert.alert('Registration Failed', err.message);
+      setStep1Error(err.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const pickFromGallery = async () => {
+  const pickFile = async (setter, useCamera = false) => {
+    if (useCamera) {
+      if (Platform.OS === 'web') return Alert.alert('Not supported', 'Use gallery on web.');
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') return Alert.alert('Permission required', 'Allow camera access.');
+      const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.85 });
+      if (!result.canceled && result.assets?.length > 0) setter(result.assets[0]);
+      return;
+    }
     if (Platform.OS !== 'web') {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') return Alert.alert('Permission required', 'Allow access to your photo library.');
     }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, quality: 0.8 });
-    if (!result.canceled && result.assets?.length > 0) setPickedFile(result.assets[0]);
-  };
-
-  const pickFromCamera = async () => {
-    if (Platform.OS === 'web') return Alert.alert('Not supported', 'Use gallery on web.');
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') return Alert.alert('Permission required', 'Allow camera access.');
-    const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.8 });
-    if (!result.canceled && result.assets?.length > 0) setPickedFile(result.assets[0]);
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, quality: 0.85 });
+    if (!result.canceled && result.assets?.length > 0) setter(result.assets[0]);
   };
 
   const handleStep2 = async (skip = false) => {
     setLoading(true);
     try {
-      if (!skip && pickedFile) {
+      if (!skip && (pickedFile || selfieFile)) {
         const formData = new FormData();
         formData.append('document_type', docType);
-        if (Platform.OS === 'web') {
-          const res  = await fetch(pickedFile.uri);
-          const blob = await res.blob();
-          formData.append('document', blob, `verification_${Date.now()}.jpg`);
-        } else {
-          formData.append('document', { uri: pickedFile.uri, name: `verification_${Date.now()}.jpg`, type: 'image/jpeg' });
-        }
+
+        const appendFile = async (field, file) => {
+          if (!file) return;
+          if (Platform.OS === 'web') {
+            const res  = await fetch(file.uri);
+            const blob = await res.blob();
+            formData.append(field, blob, `${field}_${Date.now()}.jpg`);
+          } else {
+            formData.append(field, { uri: file.uri, name: `${field}_${Date.now()}.jpg`, type: 'image/jpeg' });
+          }
+        };
+
+        await appendFile('passport_photo', selfieFile);
+        await appendFile('document',       pickedFile);
         await api.verification.upload(formData);
       }
       await setSession(pendingToken, pendingUser);
     } catch (err) {
-      Alert.alert('Error', err.message);
+      setStep2Error(err.message || 'Upload failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -265,6 +280,13 @@ export default function RegisterScreen({ navigation }) {
                 )}
               </TouchableOpacity>
             </Animated.View>
+
+            {step1Error ? (
+              <View style={styles.inlineError}>
+                <Ionicons name="alert-circle-outline" size={15} color={COLORS.danger} />
+                <Text style={styles.inlineErrorText}>{step1Error}</Text>
+              </View>
+            ) : null}
           </View>
         )}
 
@@ -273,7 +295,44 @@ export default function RegisterScreen({ navigation }) {
           <View style={styles.card}>
             <View style={styles.cardAccent} />
 
-            <Text style={styles.sectionLabel}>DOCUMENT TYPE</Text>
+            {/* ── Passport-sized selfie ── */}
+            <Text style={styles.sectionLabel}>PASSPORT-SIZED PHOTO (SELFIE)</Text>
+            <Text style={styles.sectionHint}>A clear photo of your face — look straight at the camera, no sunglasses.</Text>
+            {selfieFile ? (
+              <View style={styles.previewBox}>
+                <View style={styles.previewIcon}>
+                  <Ionicons name="checkmark-circle" size={32} color={COLORS.success} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.previewName}>Selfie selected ✓</Text>
+                  <Text style={styles.previewSize}>{Math.round((selfieFile.fileSize || 0) / 1024)} KB</Text>
+                </View>
+                <TouchableOpacity onPress={() => setSelfieFile(null)}>
+                  <Ionicons name="close-circle" size={22} color={COLORS.danger} />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.uploadArea}>
+                <View style={styles.uploadIconRing}>
+                  <Ionicons name="person-circle-outline" size={30} color={COLORS.primary} />
+                </View>
+                <Text style={styles.uploadTitle}>Upload your selfie</Text>
+                <Text style={styles.uploadSub}>JPEG or PNG · Max 8 MB</Text>
+                <View style={styles.uploadBtnRow}>
+                  <TouchableOpacity style={styles.uploadBtn} onPress={() => pickFile(setSelfieFile)} activeOpacity={0.8}>
+                    <Ionicons name="images-outline" size={17} color={COLORS.primary} />
+                    <Text style={styles.uploadBtnText}>Gallery</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.uploadBtn} onPress={() => pickFile(setSelfieFile, true)} activeOpacity={0.8}>
+                    <Ionicons name="camera-outline" size={17} color={COLORS.primary} />
+                    <Text style={styles.uploadBtnText}>Camera</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            <Text style={[styles.sectionLabel, { marginTop: 16 }]}>IDENTITY DOCUMENT</Text>
+            <Text style={styles.sectionHint}>Upload your government-issued ID or passport. All four corners must be visible.</Text>
             <View style={styles.docTypeRow}>
               {DOC_TYPES.map((d) => (
                 <TouchableOpacity key={d.key} style={[styles.docTypeBtn, docType === d.key && styles.docTypeBtnActive]} onPress={() => setDocType(d.key)} activeOpacity={0.8}>
@@ -283,12 +342,10 @@ export default function RegisterScreen({ navigation }) {
                 </TouchableOpacity>
               ))}
             </View>
-
-            <Text style={styles.sectionLabel}>UPLOAD DOCUMENT</Text>
             {pickedFile ? (
               <View style={styles.previewBox}>
                 <View style={styles.previewIcon}>
-                  <Ionicons name="document-text" size={32} color={COLORS.primary} />
+                  <Ionicons name="checkmark-circle" size={32} color={COLORS.success} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.previewName}>Document selected ✓</Text>
@@ -301,16 +358,16 @@ export default function RegisterScreen({ navigation }) {
             ) : (
               <View style={styles.uploadArea}>
                 <View style={styles.uploadIconRing}>
-                  <Ionicons name="cloud-upload-outline" size={30} color={COLORS.primary} />
+                  <Ionicons name="card-outline" size={30} color={COLORS.primary} />
                 </View>
-                <Text style={styles.uploadTitle}>Upload your document</Text>
+                <Text style={styles.uploadTitle}>Upload your ID document</Text>
                 <Text style={styles.uploadSub}>JPEG or PNG · Max 8 MB</Text>
                 <View style={styles.uploadBtnRow}>
-                  <TouchableOpacity style={styles.uploadBtn} onPress={pickFromGallery} activeOpacity={0.8}>
+                  <TouchableOpacity style={styles.uploadBtn} onPress={() => pickFile(setPickedFile)} activeOpacity={0.8}>
                     <Ionicons name="images-outline" size={17} color={COLORS.primary} />
                     <Text style={styles.uploadBtnText}>Gallery</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.uploadBtn} onPress={pickFromCamera} activeOpacity={0.8}>
+                  <TouchableOpacity style={styles.uploadBtn} onPress={() => pickFile(setPickedFile, true)} activeOpacity={0.8}>
                     <Ionicons name="camera-outline" size={17} color={COLORS.primary} />
                     <Text style={styles.uploadBtnText}>Camera</Text>
                   </TouchableOpacity>
@@ -332,13 +389,20 @@ export default function RegisterScreen({ navigation }) {
                 {loading ? <ActivityIndicator color={COLORS.card} size="small" /> : (
                   <View style={styles.submitInner}>
                     <Ionicons name="cloud-upload" size={17} color={COLORS.card} style={{ marginRight: 8 }} />
-                    <Text style={styles.submitText}>{pickedFile ? 'Submit & Continue' : 'Continue without document'}</Text>
+                    <Text style={styles.submitText}>{(pickedFile || selfieFile) ? 'Submit & Continue' : 'Continue without documents'}</Text>
                   </View>
                 )}
               </TouchableOpacity>
             </Animated.View>
 
-            {pickedFile && (
+            {step2Error ? (
+              <View style={styles.inlineError}>
+                <Ionicons name="alert-circle-outline" size={15} color={COLORS.danger} />
+                <Text style={styles.inlineErrorText}>{step2Error}</Text>
+              </View>
+            ) : null}
+
+            {(pickedFile || selfieFile) && (
               <TouchableOpacity onPress={() => handleStep2(true)} style={styles.skipRow} disabled={loading} activeOpacity={0.7}>
                 <Text style={styles.skipText}>Skip for now</Text>
                 <Ionicons name="arrow-forward" size={13} color={COLORS.muted} style={{ marginLeft: 4 }} />
@@ -388,7 +452,8 @@ const styles = StyleSheet.create({
     shadowColor: COLORS.primary, shadowOpacity: 0.09, shadowRadius: 18, shadowOffset: { width: 0, height: 6 }, elevation: 6,
   },
   cardAccent:   { height: 4, backgroundColor: COLORS.primary, marginHorizontal: -22, marginBottom: 22 },
-  sectionLabel: { fontSize: 10, fontWeight: '700', color: COLORS.subtext, letterSpacing: 1.2, marginBottom: 10 },
+  sectionLabel: { fontSize: 10, fontWeight: '700', color: COLORS.subtext, letterSpacing: 1.2, marginBottom: 4 },
+  sectionHint:  { fontSize: 12, color: COLORS.muted, marginBottom: 10, lineHeight: 17 },
 
   // ── Role selector ──
   roleRow: { flexDirection: 'row', columnGap: 8, marginBottom: 20 },
@@ -486,4 +551,8 @@ const styles = StyleSheet.create({
   // ── Skip ──
   skipRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 12 },
   skipText: { fontSize: 13, color: COLORS.muted, fontWeight: '500' },
+
+  // ── Inline error ──
+  inlineError:     { flexDirection: 'row', alignItems: 'center', columnGap: 6, backgroundColor: '#FEE2E2', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12, marginTop: 10 },
+  inlineErrorText: { flex: 1, fontSize: 13, color: COLORS.danger, fontWeight: '500' },
 });

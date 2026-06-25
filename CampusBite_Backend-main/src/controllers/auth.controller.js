@@ -228,6 +228,14 @@ exports.login = async (req, res) => {
       });
     }
 
+    // ── Suspension gate ───────────────────────────────────────────────────────────
+    if (user.is_suspended) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account has been suspended. Please contact support.',
+      });
+    }
+
     // ── Approval gate for vendors and food couriers ───────────────────────────────
     if (['vendor', 'food_courier'].includes(user.role) && !user.is_approved) {
       return res.status(403).json({
@@ -416,6 +424,75 @@ exports.updateProfile = async (req, res) => {
     res.status(200).json({ success: true, message: 'Profile updated successfully.', user: updatedUser });
   } catch (error) {
     console.error('[AUTH] updateProfile error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/**
+ * POST /api/auth/check-status
+ * Public — verifies credentials and returns the approval status for
+ * vendor or food_courier accounts that cannot yet log in.
+ *
+ * Body: { email, password }
+ * Returns: { role, name, approval_status: 'pending' | 'rejected' | 'approved', registered_at, rejected_at? }
+ */
+exports.checkApprovalStatus = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: 'Email and password are required.' });
+    }
+
+    const user = await User.findOne({
+      where:      { email: email.toLowerCase() },
+      attributes: ['id', 'name', 'email', 'role', 'password_hash', 'is_approved', 'verification_status', 'admin_note', 'requested_docs', 'verification_document', 'passport_photo', 'created_at'],
+    });
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Invalid email or password.' });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password_hash);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: 'Invalid email or password.' });
+    }
+
+    if (!['vendor', 'food_courier'].includes(user.role)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Status check is only available for vendor and food courier accounts.',
+      });
+    }
+
+    let profile = null;
+    if (user.role === 'vendor') {
+      profile = await Vendor.findOne({ where: { user_id: user.id } });
+    } else {
+      profile = await FoodCourierProfile.findOne({ where: { user_id: user.id } });
+    }
+
+    let approval_status = 'pending';
+    if (user.is_approved) approval_status = 'approved';
+    else if (profile?.rejected_at) approval_status = 'rejected';
+    else if (user.verification_status === 'info_requested') approval_status = 'info_requested';
+
+    return res.status(200).json({
+      success: true,
+      name: user.name,
+      role: user.role,
+      user_id: user.id,
+      approval_status,
+      admin_note:     user.admin_note    || null,
+      requested_docs: user.requested_docs
+        ? JSON.parse(user.requested_docs)
+        : [
+            ...(!user.passport_photo        ? ['passport_photo'] : []),
+            ...(!user.verification_document ? ['national_id']    : []),
+          ],
+      registered_at:  user.created_at,
+      rejected_at:    profile?.rejected_at || null,
+    });
+  } catch (error) {
+    console.error('[AUTH] checkApprovalStatus error:', error);
     res.status(500).json({ success: false, message: 'Server error.' });
   }
 };

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -17,6 +17,9 @@ import WriteReviewScreen   from '../screens/consumer/WriteReviewScreen';
 import ProfileScreen       from '../screens/shared/ProfileScreen';
 import { COLORS }          from '../constants';
 import useCartStore        from '../stores/cartStore';
+import { api }             from '../api';
+
+const ACTIVE_CONSUMER_STATUSES = ['Received', 'Preparing', 'Ready', 'Collected', 'In Transit'];
 
 const Tab   = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -99,6 +102,26 @@ function OrdersStack() {
 
 export default function ConsumerNavigator() {
   const insets = useSafeAreaInsets();
+  const [orderCount, setOrderCount] = useState(0);
+
+  const fetchOrderCount = useCallback(async () => {
+    try {
+      const res    = await api.orders.getMyOrders();
+      const orders = res.data?.orders ?? (Array.isArray(res.data) ? res.data : []);
+      setOrderCount(orders.filter(o => ACTIVE_CONSUMER_STATUSES.includes(o.status)).length);
+    } catch {
+      // silently ignore — badge just won't show
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchOrderCount();
+    const interval = setInterval(fetchOrderCount, 30000);
+    return () => clearInterval(interval);
+  }, [fetchOrderCount]);
+
+  const orderBadge = orderCount > 0 ? (orderCount > 99 ? '99+' : orderCount) : undefined;
+  const badgeStyle = { backgroundColor: COLORS.danger, fontSize: 10, fontWeight: '700', minWidth: 18, height: 18, borderRadius: 9 };
 
   return (
     <Tab.Navigator
@@ -146,11 +169,14 @@ export default function ConsumerNavigator() {
       <Tab.Screen
         name="OrdersTab"
         component={OrdersStack}
+        listeners={{ tabPress: () => fetchOrderCount() }}
         options={{
           title: 'Orders',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="bag-outline" size={size} color={color} />
           ),
+          tabBarBadge: orderBadge,
+          tabBarBadgeStyle: badgeStyle,
         }}
       />
 

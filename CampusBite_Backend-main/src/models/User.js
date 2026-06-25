@@ -80,10 +80,31 @@ const User = sequelize.define(
       comment:   'Type of verification document uploaded.',
     },
     verification_status: {
-      type:      DataTypes.ENUM('not_submitted', 'pending', 'approved', 'rejected'),
+      type:      DataTypes.ENUM('not_submitted', 'pending', 'approved', 'rejected', 'info_requested'),
       allowNull: false,
       defaultValue: 'not_submitted',
       comment:   'Admin review status of the uploaded verification document.',
+    },
+    passport_photo: {
+      type:      DataTypes.STRING(500),
+      allowNull: true,
+      comment:   'File path to the passport-sized photo uploaded by the user.',
+    },
+    admin_note: {
+      type:      DataTypes.TEXT,
+      allowNull: true,
+      comment:   'Note from admin requesting additional information or explaining rejection.',
+    },
+    requested_docs: {
+      type:      DataTypes.TEXT,
+      allowNull: true,
+      comment:   'JSON array of doc keys the admin requested: ["passport_photo","id_document"]',
+    },
+    is_suspended: {
+      type:         DataTypes.BOOLEAN,
+      allowNull:    false,
+      defaultValue: false,
+      comment:      'Admin can suspend any user account to block login.',
     },
   },
   {

@@ -2,11 +2,12 @@ import React, { useState, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
-  ScrollView, Animated, Image,
+  ScrollView, Animated, Image, Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import useAuthStore from '../../stores/authStore';
 import { COLORS } from '../../constants';
+import { api } from '../../api';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail]               = useState('');
@@ -19,6 +20,33 @@ export default function LoginScreen({ navigation }) {
   const [errorMsg, setErrorMsg]         = useState(null);
   const btnScale                        = useRef(new Animated.Value(1)).current;
   const login                           = useAuthStore((s) => s.login);
+
+  // ── Application status check ──
+  const [statusOpen, setStatusOpen]         = useState(false);
+  const [statusEmail, setStatusEmail]       = useState('');
+  const [statusPassword, setStatusPassword] = useState('');
+  const [statusShowPass, setStatusShowPass] = useState(false);
+  const [statusLoading, setStatusLoading]   = useState(false);
+  const [statusResult, setStatusResult]     = useState(null);  // { name, role, approval_status, registered_at, rejected_at }
+  const [statusError, setStatusError]       = useState(null);
+
+  const handleCheckStatus = async () => {
+    if (!statusEmail || !statusPassword) {
+      setStatusError('Please enter your email and password.');
+      return;
+    }
+    setStatusError(null);
+    setStatusResult(null);
+    setStatusLoading(true);
+    try {
+      const res = await api.auth.checkStatus({ email: statusEmail.trim(), password: statusPassword });
+      setStatusResult(res.data);
+    } catch (err) {
+      setStatusError(err.message || 'Could not retrieve status. Check your credentials.');
+    } finally {
+      setStatusLoading(false);
+    }
+  };
 
   const pressIn  = () => Animated.spring(btnScale, { toValue: 0.96, useNativeDriver: false }).start();
   const pressOut = () => Animated.spring(btnScale, { toValue: 1,    useNativeDriver: false }).start();
@@ -36,6 +64,8 @@ export default function LoginScreen({ navigation }) {
     } catch (err) {
       if (err.message?.toLowerCase().includes('pending') || err.message?.toLowerCase().includes('approval')) {
         setPendingMsg(err.message);
+      } else if (err.message?.toLowerCase().includes('suspended')) {
+        setErrorMsg(err.message);
       } else {
         setErrorMsg('Incorrect email or password. Please try again.');
       }
@@ -116,7 +146,19 @@ export default function LoginScreen({ navigation }) {
               <View style={styles.errorBannerLeft}>
                 <Ionicons name="alert-circle" size={20} color={COLORS.danger} />
               </View>
-              <Text style={styles.errorBannerText}>{errorMsg}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.errorBannerText}>{errorMsg}</Text>
+                {errorMsg.toLowerCase().includes('suspended') && (
+                  <TouchableOpacity
+                    onPress={() => Linking.openURL('mailto:admin@campusbite.com?subject=Account%20Suspension%20Appeal')}
+                    style={styles.contactSupportBtn}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="mail-outline" size={13} color={COLORS.danger} />
+                    <Text style={styles.contactSupportText}>Email admin@campusbite.com</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
               <TouchableOpacity onPress={() => setErrorMsg(null)}>
                 <Ionicons name="close" size={18} color={COLORS.danger} />
               </TouchableOpacity>
@@ -222,6 +264,158 @@ export default function LoginScreen({ navigation }) {
           <Text style={styles.signupText}>Don't have an account? </Text>
           <Text style={styles.signupLink}>Sign up</Text>
         </TouchableOpacity>
+
+        {/* ── Application Status Checker ── */}
+        <View style={styles.statusChecker}>
+          <TouchableOpacity
+            style={styles.statusToggleRow}
+            onPress={() => { setStatusOpen(!statusOpen); setStatusResult(null); setStatusError(null); }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="shield-checkmark-outline" size={16} color={COLORS.primary} style={{ marginRight: 6 }} />
+            <Text style={styles.statusToggleText}>Check my application status</Text>
+            <Ionicons name={statusOpen ? 'chevron-up' : 'chevron-down'} size={16} color={COLORS.primary} style={{ marginLeft: 4 }} />
+          </TouchableOpacity>
+
+          {statusOpen && (
+            <View style={styles.statusPanel}>
+              <Text style={styles.statusPanelHint}>
+                Enter your vendor or food courier credentials to see whether your registration was accepted or denied.
+              </Text>
+
+              {/* Status email */}
+              <View style={styles.statusInputWrap}>
+                <Ionicons name="mail-outline" size={15} color={COLORS.muted} style={{ marginRight: 8 }} />
+                <TextInput
+                  style={styles.statusInput}
+                  placeholder="your@email.com"
+                  placeholderTextColor={COLORS.muted}
+                  value={statusEmail}
+                  onChangeText={(v) => { setStatusEmail(v); setStatusError(null); setStatusResult(null); }}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+
+              {/* Status password */}
+              <View style={styles.statusInputWrap}>
+                <Ionicons name="lock-closed-outline" size={15} color={COLORS.muted} style={{ marginRight: 8 }} />
+                <TextInput
+                  style={[styles.statusInput, { flex: 1 }]}
+                  placeholder="Password"
+                  placeholderTextColor={COLORS.muted}
+                  value={statusPassword}
+                  onChangeText={(v) => { setStatusPassword(v); setStatusError(null); setStatusResult(null); }}
+                  secureTextEntry={!statusShowPass}
+                />
+                <TouchableOpacity onPress={() => setStatusShowPass(!statusShowPass)} activeOpacity={0.7}>
+                  <Ionicons name={statusShowPass ? 'eye' : 'eye-off'} size={16} color={COLORS.muted} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Error */}
+              {statusError && (
+                <Text style={styles.statusErrorText}>{statusError}</Text>
+              )}
+
+              {/* Check button */}
+              <TouchableOpacity
+                style={[styles.statusCheckBtn, statusLoading && { opacity: 0.7 }]}
+                onPress={handleCheckStatus}
+                disabled={statusLoading}
+                activeOpacity={0.8}
+              >
+                {statusLoading
+                  ? <ActivityIndicator color={COLORS.card} size="small" />
+                  : <Text style={styles.statusCheckBtnText}>Check Status</Text>
+                }
+              </TouchableOpacity>
+
+              {/* Result card */}
+              {statusResult && (
+                <View style={[
+                  styles.statusResultCard,
+                  statusResult.approval_status === 'rejected'      && styles.statusResultCardRejected,
+                  statusResult.approval_status === 'approved'      && styles.statusResultCardApproved,
+                  statusResult.approval_status === 'info_requested' && styles.statusResultCardInfo,
+                ]}>
+                  <View style={styles.statusResultHeader}>
+                    <Ionicons
+                      name={
+                        statusResult.approval_status === 'approved'       ? 'checkmark-circle' :
+                        statusResult.approval_status === 'rejected'       ? 'close-circle'     :
+                        statusResult.approval_status === 'info_requested' ? 'alert-circle'     : 'time'
+                      }
+                      size={22}
+                      color={
+                        statusResult.approval_status === 'approved'       ? COLORS.success  :
+                        statusResult.approval_status === 'rejected'       ? COLORS.danger   :
+                        statusResult.approval_status === 'info_requested' ? COLORS.infoText : COLORS.warning
+                      }
+                    />
+                    <Text style={[
+                      styles.statusResultTitle,
+                      statusResult.approval_status === 'rejected'       && { color: COLORS.danger },
+                      statusResult.approval_status === 'approved'       && { color: COLORS.success },
+                      statusResult.approval_status === 'info_requested' && { color: COLORS.infoText },
+                    ]}>
+                      {statusResult.approval_status === 'approved'       ? 'Application Approved'  :
+                       statusResult.approval_status === 'rejected'       ? 'Application Denied'    :
+                       statusResult.approval_status === 'info_requested' ? 'Information Required'  : 'Under Review'}
+                    </Text>
+                  </View>
+
+                  <Text style={styles.statusResultName}>Hello, {statusResult.name}</Text>
+                  <Text style={styles.statusResultRole}>
+                    Role: {statusResult.role === 'food_courier' ? 'Food Courier' : 'Vendor'}
+                  </Text>
+
+                  <Text style={styles.statusResultMsg}>
+                    {statusResult.approval_status === 'approved'
+                      ? 'Your registration has been approved. You can now log in above.'
+                      : statusResult.approval_status === 'rejected'
+                      ? 'Your application was not approved by the admin. Please contact support for more details.'
+                      : statusResult.approval_status === 'info_requested'
+                      ? 'The admin has requested additional information before your account can be approved.'
+                      : 'Your application is still being reviewed by the admin. You will be notified once a decision is made.'}
+                  </Text>
+
+                  {/* Admin note for info_requested */}
+                  {statusResult.approval_status === 'info_requested' && statusResult.admin_note && (
+                    <View style={styles.adminNoteBox}>
+                      <Text style={styles.adminNoteLabel}>Admin's note:</Text>
+                      <Text style={styles.adminNoteText}>{statusResult.admin_note}</Text>
+                    </View>
+                  )}
+
+                  {/* Submit info button */}
+                  {statusResult.approval_status === 'info_requested' && (
+                    <TouchableOpacity
+                      style={styles.submitInfoBtn}
+                      onPress={() => navigation.navigate('SubmitInfo', {
+                        email:         statusEmail,
+                        password:      statusPassword,
+                        adminNote:     statusResult.admin_note,
+                        role:          statusResult.role,
+                        requestedDocs: statusResult.requested_docs,
+                      })}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="cloud-upload-outline" size={15} color={COLORS.white} />
+                      <Text style={styles.submitInfoBtnText}>Submit Required Information</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {statusResult.rejected_at && (
+                    <Text style={styles.statusResultDate}>
+                      Decision date: {new Date(statusResult.rejected_at).toLocaleDateString()}
+                    </Text>
+                  )}
+                </View>
+              )}
+            </View>
+          )}
+        </View>
 
         {/* ── Trust badge ── */}
         <View style={styles.trustBadge}>
@@ -346,7 +540,7 @@ const styles = StyleSheet.create({
 
   // ── Error banner ──
   errorBanner: {
-    flexDirection: 'row', alignItems: 'center',
+    flexDirection: 'row', alignItems: 'flex-start',
     backgroundColor: COLORS.dangerBg, borderRadius: 14,
     borderWidth: 1.5, borderColor: COLORS.dangerBorder,
     padding: 12, marginBottom: 16, gap: 10,
@@ -355,7 +549,9 @@ const styles = StyleSheet.create({
     width: 32, height: 32, borderRadius: 8,
     backgroundColor: '#FEE2E2', alignItems: 'center', justifyContent: 'center',
   },
-  errorBannerText: { flex: 1, fontSize: 13, color: COLORS.danger, fontWeight: '600', lineHeight: 17 },
+  errorBannerText: { fontSize: 13, color: COLORS.danger, fontWeight: '600', lineHeight: 17 },
+  contactSupportBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
+  contactSupportText: { fontSize: 12, color: COLORS.danger, fontWeight: '700', textDecorationLine: 'underline' },
 
   // ── Trust ──
   trustBadge: {
@@ -366,4 +562,61 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   trustText: { fontSize: 11, color: COLORS.subtext, marginLeft: 6, fontWeight: '500' },
+
+  // ── Application status checker ──
+  statusChecker: {
+    width: '100%', marginBottom: 20,
+    backgroundColor: COLORS.card, borderRadius: 20,
+    borderWidth: 1.5, borderColor: COLORS.borderAccent,
+    overflow: 'hidden',
+    shadowColor: COLORS.primary, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
+  },
+  statusToggleRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 14, paddingHorizontal: 16,
+  },
+  statusToggleText: { fontSize: 13, fontWeight: '700', color: COLORS.primary },
+
+  statusPanel: { paddingHorizontal: 16, paddingBottom: 16, borderTopWidth: 1, borderTopColor: COLORS.borderAccent },
+  statusPanelHint: { fontSize: 12, color: COLORS.subtext, lineHeight: 17, marginTop: 12, marginBottom: 12 },
+
+  statusInputWrap: {
+    flexDirection: 'row', alignItems: 'center',
+    borderBottomWidth: 1.5, borderColor: COLORS.border,
+    paddingVertical: 8, marginBottom: 10,
+  },
+  statusInput: { flex: 1, fontSize: 14, color: COLORS.text, fontWeight: '500', ...Platform.select({ web: { outlineStyle: 'none' } }) },
+
+  statusErrorText: { fontSize: 12, color: COLORS.danger, marginBottom: 8, fontWeight: '600' },
+
+  statusCheckBtn: {
+    backgroundColor: COLORS.primary, borderRadius: 12, paddingVertical: 13,
+    alignItems: 'center', marginTop: 4, marginBottom: 12,
+  },
+  statusCheckBtnText: { color: COLORS.card, fontSize: 14, fontWeight: '800' },
+
+  statusResultCard: {
+    borderRadius: 14, padding: 14,
+    backgroundColor: COLORS.warningBg, borderWidth: 1.5, borderColor: COLORS.warningBorder,
+  },
+  statusResultCardRejected: { backgroundColor: COLORS.dangerBg,  borderColor: COLORS.dangerBorder },
+  statusResultCardApproved: { backgroundColor: COLORS.successBg, borderColor: COLORS.successBorder },
+  statusResultCardInfo:     { backgroundColor: COLORS.infoBg,    borderColor: COLORS.infoBorder },
+
+  statusResultHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 8 },
+  statusResultTitle:  { fontSize: 14, fontWeight: '800', color: COLORS.warningText },
+  statusResultName:   { fontSize: 13, fontWeight: '700', color: COLORS.text, marginBottom: 2 },
+  statusResultRole:   { fontSize: 12, color: COLORS.subtext, marginBottom: 6 },
+  statusResultMsg:    { fontSize: 12, color: COLORS.subtext, lineHeight: 17, marginBottom: 4 },
+  statusResultDate:   { fontSize: 11, color: COLORS.muted, marginTop: 4 },
+
+  adminNoteBox: { backgroundColor: 'rgba(59,130,246,0.08)', borderRadius: 8, padding: 10, marginTop: 8, marginBottom: 4 },
+  adminNoteLabel: { fontSize: 10, fontWeight: '800', color: COLORS.infoText, letterSpacing: 0.8, marginBottom: 3 },
+  adminNoteText:  { fontSize: 12, color: COLORS.infoText, lineHeight: 17 },
+
+  submitInfoBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    backgroundColor: COLORS.info, borderRadius: 10, paddingVertical: 11, marginTop: 10,
+  },
+  submitInfoBtnText: { fontSize: 13, fontWeight: '800', color: COLORS.white },
 });

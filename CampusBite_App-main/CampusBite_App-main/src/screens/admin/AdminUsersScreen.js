@@ -2,13 +2,13 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   ActivityIndicator, RefreshControl, ScrollView, TextInput,
-  Alert, Modal,
+  Alert, Modal, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
 import { COLORS } from '../../constants';
 
-const TABS = ['All', 'Consumers', 'Couriers', 'Suspended'];
+const TABS = ['All', 'Consumers', 'Vendors', 'Couriers', 'Suspended'];
 
 export default function AdminUsersScreen() {
   const [activeTab, setActiveTab] = useState('All');
@@ -19,8 +19,11 @@ export default function AdminUsersScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [actionMsg, setActionMsg]   = useState(null);
+  const [suspending, setSuspending] = useState(null);
   const [consumersCount, setConsumersCount] = useState(0);
-  const [couriersCount, setCouriersCount] = useState(0);
+  const [couriersCount, setCouriersCount]   = useState(0);
+  const [vendorsCount, setVendorsCount]     = useState(0);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -28,9 +31,11 @@ export default function AdminUsersScreen() {
       setUsers(data.users || []);
       
       const consumers = (data.users || []).filter(u => u.role === 'consumer');
-      const couriers = (data.users || []).filter(u => u.role === 'food_courier');
+      const couriers  = (data.users || []).filter(u => u.role === 'food_courier');
+      const vendors   = (data.users || []).filter(u => u.role === 'vendor');
       setConsumersCount(consumers.length);
       setCouriersCount(couriers.length);
+      setVendorsCount(vendors.length);
     } catch (err) {
       console.error(err.message);
     } finally {
@@ -47,6 +52,8 @@ export default function AdminUsersScreen() {
     // Filter by tab
     if (activeTab === 'Consumers') {
       filtered = filtered.filter(u => u.role === 'consumer');
+    } else if (activeTab === 'Vendors') {
+      filtered = filtered.filter(u => u.role === 'vendor');
     } else if (activeTab === 'Couriers') {
       filtered = filtered.filter(u => u.role === 'food_courier');
     } else if (activeTab === 'Suspended') {
@@ -75,41 +82,47 @@ export default function AdminUsersScreen() {
       .slice(0, 2);
   };
 
-  const handleSuspend = async (user) => {
-    Alert.alert(
-      'Suspend Account',
-      `Are you sure you want to suspend ${user.name}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Suspend',
-          style: 'destructive',
-          onPress: async () => {
-            // In real app, call backend API to suspend user
-            Alert.alert('Success', `${user.name} has been suspended.`);
-            fetchUsers();
-          },
-        },
-      ]
-    );
+  const showMsg = (text, isError = false) => {
+    setActionMsg({ text, isError });
+    setTimeout(() => setActionMsg(null), 4000);
   };
 
-  const handleUnsuspend = async (user) => {
-    Alert.alert(
-      'Unsuspend Account',
-      `Are you sure you want to unsuspend ${user.name}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Unsuspend',
-          onPress: async () => {
-            // In real app, call backend API to unsuspend user
-            Alert.alert('Success', `${user.name} has been unsuspended.`);
-            fetchUsers();
-          },
-        },
-      ]
-    );
+  const doSuspendToggle = async (user) => {
+    setSuspending(user.id);
+    try {
+      const { data } = await api.admin.suspendUser(user.id);
+      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, is_suspended: data.is_suspended } : u));
+      if (selectedUser?.id === user.id) setSelectedUser(s => ({ ...s, is_suspended: data.is_suspended }));
+      showMsg(data.message);
+    } catch (err) {
+      showMsg(err.message || 'Action failed. Please try again.', true);
+    } finally {
+      setSuspending(null);
+    }
+  };
+
+  const handleSuspend = (user) => {
+    if (Platform.OS === 'web') {
+      const ok = typeof window !== 'undefined' && window.confirm(`Suspend ${user.name}'s account?`);
+      if (ok) doSuspendToggle(user);
+      return;
+    }
+    Alert.alert('Suspend Account', `Are you sure you want to suspend ${user.name}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Suspend', style: 'destructive', onPress: () => doSuspendToggle(user) },
+    ]);
+  };
+
+  const handleUnsuspend = (user) => {
+    if (Platform.OS === 'web') {
+      const ok = typeof window !== 'undefined' && window.confirm(`Unsuspend ${user.name}'s account?`);
+      if (ok) doSuspendToggle(user);
+      return;
+    }
+    Alert.alert('Unsuspend Account', `Are you sure you want to unsuspend ${user.name}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Unsuspend', onPress: () => doSuspendToggle(user) },
+    ]);
   };
 
   const openUserDetail = (user) => {
@@ -129,7 +142,7 @@ export default function AdminUsersScreen() {
           <Ionicons name="people-outline" size={22} color={COLORS.primary} />
           <View>
             <Text style={styles.headerTitle}>Users</Text>
-            <Text style={styles.headerSubtitle}>{consumersCount} consumers - {couriersCount} couriers</Text>
+            <Text style={styles.headerSubtitle}>{consumersCount + vendorsCount + couriersCount} users · {consumersCount} consumers · {vendorsCount} vendors · {couriersCount} couriers</Text>
           </View>
         </View>
         <TouchableOpacity style={styles.notificationBtn}>
@@ -163,9 +176,10 @@ export default function AdminUsersScreen() {
         {/* Tabs */}
         <View style={styles.tabRow}>
           {TABS.map((tab) => {
-            const count = tab === 'All' ? users.length :
+            const count = tab === 'All'       ? consumersCount + vendorsCount + couriersCount :
                           tab === 'Consumers' ? consumersCount :
-                          tab === 'Couriers' ? couriersCount :
+                          tab === 'Vendors'   ? vendorsCount :
+                          tab === 'Couriers'  ? couriersCount :
                           users.filter(u => u.is_suspended).length;
             return (
               <TouchableOpacity
@@ -181,31 +195,80 @@ export default function AdminUsersScreen() {
           })}
         </View>
 
+        {/* Action message banner */}
+        {actionMsg && (
+          <View style={[styles.actionBanner, actionMsg.isError ? styles.actionBannerError : styles.actionBannerSuccess]}>
+            <Ionicons name={actionMsg.isError ? 'alert-circle-outline' : 'checkmark-circle-outline'} size={16} color={actionMsg.isError ? COLORS.danger : COLORS.success} />
+            <Text style={[styles.actionBannerText, { color: actionMsg.isError ? COLORS.danger : COLORS.success }]}>{actionMsg.text}</Text>
+          </View>
+        )}
+
         {/* Consumers Section */}
         {(activeTab === 'All' || activeTab === 'Consumers') && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>CONSUMERS</Text>
             {filteredUsers.filter(u => u.role === 'consumer').map((user) => (
-              <TouchableOpacity key={user.id} style={styles.userCard} onPress={() => openUserDetail(user)}>
-                <View style={styles.userHeader}>
-                  <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>{getInitials(user.name)}</Text>
+              <View key={user.id} style={[styles.userCard, user.is_suspended && styles.userCardSuspended]}>
+                <TouchableOpacity onPress={() => openUserDetail(user)}>
+                  <View style={styles.userHeader}>
+                    <View style={[styles.avatar, user.is_suspended && { backgroundColor: COLORS.dangerBg }]}>
+                      <Text style={[styles.avatarText, user.is_suspended && { color: COLORS.danger }]}>{getInitials(user.name)}</Text>
+                    </View>
+                    <View style={styles.userMeta}>
+                      <Text style={styles.userName}>{user.name}</Text>
+                      <Text style={styles.userSub}>Consumer{user.is_suspended ? ' - Suspended' : ' - Active'}</Text>
+                    </View>
+                    <View style={[styles.statusBadge, user.is_suspended && { backgroundColor: COLORS.dangerBg }]}>
+                      <Text style={[styles.statusBadgeText, user.is_suspended && { color: COLORS.danger }]}>{user.is_suspended ? 'Suspended' : 'Active'}</Text>
+                    </View>
                   </View>
-                  <View style={styles.userMeta}>
-                    <Text style={styles.userName}>{user.name}</Text>
-                    <Text style={styles.userSub}>0 orders - KES 0 spent - Active</Text>
-                  </View>
-                  <View style={styles.statusBadge}>
-                    <Text style={styles.statusBadgeText}>Active</Text>
-                  </View>
-                </View>
-                <TouchableOpacity
-                  style={styles.suspendBtn}
-                  onPress={() => handleSuspend(user)}
-                >
-                  <Text style={styles.suspendBtnText}>Suspend</Text>
                 </TouchableOpacity>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.suspendBtn, user.is_suspended && styles.unsuspendBtn]}
+                  onPress={() => user.is_suspended ? handleUnsuspend(user) : handleSuspend(user)}
+                  disabled={suspending === user.id}
+                >
+                  {suspending === user.id
+                    ? <ActivityIndicator size="small" color={user.is_suspended ? COLORS.white : COLORS.danger} />
+                    : <Text style={[styles.suspendBtnText, user.is_suspended && styles.unsuspendBtnText]}>{user.is_suspended ? 'Unsuspend' : 'Suspend'}</Text>
+                  }
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Vendors Section */}
+        {(activeTab === 'All' || activeTab === 'Vendors') && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>VENDORS</Text>
+            {filteredUsers.filter(u => u.role === 'vendor').map((user) => (
+              <View key={user.id} style={[styles.userCard, user.is_suspended && styles.userCardSuspended]}>
+                <TouchableOpacity onPress={() => openUserDetail(user)}>
+                  <View style={styles.userHeader}>
+                    <View style={[styles.avatar, user.is_suspended ? { backgroundColor: COLORS.dangerBg } : {}]}>
+                      <Text style={[styles.avatarText, user.is_suspended ? { color: COLORS.danger } : {}]}>{getInitials(user.name)}</Text>
+                    </View>
+                    <View style={styles.userMeta}>
+                      <Text style={styles.userName}>{user.name}</Text>
+                      <Text style={styles.userSub}>Vendor{user.is_suspended ? ' - Suspended' : ' - Active'}</Text>
+                    </View>
+                    <View style={[styles.statusBadge, user.is_suspended ? { backgroundColor: COLORS.dangerBg } : { backgroundColor: COLORS.successLight }]}>
+                      <Text style={[styles.statusBadgeText, { color: user.is_suspended ? COLORS.danger : COLORS.success }]}>{user.is_suspended ? 'Suspended' : 'Active'}</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.suspendBtn, user.is_suspended && styles.unsuspendBtn]}
+                  onPress={() => user.is_suspended ? handleUnsuspend(user) : handleSuspend(user)}
+                  disabled={suspending === user.id}
+                >
+                  {suspending === user.id
+                    ? <ActivityIndicator size="small" color={user.is_suspended ? COLORS.white : COLORS.danger} />
+                    : <Text style={[styles.suspendBtnText, user.is_suspended && styles.unsuspendBtnText]}>{user.is_suspended ? 'Unsuspend' : 'Suspend'}</Text>
+                  }
+                </TouchableOpacity>
+              </View>
             ))}
           </View>
         )}
@@ -215,26 +278,32 @@ export default function AdminUsersScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>COURIERS</Text>
             {filteredUsers.filter(u => u.role === 'food_courier').map((user) => (
-              <TouchableOpacity key={user.id} style={styles.userCard} onPress={() => openUserDetail(user)}>
-                <View style={styles.userHeader}>
-                  <View style={[styles.avatar, { backgroundColor: '#FFF5EB' }]}>
-                    <Text style={[styles.avatarText, { color: COLORS.secondary }]}>{getInitials(user.name)}</Text>
+              <View key={user.id} style={[styles.userCard, user.is_suspended && styles.userCardSuspended]}>
+                <TouchableOpacity onPress={() => openUserDetail(user)}>
+                  <View style={styles.userHeader}>
+                    <View style={[styles.avatar, { backgroundColor: user.is_suspended ? COLORS.dangerBg : '#FFF5EB' }]}>
+                      <Text style={[styles.avatarText, { color: user.is_suspended ? COLORS.danger : COLORS.secondary }]}>{getInitials(user.name)}</Text>
+                    </View>
+                    <View style={styles.userMeta}>
+                      <Text style={styles.userName}>{user.name}</Text>
+                      <Text style={styles.userSub}>Courier{user.is_suspended ? ' - Suspended' : ' - Active'}</Text>
+                    </View>
+                    <View style={[styles.statusBadge, user.is_suspended ? { backgroundColor: COLORS.dangerBg } : { backgroundColor: COLORS.successLight }]}>
+                      <Text style={[styles.statusBadgeText, { color: user.is_suspended ? COLORS.danger : COLORS.success }]}>{user.is_suspended ? 'Suspended' : 'Active'}</Text>
+                    </View>
                   </View>
-                  <View style={styles.userMeta}>
-                    <Text style={styles.userName}>{user.name}</Text>
-                    <Text style={styles.userSub}>0 deliveries - Avg 0 min - 0.0★</Text>
-                  </View>
-                  <View style={[styles.statusBadge, { backgroundColor: COLORS.successLight }]}>
-                    <Text style={[styles.statusBadgeText, { color: COLORS.success }]}>On duty</Text>
-                  </View>
-                </View>
-                <TouchableOpacity
-                  style={styles.suspendBtn}
-                  onPress={() => handleSuspend(user)}
-                >
-                  <Text style={styles.suspendBtnText}>Suspend</Text>
                 </TouchableOpacity>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.suspendBtn, user.is_suspended && styles.unsuspendBtn]}
+                  onPress={() => user.is_suspended ? handleUnsuspend(user) : handleSuspend(user)}
+                  disabled={suspending === user.id}
+                >
+                  {suspending === user.id
+                    ? <ActivityIndicator size="small" color={user.is_suspended ? COLORS.white : COLORS.danger} />
+                    : <Text style={[styles.suspendBtnText, user.is_suspended && styles.unsuspendBtnText]}>{user.is_suspended ? 'Unsuspend' : 'Suspend'}</Text>
+                  }
+                </TouchableOpacity>
+              </View>
             ))}
           </View>
         )}
@@ -498,6 +567,19 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.success,
   },
+  userCardSuspended: {
+    borderColor: COLORS.dangerBorder || '#FCA5A5',
+    backgroundColor: '#FFF8F8',
+  },
+  actionBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    marginHorizontal: 16, marginTop: 8,
+    borderRadius: 10, paddingVertical: 10, paddingHorizontal: 14,
+    borderWidth: 1,
+  },
+  actionBannerSuccess: { backgroundColor: '#F0FDF4', borderColor: '#86EFAC' },
+  actionBannerError:   { backgroundColor: '#FEF2F2', borderColor: '#FCA5A5' },
+  actionBannerText:    { flex: 1, fontSize: 13, fontWeight: '600' },
   suspendBtn: {
     paddingVertical: 10,
     borderRadius: 8,

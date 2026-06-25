@@ -5,7 +5,7 @@ import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
 import { COLORS } from '../../constants';
 
-export default function VendorProfileScreen({ navigation }) {
+export default function VendorProfileScreen({ navigation = {} }) {
   const { user, logout } = useAuthStore();
   console.log('VendorProfileScreen: user state =', user);
   const [vendor, setVendor] = useState(null);
@@ -219,7 +219,7 @@ export default function VendorProfileScreen({ navigation }) {
           <Ionicons name="storefront-outline" size={22} color={COLORS.text} />
           <Text style={styles.headerTitle}>Vendor Profile</Text>
         </View>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate?.('VendorSettings')}>
           <Ionicons name="settings-outline" size={22} color={COLORS.text} />
         </TouchableOpacity>
       </View>

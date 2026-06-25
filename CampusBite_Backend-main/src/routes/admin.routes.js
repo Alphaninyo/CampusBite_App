@@ -13,5 +13,10 @@ router.get('/stats/top-vendors',    adminController.getTopVendors);
 router.get('/orders',               adminController.getAllOrders);
 router.get('/users',                adminController.getAllUsers);
 router.get('/vendors',              adminController.getAllVendors);
+router.get('/users/pending-docs',                adminController.getPendingDocUsers);
+router.patch('/users/:userId/approve-docs',      adminController.approveUserDocs);
+router.patch('/users/:userId/reject-docs',       adminController.rejectUserDocs);
+router.patch('/users/:userId/request-info',      adminController.requestInfo);
+router.patch('/users/:userId/suspend',           adminController.suspendUser);
 
 module.exports = router;

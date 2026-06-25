@@ -144,7 +144,7 @@ exports.getPendingFoodCouriers = async (req, res) => {
     // Re-fetch after auto-creating any missing profiles
     const profiles = await FoodCourierProfile.findAll({
       where: { approved_at: null, rejected_at: null },
-      include: [{ model: User, as: 'user', attributes: ['id', 'name', 'email', 'phone', 'created_at', 'verification_status'] }],
+      include: [{ model: User, as: 'user', attributes: ['id', 'name', 'email', 'phone', 'created_at', 'verification_status', 'verification_type', 'verification_document', 'passport_photo'] }],
       order: [['created_at', 'ASC']],
     });
     res.status(200).json({ success: true, count: profiles.length, couriers: profiles });

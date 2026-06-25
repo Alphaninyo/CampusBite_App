@@ -1,5 +1,6 @@
 const { sequelize, User, Vendor, Order, Payment, Review, MenuItem } = require('../models');
 const { Op } = require('sequelize');
+const bcrypt  = require('bcryptjs');
 
 // ─── Stats Overview ───────────────────────────────────────────────────────────
 
@@ -9,52 +10,70 @@ const { Op } = require('sequelize');
  */
 exports.getStats = async (req, res) => {
   try {
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+
     const [
       totalOrders,
       ordersByStatus,
       confirmedRevenue,
+      todayRevenue,
+      deliveredCount,
+      activeCount,
       totalConsumers,
       totalVendors,
       totalRiders,
       pendingVendors,
       totalReviews,
+      avgDeliveryRow,
     ] = await Promise.all([
       Order.count(),
       Order.findAll({
-        attributes: [
-          'status',
-          [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
-        ],
+        attributes: ['status', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
         group: ['status'],
         raw:   true,
       }),
       Payment.sum('amount', { where: { status: 'confirmed' } }),
+      Payment.sum('amount', { where: { status: 'confirmed', created_at: { [Op.gte]: todayStart } } }),
+      Order.count({ where: { status: 'Delivered' } }),
+      Order.count({ where: { status: { [Op.in]: ['Received', 'Preparing', 'Ready', 'Collected', 'In Transit'] } } }),
       User.count({ where: { role: 'consumer' } }),
-      User.count({ where: { role: 'vendor' } }),
-      User.count({ where: { role: 'food_courier' } }),
+      User.count({ where: { role: 'vendor', is_approved: true } }),
+      User.count({ where: { role: 'food_courier', is_approved: true } }),
       Vendor.count({ where: { approved_at: null } }),
       Review.count(),
+      Order.findOne({
+        where: { status: 'Delivered' },
+        attributes: [[sequelize.literal("AVG(EXTRACT(EPOCH FROM (updated_at - created_at))/60)"), 'avg_minutes']],
+        raw: true,
+      }).catch(() => null),
     ]);
+
+    const fulfilmentRate = totalOrders > 0
+      ? Math.round((deliveredCount / totalOrders) * 100)
+      : 0;
 
     res.status(200).json({
       success: true,
       stats: {
         orders: {
-          total:     totalOrders,
-          by_status: ordersByStatus,
+          total:         totalOrders,
+          delivered:     deliveredCount,
+          active:        activeCount,
+          fulfilment_rate: fulfilmentRate,
+          by_status:     ordersByStatus,
         },
         revenue: {
           confirmed_total: parseFloat(confirmedRevenue || 0).toFixed(2),
+          today_total:     parseFloat(todayRevenue     || 0).toFixed(2),
         },
         users: {
           consumers:       totalConsumers,
           vendors:         totalVendors,
-          food_couriers:    totalRiders,
+          food_couriers:   totalRiders,
           pending_vendors: pendingVendors,
         },
-        reviews: {
-          total: totalReviews,
-        },
+        reviews:  { total: totalReviews },
+        avg_delivery_minutes: Math.round(parseFloat(avgDeliveryRow?.avg_minutes || 0)),
       },
     });
   } catch (error) {
@@ -209,7 +228,7 @@ exports.getAllUsers = async (req, res) => {
     const limit  = Math.min(100, parseInt(req.query.limit) || 20);
     const offset = (page - 1) * limit;
 
-    const where = {};
+    const where = { verification_status: { [Op.ne]: 'rejected' } };
     if (req.query.role) where.role = req.query.role;
 
     const { count, rows: users } = await User.findAndCountAll({
@@ -253,7 +272,7 @@ exports.getAllVendors = async (req, res) => {
     const { count, rows: vendors } = await Vendor.findAndCountAll({
       where,
       include: [
-        { model: User, as: 'owner', attributes: ['name', 'email', 'phone', 'is_approved'] },
+        { model: User, as: 'owner', attributes: ['id', 'name', 'email', 'phone', 'is_approved', 'verification_status', 'verification_document', 'verification_type', 'passport_photo'] },
       ],
       order:  [['created_at', 'DESC']],
       limit,
@@ -272,3 +291,144 @@ exports.getAllVendors = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
+
+/**
+ * PATCH /api/admin/users/:userId/request-info
+ * Admin only — marks a vendor/food_courier account as needing more information.
+ *
+ * Body: { note: string, requestedDocs: string[] }
+ *   requestedDocs: subset of ['passport_photo', 'id_document'] — which files to request
+ */
+exports.requestInfo = async (req, res) => {
+  try {
+    const { note, requestedDocs } = req.body;
+    if (!note || !note.trim()) {
+      return res.status(400).json({ success: false, message: 'A note describing the missing information is required.' });
+    }
+
+    const VALID_DOCS = ['passport_photo', 'national_id', 'passport'];
+    const docs = Array.isArray(requestedDocs) ? requestedDocs.filter(d => VALID_DOCS.includes(d)) : VALID_DOCS;
+    if (docs.length === 0) {
+      return res.status(400).json({ success: false, message: 'Select at least one document to request.' });
+    }
+
+    const user = await User.findByPk(req.params.userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    if (!['vendor', 'food_courier'].includes(user.role)) {
+      return res.status(400).json({ success: false, message: 'Info requests only apply to vendor and food courier accounts.' });
+    }
+
+    await user.update({
+      verification_status: 'info_requested',
+      admin_note:          note.trim(),
+      requested_docs:      JSON.stringify(docs),
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Information request sent to ${user.name}.`,
+    });
+  } catch (error) {
+    console.error('[ADMIN] requestInfo error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/**
+ * PATCH /api/admin/users/:userId/suspend
+ * Admin only — toggles the is_suspended flag on any user account.
+ * Suspended users are blocked from logging in.
+ */
+exports.suspendUser = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+    if (user.role === 'admin') {
+      return res.status(400).json({ success: false, message: 'Admin accounts cannot be suspended.' });
+    }
+
+    const newState = !user.is_suspended;
+    await user.update({ is_suspended: newState });
+
+    res.status(200).json({
+      success:      true,
+      is_suspended: newState,
+      message:      `${user.name} has been ${newState ? 'suspended' : 'unsuspended'}.`,
+    });
+  } catch (error) {
+    console.error('[ADMIN] suspendUser error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+// ─── Pending Document Reviews ─────────────────────────────────────────────────
+
+/**
+ * GET /api/admin/users/pending-docs
+ * Admin only — all vendors/couriers who have submitted documents awaiting review.
+ */
+exports.getPendingDocUsers = async (req, res) => {
+  try {
+    const users = await User.findAll({
+      where: {
+        verification_status: 'pending',
+        role: { [Op.in]: ['vendor', 'food_courier'] },
+      },
+      attributes: { exclude: ['password_hash', 'fcm_token'] },
+      order: [['updated_at', 'DESC']],
+    });
+    res.status(200).json({ success: true, users });
+  } catch (error) {
+    console.error('[ADMIN] getPendingDocUsers error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/**
+ * PATCH /api/admin/users/:userId/approve-docs
+ * Admin only — marks verification documents as approved.
+ */
+exports.approveUserDocs = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
+    if (!['vendor', 'food_courier'].includes(user.role)) {
+      return res.status(400).json({ success: false, message: 'Only vendor and courier documents can be approved.' });
+    }
+    await user.update({ verification_status: 'approved', admin_note: null });
+    res.status(200).json({ success: true, message: `${user.name}'s documents have been approved.` });
+  } catch (error) {
+    console.error('[ADMIN] approveUserDocs error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/**
+ * PATCH /api/admin/users/:userId/reject-docs
+ * Admin only — rejects verification documents and sends a note back to the user.
+ * Body: { note: string }
+ */
+exports.rejectUserDocs = async (req, res) => {
+  try {
+    const { note } = req.body;
+    const user = await User.findByPk(req.params.userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
+    if (!['vendor', 'food_courier'].includes(user.role)) {
+      return res.status(400).json({ success: false, message: 'Only vendor and courier documents can be rejected.' });
+    }
+    await user.update({
+      verification_status: 'info_requested',
+      admin_note: note?.trim() || 'Your submitted documents were not accepted. Please resubmit clear, valid documents.',
+    });
+    res.status(200).json({ success: true, message: `${user.name}'s documents have been rejected.` });
+  } catch (error) {
+    console.error('[ADMIN] rejectUserDocs error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+

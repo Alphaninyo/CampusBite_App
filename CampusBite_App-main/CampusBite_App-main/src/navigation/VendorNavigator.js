@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StyleSheet } from 'react-native';
@@ -12,8 +12,12 @@ import MenuScreen            from '../screens/vendor/MenuScreen';
 import AddMenuItemScreen     from '../screens/vendor/AddMenuItemScreen';
 import EditMenuItemScreen    from '../screens/vendor/EditMenuItemScreen';
 import VendorProfileScreen      from '../screens/vendor/VendorProfileScreen';
+import VendorSettingsScreen     from '../screens/vendor/VendorSettingsScreen';
 import VendorPromoCodesScreen  from '../screens/vendor/VendorPromoCodesScreen';
 import { COLORS }              from '../constants';
+import { api }                 from '../api';
+
+const ACTIVE_VENDOR_STATUSES = ['Received', 'Preparing', 'Ready'];
 
 const Tab   = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -46,8 +50,37 @@ function MenuStack() {
   );
 }
 
+function ProfileStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="VendorProfile"   component={VendorProfileScreen} />
+      <Stack.Screen name="VendorSettings"  component={VendorSettingsScreen} />
+    </Stack.Navigator>
+  );
+}
+
 export default function VendorNavigator() {
   const insets = useSafeAreaInsets();
+  const [orderCount, setOrderCount] = useState(0);
+
+  const fetchOrderCount = useCallback(async () => {
+    try {
+      const res    = await api.orders.getVendorOrders();
+      const orders = res.data?.orders ?? (Array.isArray(res.data) ? res.data : []);
+      setOrderCount(orders.filter(o => ACTIVE_VENDOR_STATUSES.includes(o.status)).length);
+    } catch {
+      // silently ignore — badge just won't show
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchOrderCount();
+    const interval = setInterval(fetchOrderCount, 30000);
+    return () => clearInterval(interval);
+  }, [fetchOrderCount]);
+
+  const orderBadge = orderCount > 0 ? (orderCount > 99 ? '99+' : orderCount) : undefined;
+  const badgeStyle = { backgroundColor: COLORS.danger, fontSize: 10, fontWeight: '700', minWidth: 18, height: 18, borderRadius: 9 };
 
   return (
     <Tab.Navigator
@@ -61,10 +94,20 @@ export default function VendorNavigator() {
         tabBarItemStyle:          styles.tabItem,
       }}
     >
-      <Tab.Screen name="HomeTab"    component={HomeStack}    options={{ title: 'Home',    tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} /> }} />
-      <Tab.Screen name="OrdersTab"  component={OrdersStack}  options={{ title: 'Orders',  tabBarIcon: ({ color, size }) => <Ionicons name="bag-outline" size={size} color={color} /> }} />
+      <Tab.Screen name="HomeTab" component={HomeStack} options={{ title: 'Home', tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} /> }} />
+      <Tab.Screen
+        name="OrdersTab"
+        component={OrdersStack}
+        listeners={{ tabPress: () => fetchOrderCount() }}
+        options={{
+          title: 'Orders',
+          tabBarIcon: ({ color, size }) => <Ionicons name="bag-outline" size={size} color={color} />,
+          tabBarBadge: orderBadge,
+          tabBarBadgeStyle: badgeStyle,
+        }}
+      />
       <Tab.Screen name="MenuTab"    component={MenuStack}    options={{ title: 'Menu',    tabBarIcon: ({ color, size }) => <Ionicons name="restaurant-outline" size={size} color={color} /> }} />
-      <Tab.Screen name="ProfileTab" component={VendorProfileScreen} options={{ title: 'Profile', tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} /> }} />
+      <Tab.Screen name="ProfileTab" component={ProfileStack} options={{ title: 'Profile', tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} /> }} />
     </Tab.Navigator>
   );
 }

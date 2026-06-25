@@ -12,6 +12,10 @@ export default function PendingApprovalScreen({ navigation }) {
   const { user, logout, updateUser }    = useAuthStore();
   const [checking, setChecking]         = useState(false);
   const [verStatus, setVerStatus]       = useState(user?.verification_status || 'not_submitted');
+  const [checkMsg,  setCheckMsg]        = useState(null);
+  const [checkErr,  setCheckErr]        = useState('');
+  const [infoNote,  setInfoNote]        = useState('');
+  const [infoDocs,  setInfoDocs]        = useState([]);
   const pulseAnim                       = useRef(new Animated.Value(1)).current;
 
   const roleLabel = user?.role === 'food_courier' ? 'Food Courier' : 'Vendor';
@@ -29,17 +33,25 @@ export default function PendingApprovalScreen({ navigation }) {
 
   const checkStatus = async () => {
     setChecking(true);
+    setCheckMsg(null);
+    setCheckErr('');
     try {
       const { data } = await api.auth.getMe();
-      updateUser({ is_approved: data.user.is_approved });
-      setVerStatus(data.user.verification_status || 'not_submitted');
-      if (data.user.is_approved) {
-        Alert.alert('Account Approved! 🎉', 'Your account has been approved. Welcome to CampusBite!');
+      const u = data.user;
+      updateUser({ is_approved: u.is_approved, verification_status: u.verification_status });
+      setVerStatus(u.verification_status || 'not_submitted');
+      if (u.is_approved) {
+        setCheckMsg('approved');
+      } else if (u.verification_status === 'info_requested') {
+        setInfoNote(u.admin_note || '');
+        const raw = u.requested_docs;
+        setInfoDocs(Array.isArray(raw) ? raw : (raw ? JSON.parse(raw) : []));
+        setCheckMsg('info_requested');
       } else {
-        Alert.alert('Still Pending', 'Your account is still under review. We\'ll notify you once approved.');
+        setCheckMsg('pending');
       }
     } catch (err) {
-      Alert.alert('Error', err.message);
+      setCheckErr(err.message || 'Could not check status. Please try again.');
     } finally {
       setChecking(false);
     }
@@ -201,6 +213,49 @@ export default function PendingApprovalScreen({ navigation }) {
           }
         </TouchableOpacity>
 
+        {checkMsg === 'approved' && (
+          <View style={[styles.statusBanner, styles.statusBannerGreen]}>
+            <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
+            <Text style={[styles.statusBannerText, { color: COLORS.success }]}>
+              Your account has been approved! Welcome to CampusBite.
+            </Text>
+          </View>
+        )}
+        {checkMsg === 'pending' && (
+          <View style={[styles.statusBanner, styles.statusBannerOrange]}>
+            <Ionicons name="time-outline" size={18} color={COLORS.primary} />
+            <Text style={[styles.statusBannerText, { color: COLORS.primary }]}>
+              Still under review. We'll notify you once approved.
+            </Text>
+          </View>
+        )}
+        {checkMsg === 'info_requested' && (
+          <View style={[styles.statusBanner, styles.statusBannerOrange, { flexDirection: 'column', alignItems: 'flex-start' }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+              <Ionicons name="information-circle-outline" size={18} color={COLORS.primary} />
+              <Text style={[styles.statusBannerText, { color: COLORS.primary, marginLeft: 8 }]}>
+                Admin has requested additional information.
+              </Text>
+            </View>
+            {infoNote ? (
+              <Text style={{ fontSize: 12, color: COLORS.subtext, marginBottom: 10, lineHeight: 17 }}>{infoNote}</Text>
+            ) : null}
+            <TouchableOpacity
+              style={{ backgroundColor: COLORS.primary, borderRadius: 10, paddingVertical: 9, paddingHorizontal: 16, alignSelf: 'flex-start' }}
+              onPress={() => navigation.navigate('SubmitInfo', { requestedDocs: infoDocs, adminNote: infoNote, role: user?.role, useAuthFlow: true })}
+              activeOpacity={0.8}
+            >
+              <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>Submit Required Information</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {checkErr ? (
+          <View style={[styles.statusBanner, styles.statusBannerRed]}>
+            <Ionicons name="alert-circle-outline" size={18} color={COLORS.danger} />
+            <Text style={[styles.statusBannerText, { color: COLORS.danger }]}>{checkErr}</Text>
+          </View>
+        ) : null}
+
         {/* Tips */}
         <View style={styles.tipsCard}>
           <Text style={styles.tipsTitle}>While you wait…</Text>
@@ -280,4 +335,10 @@ const styles = StyleSheet.create({
   tipsTitle:  { fontSize: 13, fontWeight: '700', color: COLORS.text, marginBottom: 12 },
   tipRow:     { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
   tipText:    { fontSize: 12, color: COLORS.subtext, marginLeft: 8, flex: 1, lineHeight: 16 },
+
+  statusBanner:       { flexDirection: 'row', alignItems: 'center', width: '100%', borderRadius: 12, padding: 12, marginBottom: 12, columnGap: 10 },
+  statusBannerGreen:  { backgroundColor: '#DCFCE7', borderWidth: 1, borderColor: '#86EFAC' },
+  statusBannerOrange: { backgroundColor: COLORS.iconBg, borderWidth: 1, borderColor: COLORS.borderWarm },
+  statusBannerRed:    { backgroundColor: '#FEE2E2', borderWidth: 1, borderColor: '#FCA5A5' },
+  statusBannerText:   { flex: 1, fontSize: 13, fontWeight: '600' },
 });
