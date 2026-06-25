@@ -45,6 +45,8 @@ async function startServer() {
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN NOT NULL DEFAULT false`,
       // User profile photo
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_photo VARCHAR(500)`,
+      // Order cancellation
+      `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel='Cancelled' AND enumtypid=(SELECT oid FROM pg_type WHERE typname='enum_orders_status')) THEN ALTER TYPE "enum_orders_status" ADD VALUE 'Cancelled'; END IF; END $$`,
     ];
     for (const sql of migrations) {
       await sequelize.query(sql).catch((e) => console.warn('[MIGRATION]', sql.slice(0, 60), e.message));

@@ -43,7 +43,7 @@ export default function VendorOrdersScreen({ navigation }) {
         style: 'destructive',
         onPress: async () => {
           try {
-            await api.orders.updateStatus(orderId, 'Cancelled');
+            await api.orders.cancel(orderId);
             fetchOrders();
           } catch (err) {
             console.error('Decline error:', err.message);

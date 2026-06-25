@@ -74,6 +74,7 @@ export const api = {
     getById:             (id)     => client.get(`/orders/${id}`),
     getVendorOrders:     ()       => client.get('/orders/vendor'),
     updateStatus:        (id, status) => client.patch(`/orders/${id}/status`, { status }),
+    cancel:              (id)         => client.patch(`/orders/${id}/cancel`),
     getAvailableForFoodCourier:()       => client.get('/orders/food-courier/available'),
     acceptDelivery:      (id)     => client.patch(`/orders/${id}/assign-food-courier`),
     getFoodCourierOrders:      ()       => client.get('/orders/food-courier/mine'),

@@ -562,6 +562,46 @@ exports.updateOrderStatus = async (req, res) => {
   }
 };
 
+// ─── Vendor: Cancel / Decline Order ──────────────────────────────────────────
+
+exports.cancelOrder = async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    const order = await Order.findByPk(req.params.id, { transaction: t });
+    if (!order) {
+      await t.rollback();
+      return res.status(404).json({ success: false, message: 'Order not found.' });
+    }
+
+    const vendorProfile = await Vendor.findOne({ where: { user_id: req.user.id }, transaction: t });
+    if (!vendorProfile || vendorProfile.id !== order.vendor_id) {
+      await t.rollback();
+      return res.status(403).json({ success: false, message: 'This order does not belong to your shop.' });
+    }
+
+    if (order.status !== 'Received') {
+      await t.rollback();
+      return res.status(400).json({
+        success: false,
+        message: `Cannot cancel an order that is already "${order.status}". Only "Received" orders can be declined.`,
+      });
+    }
+
+    await order.update({ status: 'Cancelled' }, { transaction: t });
+    await t.commit();
+
+    User.findByPk(order.consumer_id, { attributes: ['fcm_token'] })
+      .then((u) => notify.send(u?.fcm_token, 'Order Cancelled', 'Your order was declined by the vendor. A refund will be processed if applicable.', { order_id: order.id }))
+      .catch(console.error);
+
+    res.status(200).json({ success: true, message: 'Order declined.', order_id: order.id, new_status: 'Cancelled' });
+  } catch (error) {
+    await t.rollback();
+    console.error('[ORDER] cancelOrder error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 // ─── Food Courier Endpoints ───────────────────────────────────────────────────
 
 exports.getAvailableOrders = async (req, res) => {

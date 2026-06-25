@@ -46,6 +46,19 @@ const useAuthStore = create((set, get) => ({
         await AsyncStorage.setItem('user', JSON.stringify(data.user));
         set({ token: data.token, user: data.user });
         console.log('AuthStore: Login complete, user saved:', data.user);
+
+        // Register device push token in background — non-blocking
+        (async () => {
+          try {
+            const Notifications = require('expo-notifications');
+            const { status } = await Notifications.getPermissionsAsync();
+            if (status === 'granted') {
+              const { data: pushToken } = await Notifications.getExpoPushTokenAsync();
+              if (pushToken) await api.auth.updateDeviceToken({ device_token: pushToken });
+            }
+          } catch (_) { /* push token unavailable on this platform — safe to skip */ }
+        })();
+
         return data.user;
       } else {
         console.error('AuthStore: Invalid login response - missing token or user');

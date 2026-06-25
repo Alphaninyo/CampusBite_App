@@ -1,786 +1,587 @@
-# 📡 CampusBite API Documentation
+# CampusBite API Documentation
 
-## 🌐 **API Overview**
+## Overview
 
-The CampusBite API provides RESTful endpoints for managing users, vendors, orders, and cart functionality. All API responses are in JSON format and follow standard HTTP status codes.
+The CampusBite backend is a Node.js + Express REST API backed by PostgreSQL (via Sequelize).
+All endpoints are prefixed with `/api`. Responses are JSON.
+
+- **Base URL (development):** `http://localhost:5000/api`
+- **Auth:** JWT Bearer token — `Authorization: Bearer <token>`
+- **Roles:** `consumer`, `vendor`, `food_courier`, `admin`
 
 ---
 
-## 🔐 **Authentication**
+## Authentication
 
-### **JWT Token Authentication**
-All protected endpoints require a JWT token in the Authorization header:
+### POST /auth/register
+Register a new user account. Returns a JWT and user object.
 
-```javascript
-Authorization: Bearer <jwt_token>
-```
-
-### **Token Endpoints**
-
-#### **POST /api/auth/login**
-Authenticate user and return JWT token.
-
-**Request Body:**
+**Body:**
 ```json
 {
-  "email": "user@example.com",
-  "password": "password123"
+  "name": "Alice",
+  "email": "alice@example.com",
+  "password": "secret123",
+  "phone": "0712345678",
+  "role": "consumer"
 }
 ```
 
-**Response:**
+**Response `201`:**
 ```json
-{
-  "success": true,
-  "data": {
-    "user": {
-      "id": "user_id",
-      "name": "John Doe",
-      "email": "user@example.com",
-      "phone": "+1234567890"
-    },
-    "token": "jwt_token_here",
-    "expires_in": 86400
-  }
-}
-```
-
-#### **POST /api/auth/register**
-Register a new user account.
-
-**Request Body:**
-```json
-{
-  "name": "John Doe",
-  "email": "user@example.com",
-  "phone": "+1234567890",
-  "password": "password123",
-  "confirm_password": "password123"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "user": {
-      "id": "user_id",
-      "name": "John Doe",
-      "email": "user@example.com",
-      "phone": "+1234567890"
-    },
-    "token": "jwt_token_here"
-  }
-}
-```
-
-#### **POST /api/auth/logout**
-Invalidate the current JWT token.
-
-**Headers:**
-```javascript
-Authorization: Bearer <jwt_token>
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Logged out successfully"
-}
-```
-
-#### **GET /api/auth/profile**
-Get current user profile.
-
-**Headers:**
-```javascript
-Authorization: Bearer <jwt_token>
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "id": "user_id",
-    "name": "John Doe",
-    "email": "user@example.com",
-    "phone": "+1234567890",
-    "avatar": "avatar_url",
-    "preferences": {
-      "dietary": ["vegetarian"],
-      "favorites": ["vendor_id_1"]
-    },
-    "stats": {
-      "total_orders": 25,
-      "favorite_vendor": "Vendor Name"
-    }
-  }
-}
+{ "success": true, "token": "jwt...", "user": { "id": "...", "name": "Alice", "role": "consumer" } }
 ```
 
 ---
 
-## 🏪 **Vendor Endpoints**
+### POST /auth/login
+Authenticate and return a JWT. The device's Expo push token should be registered immediately after login (see PUT /auth/device-token).
 
-### **GET /api/vendors**
-Get all vendors with optional filtering.
-
-**Query Parameters:**
-- `category` (optional): Filter by category
-- `search` (optional): Search by name
-- `limit` (optional): Number of results (default: 20)
-- `offset` (optional): Pagination offset (default: 0)
-
-**Response:**
+**Body:**
 ```json
-{
-  "success": true,
-  "data": {
-    "vendors": [
-      {
-        "id": "vendor_id",
-        "business_name": "The Grand Bistro",
-        "category": "Restaurants",
-        "image": "vendor_image_url",
-        "rating": 4.8,
-        "delivery_time": "15-20 mins",
-        "free_delivery": true,
-        "address": "123 Campus Street",
-        "phone": "+1234567890",
-        "description": "Fine dining restaurant"
-      }
-    ],
-    "total": 50,
-    "limit": 20,
-    "offset": 0
-  }
-}
+{ "email": "alice@example.com", "password": "secret123" }
 ```
 
-### **GET /api/vendors/:id**
-Get specific vendor details.
-
-**Response:**
+**Response `200`:**
 ```json
-{
-  "success": true,
-  "data": {
-    "id": "vendor_id",
-    "business_name": "The Grand Bistro",
-    "category": "Restaurants",
-    "image": "vendor_image_url",
-    "rating": 4.8,
-    "delivery_time": "15-20 mins",
-    "free_delivery": true,
-    "address": "123 Campus Street",
-    "phone": "+1234567890",
-    "description": "Fine dining restaurant",
-    "menu": [
-      {
-        "id": "item_id",
-        "name": "Classic Beef Burger",
-        "description": "Juicy beef patty with fresh vegetables",
-        "price": 8.99,
-        "image": "item_image_url",
-        "category": "Main Course",
-        "available": true,
-        "prep_time": "15 mins"
-      }
-    ]
-  }
-}
-```
-
-### **GET /api/vendors/:id/menu**
-Get vendor's menu items.
-
-**Query Parameters:**
-- `category` (optional): Filter menu items by category
-- `available` (optional): Filter by availability (true/false)
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "menu": [
-      {
-        "id": "item_id",
-        "name": "Classic Beef Burger",
-        "description": "Juicy beef patty with fresh vegetables",
-        "price": 8.99,
-        "image": "item_image_url",
-        "category": "Main Course",
-        "available": true,
-        "prep_time": "15 mins",
-        "ingredients": ["beef", "lettuce", "tomato", "cheese"],
-        "allergens": ["gluten", "dairy"]
-      }
-    ]
-  }
-}
+{ "success": true, "token": "jwt...", "user": { ... } }
 ```
 
 ---
 
-## 📋 **Order Endpoints**
+### POST /auth/check-status
+Check approval/verification status for a given email. Used on the pending-approval screen to poll for changes without re-logging in.
 
-### **GET /api/orders**
-Get user's orders with filtering.
+**Body:** `{ "email": "alice@example.com" }`
 
-**Headers:**
-```javascript
-Authorization: Bearer <jwt_token>
-```
+---
 
-**Query Parameters:**
-- `status` (optional): Filter by order status
-- `limit` (optional): Number of results (default: 20)
-- `offset` (optional): Pagination offset (default: 0)
-- `search` (optional): Search by vendor or item name
+### GET /auth/me
+Return the currently authenticated user's profile.
 
-**Response:**
+**Auth:** required
+
+---
+
+### PUT /auth/profile
+Update the authenticated user's name, phone, and/or profile photo.
+
+**Auth:** required  
+**Content-Type:** `multipart/form-data` (when uploading a photo) or `application/json`
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `name` | string | optional |
+| `phone` | string | optional |
+| `avatar` | file | optional — JPEG, PNG, or WEBP, max 5 MB |
+
+**Response `200`:**
 ```json
 {
   "success": true,
-  "data": {
-    "orders": [
-      {
-        "id": "order_id",
-        "order_number": "ORD-123456",
-        "user_id": "user_id",
-        "vendor_id": "vendor_id",
-        "vendor_name": "The Grand Bistro",
-        "items": [
-          {
-            "id": "item_id",
-            "name": "Classic Beef Burger",
-            "price": 8.99,
-            "quantity": 2,
-            "subtotal": 17.98
-          }
-        ],
-        "total_amount": 25.98,
-        "status": "Delivered",
-        "delivery_address": "123 Dorm Room, Campus",
-        "created_at": "2024-01-15T12:30:00Z",
-        "updated_at": "2024-01-15T13:45:00Z",
-        "estimated_delivery": "2024-01-15T13:30:00Z"
-      }
-    ],
-    "total": 25,
-    "limit": 20,
-    "offset": 0
+  "user": {
+    "id": "...",
+    "name": "Alice",
+    "profile_photo": "/uploads/avatars/abc123_avatar.jpg"
   }
 }
 ```
 
-### **POST /api/orders**
-Create a new order.
+Profile photos are served at `http://localhost:5000/uploads/avatars/<filename>`. Append `?t=<timestamp>` to bust the browser cache after an update.
 
-**Headers:**
-```javascript
-Authorization: Bearer <jwt_token>
+---
+
+### PUT /auth/password
+Change the authenticated user's password.
+
+**Auth:** required  
+**Body:** `{ "currentPassword": "old", "newPassword": "new" }`
+
+---
+
+### PUT /auth/device-token
+Register an Expo push token so the backend can send targeted push notifications to this device. Called automatically after login by `authStore`.
+
+**Auth:** required  
+**Body:** `{ "device_token": "ExponentPushToken[...]" }`
+
+---
+
+### POST /auth/forgot-password
+Request a password-reset email.
+
+**Body:** `{ "email": "alice@example.com" }`
+
+---
+
+### POST /auth/reset-password
+Reset password using the token from the email link.
+
+**Body:** `{ "token": "reset_token", "newPassword": "newpass" }`
+
+---
+
+## Vendors
+
+### GET /vendors
+List all approved vendors. Supports optional query params: `search`, `category`, `is_open`.
+
+### GET /vendors/:id
+Get a single vendor's details.
+
+### GET /vendors/profile/me
+Get the vendor profile for the authenticated vendor user.
+
+**Auth:** required (`vendor`)
+
+### PUT /vendors/profile/me
+Update the authenticated vendor's business profile.
+
+**Auth:** required (`vendor`)
+
+### PATCH /vendors/profile/me/toggle
+Toggle the vendor's `is_open` status.
+
+**Auth:** required (`vendor`)
+
+### GET /vendors/admin/pending
+List vendors pending approval.
+
+**Auth:** required (`admin`)
+
+### PATCH /vendors/admin/:id/approve
+Approve a vendor application.
+
+**Auth:** required (`admin`)
+
+### PATCH /vendors/admin/:id/reject
+Reject a vendor application.
+
+**Auth:** required (`admin`)
+
+---
+
+## Menu
+
+### GET /menu/vendor/:vendorId
+Get all menu items for a vendor. Supports `?category=` and `?available=true`.
+
+### POST /menu
+Create a new menu item.
+
+**Auth:** required (`vendor`)  
+**Content-Type:** `multipart/form-data`
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `name` | string | required |
+| `description` | string | optional |
+| `price` | number | required |
+| `category` | string | optional |
+| `is_available` | boolean | default `true` |
+| `image` | file | optional |
+
+### PUT /menu/:id
+Update a menu item. Same fields as POST.
+
+**Auth:** required (`vendor`)
+
+### DELETE /menu/:id
+Delete a menu item.
+
+**Auth:** required (`vendor`)
+
+---
+
+## Orders
+
+### Order Status Lifecycle
+
+```
+Received → Preparing → Ready → Collected → In Transit → Delivered
+                ↓
+           Cancelled  (vendor decline — only from Received)
 ```
 
-**Request Body:**
+| Status | Set by |
+|--------|--------|
+| `Received` | System (on payment confirmation) |
+| `Preparing` | Vendor |
+| `Ready` | Vendor |
+| `Collected` | Food Courier |
+| `In Transit` | Food Courier |
+| `Delivered` | Food Courier |
+| `Cancelled` | Vendor (decline route only) |
+
+---
+
+### POST /orders/initiate
+Consumer initiates checkout. For M-Pesa: returns a `checkout_request_id` to poll. For cash/card: creates the order immediately.
+
+**Auth:** required (`consumer`)
+
+**Body:**
 ```json
 {
-  "vendor_id": "vendor_id",
-  "items": [
-    {
-      "item_id": "item_id",
-      "quantity": 2,
-      "special_instructions": "No onions please"
-    }
-  ],
-  "delivery_address": "123 Dorm Room, Campus",
-  "payment_method": "credit_card",
-  "tip_amount": 2.50
+  "vendor_id": "uuid",
+  "items": [{ "menu_item_id": "uuid", "quantity": 2 }],
+  "delivery_address": "Room 4B, Block C",
+  "payment_method": "mpesa",
+  "phone_number": "2547XXXXXXXX",
+  "promo_code": "SAVE20",
+  "special_instructions": "No onions"
 }
 ```
 
-**Response:**
+**Response `200` (M-Pesa):**
 ```json
 {
   "success": true,
-  "data": {
-    "order": {
-      "id": "order_id",
-      "order_number": "ORD-123456",
-      "vendor_id": "vendor_id",
-      "vendor_name": "The Grand Bistro",
-      "items": [
-        {
-          "id": "item_id",
-          "name": "Classic Beef Burger",
-          "price": 8.99,
-          "quantity": 2,
-          "subtotal": 17.98
-        }
-      ],
-      "total_amount": 25.98,
-      "status": "Received",
-      "delivery_address": "123 Dorm Room, Campus",
-      "created_at": "2024-01-15T12:30:00Z",
-      "estimated_delivery": "2024-01-15T13:30:00Z"
-    }
-  }
+  "checkout_request_id": "ws_CO_...",
+  "immediate": false,
+  "dev_mode": true
 }
 ```
 
-### **GET /api/orders/:id**
-Get specific order details.
-
-**Headers:**
-```javascript
-Authorization: Bearer <jwt_token>
-```
-
-**Response:**
+**Response `201` (cash/card):**
 ```json
 {
   "success": true,
-  "data": {
-    "order": {
-      "id": "order_id",
-      "order_number": "ORD-123456",
-      "user_id": "user_id",
-      "vendor_id": "vendor_id",
-      "vendor_name": "The Grand Bistro",
-      "vendor_info": {
-        "phone": "+1234567890",
-        "address": "123 Campus Street"
-      },
-      "items": [
-        {
-          "id": "item_id",
-          "name": "Classic Beef Burger",
-          "description": "Juicy beef patty with fresh vegetables",
-          "price": 8.99,
-          "quantity": 2,
-          "subtotal": 17.98,
-          "special_instructions": "No onions please"
-        }
-      ],
-      "total_amount": 25.98,
-      "delivery_fee": 3.00,
-      "tax": 2.48,
-      "tip_amount": 2.50,
-      "status": "Delivered",
-      "delivery_address": "123 Dorm Room, Campus",
-      "created_at": "2024-01-15T12:30:00Z",
-      "updated_at": "2024-01-15T13:45:00Z",
-      "estimated_delivery": "2024-01-15T13:30:00Z",
-      "delivered_at": "2024-01-15T13:45:00Z",
-      "tracking": {
-        "driver_name": "John Driver",
-        "driver_phone": "+1234567890",
-        "current_location": "Campus Gate",
-        "estimated_arrival": "5 mins"
-      }
-    }
-  }
-}
-```
-
-### **PUT /api/orders/:id/status**
-Update order status (vendor/driver only).
-
-**Headers:**
-```javascript
-Authorization: Bearer <jwt_token>
-```
-
-**Request Body:**
-```json
-{
-  "status": "Preparing",
-  "notes": "Order is being prepared"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "order": {
-      "id": "order_id",
-      "status": "Preparing",
-      "updated_at": "2024-01-15T12:45:00Z"
-    }
-  }
+  "immediate": true,
+  "order_id": "uuid"
 }
 ```
 
 ---
 
-## 🛒 **Cart Endpoints**
+### POST /orders/dev-confirm/:checkoutRequestId
+Development only — simulates a successful M-Pesa callback and creates the order.
 
-### **GET /api/cart**
-Get user's current cart.
+**Auth:** required (`consumer`)
 
-**Headers:**
-```javascript
-Authorization: Bearer <jwt_token>
-```
+---
 
-**Response:**
+### GET /orders
+Get the authenticated consumer's order history.
+
+**Auth:** required (`consumer`)
+
+---
+
+### GET /orders/:id
+Get a single order's full detail. Access is role-scoped: consumers see their own orders, food couriers see orders they are assigned to, vendors see their shop's orders.
+
+**Auth:** required
+
+---
+
+### PATCH /orders/:id/status
+Advance an order to the next status in the lifecycle. The next status is determined server-side by the TRANSITIONS map — the `status` field in the body is ignored.
+
+**Auth:** required (`vendor` or `food_courier`)
+
+**Response `200`:**
 ```json
-{
-  "success": true,
-  "data": {
-    "cart": {
-      "id": "cart_id",
-      "user_id": "user_id",
-      "items": [
-        {
-          "id": "cart_item_id",
-          "item_id": "item_id",
-          "vendor_id": "vendor_id",
-          "vendor_name": "The Grand Bistro",
-          "name": "Classic Beef Burger",
-          "price": 8.99,
-          "quantity": 2,
-          "subtotal": 17.98,
-          "special_instructions": "No onions please"
-        }
-      ],
-      "total_amount": 25.98,
-      "item_count": 2,
-      "updated_at": "2024-01-15T12:30:00Z"
-    }
-  }
-}
-```
-
-### **POST /api/cart/add**
-Add item to cart.
-
-**Headers:**
-```javascript
-Authorization: Bearer <jwt_token>
-```
-
-**Request Body:**
-```json
-{
-  "item_id": "item_id",
-  "quantity": 2,
-  "special_instructions": "No onions please"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "cart_item": {
-      "id": "cart_item_id",
-      "item_id": "item_id",
-      "vendor_id": "vendor_id",
-      "vendor_name": "The Grand Bistro",
-      "name": "Classic Beef Burger",
-      "price": 8.99,
-      "quantity": 2,
-      "subtotal": 17.98,
-      "special_instructions": "No onions please"
-    },
-    "cart_total": 25.98,
-    "item_count": 2
-  }
-}
-```
-
-### **PUT /api/cart/:itemId**
-Update cart item quantity.
-
-**Headers:**
-```javascript
-Authorization: Bearer <jwt_token>
-```
-
-**Request Body:**
-```json
-{
-  "quantity": 3,
-  "special_instructions": "Extra cheese please"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "cart_item": {
-      "id": "cart_item_id",
-      "quantity": 3,
-      "subtotal": 26.97,
-      "special_instructions": "Extra cheese please"
-    },
-    "cart_total": 34.97,
-    "item_count": 3
-  }
-}
-```
-
-### **DELETE /api/cart/:itemId**
-Remove item from cart.
-
-**Headers:**
-```javascript
-Authorization: Bearer <jwt_token>
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "cart_total": 17.99,
-    "item_count": 1
-  }
-}
+{ "success": true, "new_status": "Preparing", "order_id": "uuid" }
 ```
 
 ---
 
-## 🔔 **Notification Endpoints**
+### PATCH /orders/:id/cancel
+Vendor declines/cancels an order. Only works when `status === 'Received'`. Sends a push notification to the consumer.
 
-### **GET /api/notifications**
-Get user notifications.
+**Auth:** required (`vendor`)
 
-**Headers:**
-```javascript
-Authorization: Bearer <jwt_token>
-```
-
-**Query Parameters:**
-- `read` (optional): Filter by read status (true/false)
-- `limit` (optional): Number of results (default: 20)
-- `offset` (optional): Pagination offset (default: 0)
-
-**Response:**
+**Response `200`:**
 ```json
-{
-  "success": true,
-  "data": {
-    "notifications": [
-      {
-        "id": "notification_id",
-        "title": "Order Delivered",
-        "message": "Your order from The Grand Bistro has been delivered",
-        "type": "order_update",
-        "read": false,
-        "created_at": "2024-01-15T13:45:00Z",
-        "data": {
-          "order_id": "order_id",
-          "order_number": "ORD-123456"
-        }
-      }
-    ],
-    "unread_count": 2,
-    "total": 10
-  }
-}
+{ "success": true, "new_status": "Cancelled", "order_id": "uuid" }
 ```
 
-### **PUT /api/notifications/:id/read**
-Mark notification as read.
-
-**Headers:**
-```javascript
-Authorization: Bearer <jwt_token>
-```
-
-**Response:**
+**Error `400`** — if order is not in `Received` status:
 ```json
-{
-  "success": true,
-  "data": {
-    "notification": {
-      "id": "notification_id",
-      "read": true,
-      "read_at": "2024-01-15T14:00:00Z"
-    }
-  }
-}
+{ "success": false, "message": "Cannot cancel an order that is already \"Preparing\"..." }
 ```
 
 ---
 
-## 📊 **Analytics Endpoints**
+### GET /orders/vendor
+Get all orders for the authenticated vendor.
 
-### **GET /api/analytics/user**
-Get user analytics data.
+**Auth:** required (`vendor`)  
+**Query:** `?status=Received` (optional filter)
 
-**Headers:**
-```javascript
-Authorization: Bearer <jwt_token>
-```
+---
 
-**Response:**
+### GET /orders/food-courier/available
+Get orders with status `Ready` and no assigned rider.
+
+**Auth:** required (`food_courier`)
+
+---
+
+### GET /orders/food-courier/mine
+Get orders assigned to the authenticated food courier.
+
+**Auth:** required (`food_courier`)  
+**Query:** `?status=In+Transit` (optional filter)
+
+---
+
+### PATCH /orders/:id/assign-food-courier
+Assign the authenticated food courier to a `Ready` order.
+
+**Auth:** required (`food_courier`)
+
+---
+
+### PATCH /orders/:id/collect-cash
+Confirm that the food courier has collected cash payment from the consumer (for cash orders).
+
+**Auth:** required (`food_courier`)
+
+---
+
+### PATCH /orders/:id/location
+Update the rider's live GPS location for an in-transit order.
+
+**Auth:** required (`food_courier`)  
+**Body:** `{ "lat": -1.2345678, "lng": 36.8234567 }`
+
+---
+
+## Notifications
+
+### GET /notifications
+Get all notifications for the authenticated user.
+
+**Auth:** required
+
+### GET /notifications/unread-count
+Returns the number of unread notifications.
+
+**Auth:** required
+
+**Response `200`:**
 ```json
-{
-  "success": true,
-  "data": {
-    "stats": {
-      "total_orders": 25,
-      "total_spent": 567.89,
-      "favorite_vendor": "The Grand Bistro",
-      "favorite_category": "Restaurants",
-      "avg_order_value": 22.72,
-      "order_frequency": "weekly"
-    },
-    "recent_activity": [
-      {
-        "type": "order",
-        "description": "Placed order at The Grand Bistro",
-        "timestamp": "2024-01-15T12:30:00Z"
-      }
-    ]
-  }
-}
+{ "success": true, "unread_count": 3 }
 ```
+
+### PATCH /notifications/:id/mark-read
+Mark a single notification as read.
+
+**Auth:** required
+
+### PATCH /notifications/mark-all-read
+Mark all of the user's notifications as read.
+
+**Auth:** required
 
 ---
 
-## 🚨 **Error Responses**
+## Payments
 
-All API endpoints return consistent error responses:
+### GET /payments/status/:checkoutRequestId
+Poll the status of an M-Pesa checkout session.
+
+**Response:** `{ "status": "pending" | "confirmed" | "failed", "order_id": "..." }`
+
+### POST /payments/:checkoutRequestId/cancel
+Cancel a pending M-Pesa checkout session.
+
+---
+
+## Promo Codes
+
+### POST /promo-codes/validate
+Check whether a promo code is valid for a given vendor and subtotal.
+
+**Auth:** required (`consumer`)  
+**Body:** `{ "code": "SAVE20", "vendor_id": "uuid", "food_subtotal": 500 }`
+
+### GET /promo-codes/my
+Get the authenticated vendor's promo codes.
+
+**Auth:** required (`vendor`)
+
+### POST /promo-codes
+Create a new promo code.
+
+**Auth:** required (`vendor`)
+
+### PATCH /promo-codes/:id/toggle
+Toggle a promo code's `is_active` status.
+
+**Auth:** required (`vendor`)
+
+### DELETE /promo-codes/:id
+Delete a promo code.
+
+**Auth:** required (`vendor`)
+
+---
+
+## Reviews
+
+### POST /reviews
+Submit a review for a completed order.
+
+**Auth:** required (`consumer`)  
+**Body:** `{ "order_id": "uuid", "vendor_rating": 5, "rider_rating": 4, "comment": "Great!" }`
+
+### GET /reviews/vendor/:vendorId
+Get all reviews for a vendor.
+
+### GET /reviews/order/:orderId
+Get the review for a specific order.
+
+---
+
+## Verification
+
+### POST /verification/upload
+Upload identity/verification documents for the authenticated user. Used on initial registration or when re-submitting after an admin requests additional info (`info_requested` status).
+
+**Auth:** required  
+**Content-Type:** `multipart/form-data`
+
+### POST /verification/submit-info
+Public endpoint — submit verification documents alongside email/password credentials. Used during the registration flow before the user has a session.
+
+**Content-Type:** `multipart/form-data`
+
+### GET /verification/status
+Get the verification status of the authenticated user.
+
+**Auth:** required
+
+---
+
+## Food Courier
+
+### GET /food-courier/profile
+Get the authenticated food courier's profile.
+
+**Auth:** required (`food_courier`)
+
+### PUT /food-courier/profile
+Update the food courier's profile (vehicle type, etc.).
+
+**Auth:** required (`food_courier`)
+
+### PATCH /food-courier/profile/toggle-availability
+Toggle the courier's availability status.
+
+**Auth:** required (`food_courier`)
+
+### GET /food-courier/admin/pending
+List food couriers pending approval.
+
+**Auth:** required (`admin`)
+
+### PATCH /food-courier/admin/:id/approve
+Approve a food courier application.
+
+**Auth:** required (`admin`)
+
+### PATCH /food-courier/admin/:id/reject
+Reject a food courier application.
+
+**Auth:** required (`admin`)
+
+---
+
+## Admin
+
+### GET /admin/stats
+Overall platform stats: user counts, order totals, revenue, fulfilment rate.
+
+**Auth:** required (`admin`)
+
+### GET /admin/stats/weekly-orders
+Orders broken down by day for the current week.
+
+**Auth:** required (`admin`)
+
+### GET /admin/stats/top-vendors
+Top vendors by order volume.
+
+**Auth:** required (`admin`)
+
+### GET /admin/orders
+All orders on the platform.
+
+**Auth:** required (`admin`)
+
+### GET /admin/users
+All users. Supports `?role=` and `?search=` filters.
+
+**Auth:** required (`admin`)
+
+### GET /admin/vendors
+All vendors. Supports `?status=` filter.
+
+**Auth:** required (`admin`)
+
+### PATCH /admin/users/:id/request-info
+Request additional verification documents from a user.
+
+**Auth:** required (`admin`)  
+**Body:** `{ "note": "Please upload a clearer photo.", "requestedDocs": "National ID front and back" }`
+
+### PATCH /admin/users/:id/suspend
+Toggle a user's `is_suspended` flag.
+
+**Auth:** required (`admin`)
+
+### GET /admin/users/pending-docs
+Users who have resubmitted docs after an `info_requested` request.
+
+**Auth:** required (`admin`)
+
+### PATCH /admin/users/:id/approve-docs
+Approve resubmitted documents.
+
+**Auth:** required (`admin`)
+
+### PATCH /admin/users/:id/reject-docs
+Reject resubmitted documents.
+
+**Auth:** required (`admin`)  
+**Body:** `{ "note": "Documents still unclear." }`
+
+---
+
+## Error Responses
+
+All endpoints return a consistent envelope:
 
 ```json
-{
-  "success": false,
-  "error": {
-    "code": "ERROR_CODE",
-    "message": "Human readable error message",
-    "details": "Additional error details (if available)"
-  }
-}
+{ "success": false, "message": "Human-readable description." }
 ```
 
-### **Common Error Codes**
-
-| Code | HTTP Status | Description |
-|------|-------------|-------------|
-| `UNAUTHORIZED` | 401 | Invalid or missing authentication token |
-| `FORBIDDEN` | 403 | Insufficient permissions |
-| `NOT_FOUND` | 404 | Resource not found |
-| `VALIDATION_ERROR` | 400 | Invalid request data |
-| `RATE_LIMITED` | 429 | Too many requests |
-| `SERVER_ERROR` | 500 | Internal server error |
-| `SERVICE_UNAVAILABLE` | 503 | Service temporarily unavailable |
+| HTTP Status | Meaning |
+|-------------|---------|
+| 400 | Validation error or invalid state transition |
+| 401 | Missing or invalid JWT |
+| 403 | Insufficient role / resource not owned by caller |
+| 404 | Resource not found |
+| 409 | Conflict (e.g., rider already assigned) |
+| 500 | Server error |
+| 503 | External service unavailable (e.g., M-Pesa) |
 
 ---
 
-## 🔄 **Rate Limiting**
+## Static File Serving
 
-API endpoints are rate-limited to prevent abuse:
+Profile photos are served directly by the backend:
 
-- **Authentication endpoints**: 5 requests per minute
-- **General endpoints**: 100 requests per minute
-- **Search endpoints**: 20 requests per minute
-
-Rate limit headers are included in responses:
-```javascript
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 95
-X-RateLimit-Reset: 1642694400
+```
+GET http://localhost:5000/uploads/avatars/<filename>
 ```
 
----
-
-## 🌐 **Webhooks**
-
-### **Order Status Webhook**
-Receive real-time order status updates:
-
-**Endpoint:** Your configured webhook URL
-**Method:** POST
-**Headers:**
-```javascript
-X-CampusBite-Signature: <hmac_signature>
-X-CampusBite-Event: order.status_updated
+Append a cache-busting query string after upload:
+```
+http://localhost:5000/uploads/avatars/abc_avatar.jpg?t=1719432929000
 ```
 
-**Payload:**
-```json
-{
-  "event": "order.status_updated",
-  "data": {
-    "order_id": "order_id",
-    "status": "Delivered",
-    "updated_at": "2024-01-15T13:45:00Z"
-  }
-}
-```
-
----
-
-## 🧪 **Testing**
-
-### **Sandbox Environment**
-For testing, use the sandbox environment:
-- **Base URL**: `https://api-sandbox.campusbite.com`
-- **Authentication**: Test tokens available in developer dashboard
-- **Data**: Mock data for testing purposes
-
-### **Test Credentials**
-```javascript
-// Test User
-Email: test@campusbite.com
-Password: test123456
-
-// Test Vendor
-Email: vendor@campusbite.com
-Password: vendor123456
-```
-
----
-
-## 📱 **SDK Examples**
-
-### **JavaScript/React Native**
-```javascript
-import axios from 'axios';
-
-const api = axios.create({
-  baseURL: 'https://api.campusbite.com',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Add auth token to requests
-api.interceptors.request.use((config) => {
-  const token = AsyncStorage.getItem('authToken');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Get vendors
-const getVendors = async (category = null) => {
-  try {
-    const response = await api.get('/vendors', {
-      params: { category }
-    });
-    return response.data.data.vendors;
-  } catch (error) {
-    console.error('Error fetching vendors:', error);
-    throw error;
-  }
-};
-```
-
----
-
-This API documentation provides comprehensive information for integrating with the CampusBite platform, including all endpoints, data models, error handling, and implementation examples.
+The `express.static` middleware ignores query params, so the correct file is always returned.

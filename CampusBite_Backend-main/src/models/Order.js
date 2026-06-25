@@ -38,7 +38,8 @@ const Order = sequelize.define(
         'Ready',
         'Collected',
         'In Transit',
-        'Delivered'
+        'Delivered',
+        'Cancelled'
       ),
       allowNull: false,
       defaultValue: 'Received',

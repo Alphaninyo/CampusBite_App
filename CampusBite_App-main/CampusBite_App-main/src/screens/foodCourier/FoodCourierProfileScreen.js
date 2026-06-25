@@ -9,7 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
-import { COLORS } from '../../constants';
+import { COLORS, API_BASE_URL } from '../../constants';
 
 const VEHICLE_TYPES = ['Electric Bicycle', 'Bicycle', 'Motorcycle', 'Walking'];
 
@@ -19,7 +19,6 @@ function getMockEarnings(total) {
 
 export default function FoodCourierProfileScreen({ navigation }) {
   const { user, logout, updateUser } = useAuthStore();
-  const API_BASE = 'http://localhost:5000';
   const [isAvailable, setIsAvailable]     = useState(true);
   const [vehicleType, setVehicleType]     = useState('Electric Bicycle');
   const [totalDeliveries, setTotalDeliveries] = useState(0);
@@ -290,7 +289,7 @@ export default function FoodCourierProfileScreen({ navigation }) {
                 <ActivityIndicator color={COLORS.primary} />
               </View>
             ) : user?.profile_photo ? (
-              <Image source={{ uri: `${API_BASE}${user.profile_photo}?t=${user._photo_ts || 0}` }} style={styles.avatarImg} resizeMode="cover" />
+              <Image source={{ uri: `${API_BASE_URL}${user.profile_photo}?t=${user._photo_ts || 0}` }} style={styles.avatarImg} resizeMode="cover" />
             ) : (
               <Image
                 source={{ uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'FC')}&background=E85D04&color=fff&size=200&bold=true` }}

@@ -99,12 +99,12 @@ export default function AdminStatsScreen() {
         api.admin.getStats(),
         api.admin.getWeeklyOrders(),
         api.admin.getTopVendors(),
-        api.notifications.getUnreadCount().catch(() => ({ data: { count: 0 } })),
+        api.notifications.getUnreadCount().catch(() => ({ data: { unread_count: 0 } })),
       ]);
       setStats(statsRes.data.stats);
       setWeeklyData(weeklyRes.data.weekly_orders || []);
       setTopVendors(vendorsRes.data.top_vendors || []);
-      setUnreadCount(notifRes.data.count || 0);
+      setUnreadCount(notifRes.data.unread_count || 0);
     } catch (err) {
       console.error(err.message);
     } finally {

@@ -4,11 +4,10 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
-import { COLORS } from '../../constants';
+import { COLORS, API_BASE_URL } from '../../constants';
 
 export default function VendorProfileScreen({ navigation = {} }) {
   const { user, logout, updateUser } = useAuthStore();
-  const API_BASE = 'http://localhost:5000';
   console.log('VendorProfileScreen: user state =', user);
   const [vendor, setVendor] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -285,7 +284,7 @@ export default function VendorProfileScreen({ navigation = {} }) {
                 <ActivityIndicator color={COLORS.primary} />
               </View>
             ) : user?.profile_photo ? (
-              <Image source={{ uri: `${API_BASE}${user.profile_photo}?t=${user._photo_ts || 0}` }} style={styles.avatar} resizeMode="cover" />
+              <Image source={{ uri: `${API_BASE_URL}${user.profile_photo}?t=${user._photo_ts || 0}` }} style={styles.avatar} resizeMode="cover" />
             ) : (
               <View style={[styles.avatar, styles.avatarPlaceholder]}>
                 <Text style={styles.avatarInitial}>{storeInitial}</Text>

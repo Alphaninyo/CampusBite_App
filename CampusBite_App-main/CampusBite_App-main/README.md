@@ -22,9 +22,9 @@ For detailed instructions, see [QUICK_START.md](./QUICK_START.md)
 - **📂 8 Food Categories** - Restaurants, Home-based, Drinks, Coffee & Tea, Quick Bites, Healthy Options, Pastries
 - **🛒 Shopping Cart** - Add/remove items with real-time updates
 - **📋 Order Management** - Track order history and status
-- **� M-Pesa STK Push** - Seamless mobile payments via Safaricom Daraja API
-- **� User Profile** - Account management and activity tracking
-- **🔔 Notifications** - Order updates and special offers
+- **💳 M-Pesa STK Push** - Seamless mobile payments via Safaricom Daraja API
+- **👤 User Profile** - Account management with photo upload for all roles
+- **🔔 Push Notifications** - Order updates delivered via Expo push notifications
 - **🔐 Security** - Two-Factor Authentication (2FA) and password management
 - **📍 Saved Addresses** - Manage delivery locations with current location support
 - **❓ Help & Support** - Role-based support and FAQ system
@@ -126,13 +126,14 @@ CampusBite integrates with Safaricom's Daraja API for seamless mobile payments v
 
 ### **👤 Profile Screen**
 - **📊 User Stats** - Total orders, favorite vendor, total spent
+- **📸 Profile Photo** - Tap avatar to upload a photo from gallery (all roles); 114×114 px HD display with border and shadow
 - **📈 Recent Activity** - Account activity log
 - **⚙️ Settings** - App preferences
 - **🔐 Security** - Two-Factor Authentication (2FA) setup and password management
-- **� Saved Addresses** - Manage delivery locations with "Use Current Location" feature
+- **📍 Saved Addresses** - Manage delivery locations with "Use Current Location" feature
 - **🔔 Notifications** - View and manage order updates and promotional messages
 - **❓ Help & Support** - Role-based FAQ and contact information
-- **�📝 Profile Edit** - Update name, phone, and profile picture
+- **📝 Profile Edit** - Update name, phone, and profile picture
 
 ---
 
@@ -147,9 +148,10 @@ CampusBite integrates with Safaricom's Daraja API for seamless mobile payments v
 
 ### **🏪 Vendor**
 - Manage menu items and pricing
-- View and process orders
+- View and process incoming orders — accept or decline (cancel) orders at the `Received` stage
 - Set store availability status
 - Access business analytics
+- Upload a profile photo
 - Configure 2FA for account security
 
 ### **🚴 Food Courier**
@@ -398,8 +400,11 @@ npm install
 ## 📚 **Documentation**
 
 - **[QUICK_START.md](./QUICK_START.md)** - Detailed setup guide
-- **[API Documentation](./docs/api.md)** - API reference
-- **[Component Guide](./docs/components.md)** - Component documentation
+- **[docs/API_DOCUMENTATION.md](./docs/API_DOCUMENTATION.md)** - Full API reference (all endpoints, request/response shapes)
+- **[docs/PROJECT_OVERVIEW.md](./docs/PROJECT_OVERVIEW.md)** - Architecture, data models, state management
+- **[docs/USER_GUIDE.md](./docs/USER_GUIDE.md)** - End-user feature guide
+- **[docs/DEPLOYMENT_GUIDE.md](./docs/DEPLOYMENT_GUIDE.md)** - Production deployment instructions
+- **[CHANGELOG.md](./CHANGELOG.md)** - Version history and release notes
 
 ---
 

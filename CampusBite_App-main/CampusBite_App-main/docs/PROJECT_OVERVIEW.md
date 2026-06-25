@@ -9,51 +9,58 @@ CampusBite is a modern food delivery mobile application designed specifically fo
 ## 🏗️ **Architecture Overview**
 
 ### **Technology Stack**
-- **Frontend**: React Native with Expo
-- **State Management**: Zustand
-- **Navigation**: React Navigation (Bottom Tabs + Stack)
-- **Storage**: AsyncStorage for local data persistence
-- **UI Components**: Custom components with Expo Vector Icons
-- **Styling**: React Native StyleSheet with custom design system
+
+**Frontend**
+- **React Native + Expo** (~54) — cross-platform mobile and web
+- **Zustand** — lightweight global state management
+- **React Navigation** — Bottom Tabs + Stack navigators per role
+- **AsyncStorage** — JWT and user session persistence
+- **Expo Vector Icons** — icon library
+- **expo-image-picker** — gallery/camera access for photo uploads
+- **expo-notifications** — Expo push notification token registration
+
+**Backend**
+- **Node.js + Express** — REST API server (port 5000)
+- **Sequelize ORM** — model definitions and migrations
+- **PostgreSQL** — primary database (`campusbite_db`)
+- **Multer** — multipart file uploads (profile photos, menu images, verification docs)
+- **JWT** (`jsonwebtoken`) — stateless authentication
+- **Firebase Admin** — push notification delivery
+- **Safaricom Daraja API** — M-Pesa STK Push payment integration
 
 ### **Project Structure**
 ```
 CampusBite_App-main/
 ├── src/
-│   ├── screens/                 # Application screens
-│   │   ├── consumer/           # User-facing screens
-│   │   │   ├── HomeScreen.js
-│   │   │   ├── CartScreen.js
-│   │   │   ├── MyOrdersScreen.js
-│   │   │   ├── VendorDetailScreen.js
-│   │   │   ├── CheckoutScreen.js
-│   │   │   └── OrderDetailScreen.js
-│   │   └── shared/             # Common screens
-│   │       ├── ProfileScreen.js
-│   │       ├── LoginScreen.js
-│   │       ├── RegisterScreen.js
-│   │       └── SettingsScreen.js
+│   ├── screens/
+│   │   ├── auth/               # Login, Register, Verification, PendingApproval
+│   │   ├── consumer/           # HomeScreen, CartScreen, MyOrdersScreen, OrderDetailScreen…
+│   │   ├── vendor/             # VendorOrdersScreen, VendorProfileScreen, VendorMenuScreen…
+│   │   ├── foodCourier/        # FoodCourierHomeScreen, FoodCourierProfileScreen…
+│   │   ├── admin/              # AdminStatsScreen, AdminUsersScreen…
+│   │   └── shared/             # ProfileScreen (Admin/Consumer), PendingApprovalScreen…
 │   ├── components/             # Reusable UI components
-│   │   ├── VendorCard.js
-│   │   ├── TrendingItemCard.js
-│   │   ├── OrderCard.js
-│   │   ├── CartItemCard.js
-│   │   └── NotificationModal.js
-│   ├── stores/                 # State management
-│   │   ├── cartStore.js
-│   │   ├── userStore.js
-│   │   └── orderStore.js
-│   ├── constants/              # App constants
-│   │   └── index.js
-│   ├── api/                    # API configuration
-│   │   └── index.js
-│   └── navigation/             # Navigation setup
-│       ├── AppNavigator.js
-│       └── TabNavigator.js
-├── docs/                       # Documentation
-├── assets/                     # Static assets
+│   ├── stores/
+│   │   ├── authStore.js        # Zustand: token, user, login, logout, updateUser, hydrate
+│   │   └── cartStore.js        # Zustand: cart items (consumer only)
+│   ├── constants/
+│   │   └── index.js            # API_BASE_URL, API_URL, COLORS, …
+│   ├── api/
+│   │   ├── client.js           # Axios instance with auth interceptor
+│   │   └── index.js            # All API methods grouped by domain
+│   └── navigation/             # Stack and tab navigators per role
+├── CampusBite_Backend-main/    # Node.js + Express + Sequelize backend
+│   ├── src/
+│   │   ├── controllers/
+│   │   ├── models/
+│   │   ├── routes/
+│   │   ├── middleware/
+│   │   └── services/
+│   ├── uploads/avatars/        # Uploaded profile photos
+│   └── server.js               # Bootstrap: DB sync + migrations + HTTP server
+├── docs/                       # This documentation
+├── assets/
 ├── package.json
-├── app.json
 └── README.md
 ```
 
@@ -104,12 +111,13 @@ const COLORS = {
 };
 
 const STATUS_COLORS = {
-  'Received': '#FFA500',    // Orange
-  'Preparing': '#17A2B8',   // Blue
-  'Ready': '#28A745',       // Green
-  'Collected': '#6F42C1',   // Purple
+  'Received':   '#FFA500',  // Orange
+  'Preparing':  '#17A2B8',  // Blue
+  'Ready':      '#28A745',  // Green
+  'Collected':  '#6F42C1',  // Purple
   'In Transit': '#007BFF',  // Bright Blue
-  'Delivered': '#28A745',   // Green
+  'Delivered':  '#28A745',  // Green
+  'Cancelled':  '#DC3545',  // Red
 };
 ```
 
@@ -162,46 +170,34 @@ const STATUS_COLORS = {
 
 ## 🔧 **State Management**
 
-### **Cart Store (Zustand)**
+### **Auth Store (`src/stores/authStore.js`)**
+```javascript
+const useAuthStore = create((set, get) => ({
+  user:  null,   // full user object from backend
+  token: null,   // JWT
+  loading: true, // true while hydrating from AsyncStorage
+
+  hydrate: async () => { /* restore session from AsyncStorage on app start */ },
+  login:   async (email, password) => { /* POST /auth/login, persist, register push token */ },
+  register: async (payload) => { /* POST /auth/register, persist */ },
+  setSession: async (token, user) => { /* used after social/OAuth flows */ },
+  updateUser: (updates) => { /* merge partial updates into user, persist */ },
+  logout: async () => { /* clear AsyncStorage, reset state */ },
+}));
+```
+
+`updateUser` is called after profile changes (name, phone, profile_photo) and stores a `_photo_ts: Date.now()` timestamp used for avatar cache-busting.
+
+### **Cart Store (`src/stores/cartStore.js`)**
 ```javascript
 const useCartStore = create((set) => ({
-  cartItems: [],
-  totalAmount: 0,
-  itemCount: 0,
-  
-  // Actions
-  addToCart: (item) => { /* ... */ },
-  removeFromCart: (itemId) => { /* ... */ },
-  updateQuantity: (itemId, quantity) => { /* ... */ },
+  cartItems: [],   // [{ vendor_id, menu_item_id, name, price, quantity }]
+  vendor: null,    // current vendor (cart is single-vendor)
+
+  addToCart: (item, vendorInfo) => { /* ... */ },
+  removeFromCart: (menu_item_id) => { /* ... */ },
+  updateQuantity: (menu_item_id, qty) => { /* ... */ },
   clearCart: () => { /* ... */ },
-  loadCart: () => { /* ... */ },
-  saveCart: () => { /* ... */ },
-}));
-```
-
-### **User Store**
-```javascript
-const useUserStore = create((set) => ({
-  user: null,
-  isAuthenticated: false,
-  
-  // Actions
-  login: (userData) => { /* ... */ },
-  logout: () => { /* ... */ },
-  updateProfile: (profileData) => { /* ... */ },
-}));
-```
-
-### **Order Store**
-```javascript
-const useOrderStore = create((set) => ({
-  orders: [],
-  currentOrder: null,
-  
-  // Actions
-  fetchOrders: () => { /* ... */ },
-  createOrder: (orderData) => { /* ... */ },
-  updateOrderStatus: (orderId, status) => { /* ... */ },
 }));
 ```
 
@@ -210,44 +206,111 @@ const useOrderStore = create((set) => ({
 ## 🌐 **API Integration**
 
 ### **API Endpoints**
-```javascript
+```
 // Authentication
-POST /api/auth/login
-POST /api/auth/register
-POST /api/auth/logout
-GET /api/auth/profile
+POST   /api/auth/register
+POST   /api/auth/login
+POST   /api/auth/check-status
+GET    /api/auth/me
+PUT    /api/auth/profile          (multipart — includes avatar upload)
+PUT    /api/auth/password
+PUT    /api/auth/device-token     (Expo push token registration)
+POST   /api/auth/forgot-password
+POST   /api/auth/reset-password
 
 // Vendors
-GET /api/vendors
-GET /api/vendors/:id
-GET /api/vendors/:id/menu
+GET    /api/vendors
+GET    /api/vendors/:id
+GET    /api/vendors/profile/me
+PUT    /api/vendors/profile/me
+PATCH  /api/vendors/profile/me/toggle
+GET    /api/vendors/admin/pending
+PATCH  /api/vendors/admin/:id/approve
+PATCH  /api/vendors/admin/:id/reject
+
+// Menu
+GET    /api/menu/vendor/:vendorId
+POST   /api/menu
+PUT    /api/menu/:id
+DELETE /api/menu/:id
 
 // Orders
-GET /api/orders
-POST /api/orders
-GET /api/orders/:id
-PUT /api/orders/:id/status
+POST   /api/orders/initiate
+POST   /api/orders/dev-confirm/:checkoutRequestId
+GET    /api/orders
+GET    /api/orders/:id
+PATCH  /api/orders/:id/status     (advance lifecycle — role-gated)
+PATCH  /api/orders/:id/cancel     (vendor decline — Received only)
+GET    /api/orders/vendor
+GET    /api/orders/food-courier/available
+GET    /api/orders/food-courier/mine
+PATCH  /api/orders/:id/assign-food-courier
+PATCH  /api/orders/:id/collect-cash
+PATCH  /api/orders/:id/location
 
-// Cart
-GET /api/cart
-POST /api/cart/add
-PUT /api/cart/update
-DELETE /api/cart/:itemId
+// Notifications
+GET    /api/notifications
+GET    /api/notifications/unread-count
+PATCH  /api/notifications/:id/mark-read
+PATCH  /api/notifications/mark-all-read
+
+// Payments
+GET    /api/payments/status/:checkoutRequestId
+POST   /api/payments/:checkoutRequestId/cancel
+
+// Promo Codes
+POST   /api/promo-codes/validate
+GET    /api/promo-codes/my
+POST   /api/promo-codes
+PATCH  /api/promo-codes/:id/toggle
+DELETE /api/promo-codes/:id
+
+// Reviews
+POST   /api/reviews
+GET    /api/reviews/vendor/:vendorId
+GET    /api/reviews/order/:orderId
+
+// Verification
+POST   /api/verification/upload
+POST   /api/verification/submit-info
+GET    /api/verification/status
+
+// Food Courier
+GET    /api/food-courier/profile
+PUT    /api/food-courier/profile
+PATCH  /api/food-courier/profile/toggle-availability
+GET    /api/food-courier/admin/pending
+PATCH  /api/food-courier/admin/:id/approve
+PATCH  /api/food-courier/admin/:id/reject
+
+// Admin
+GET    /api/admin/stats
+GET    /api/admin/stats/weekly-orders
+GET    /api/admin/stats/top-vendors
+GET    /api/admin/orders
+GET    /api/admin/users
+GET    /api/admin/vendors
+PATCH  /api/admin/users/:id/request-info
+PATCH  /api/admin/users/:id/suspend
+GET    /api/admin/users/pending-docs
+PATCH  /api/admin/users/:id/approve-docs
+PATCH  /api/admin/users/:id/reject-docs
 ```
 
 ### **Data Models**
 ```javascript
 // User Model
 {
-  id: string,
+  id: string,           // UUID
   name: string,
   email: string,
   phone: string,
-  avatar?: string,
-  preferences: {
-    dietary: string[],
-    favorites: string[],
-  }
+  role: 'consumer' | 'vendor' | 'food_courier' | 'admin',
+  profile_photo?: string,   // server path e.g. "/uploads/avatars/abc_avatar.jpg"
+  is_approved: boolean,
+  is_suspended: boolean,
+  verification_status: 'not_submitted' | 'pending' | 'approved' | 'rejected' | 'info_requested',
+  fcm_token?: string,   // Expo push token registered after login
 }
 
 // Vendor Model
@@ -264,15 +327,22 @@ DELETE /api/cart/:itemId
 
 // Order Model
 {
-  id: string,
-  user_id: string,
+  id: string,           // UUID
+  consumer_id: string,
   vendor_id: string,
-  items: OrderItem[],
+  rider_id?: string,    // assigned after vendor marks Ready
+  status: 'Received' | 'Preparing' | 'Ready' | 'Collected' | 'In Transit' | 'Delivered' | 'Cancelled',
+  food_subtotal: number,
+  delivery_fee: number,
+  discount_amount: number,
   total_amount: number,
-  status: OrderStatus,
   delivery_address: string,
+  special_instructions?: string,
+  payment_method: 'mpesa' | 'cash' | 'card',
+  promo_code?: string,
+  scheduled_time?: string,
   created_at: string,
-  updated_at: string
+  updated_at: string,
 }
 ```
 

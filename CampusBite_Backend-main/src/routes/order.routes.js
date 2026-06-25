@@ -12,7 +12,8 @@ router.post('/dev-confirm/:checkoutRequestId', protect, restrictTo('consumer'), 
 router.get( '/',                               protect, restrictTo('consumer'),        orderController.getMyOrders);
 
 // ── Vendor ────────────────────────────────────────────────────────────────────
-router.get( '/vendor',                         protect, restrictTo('vendor'),          orderController.getVendorOrders);
+router.get(  '/vendor',                        protect, restrictTo('vendor'),          orderController.getVendorOrders);
+router.patch('/:id/cancel',                    protect, restrictTo('vendor'),          orderController.cancelOrder);
 
 // ── Food Courier ─────────────────────────────────────────────────────────────────────
 router.get( '/food-courier/available',                protect, restrictTo('food_courier'),           orderController.getAvailableOrders);
