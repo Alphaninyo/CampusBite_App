@@ -1,18 +1,40 @@
-# CampusBite - Complete Food Ordering System
+# CampusBite — Campus Food Ordering System
 
-A full-stack food ordering application for campus environments with React Native frontend, Node.js backend, and PostgreSQL database.
+A full-stack food ordering platform built for campus environments. Students order from verified campus vendors, food couriers handle deliveries, and admins oversee the entire operation through a live dashboard.
+
+---
+
+## Table of Contents
+
+- [Quick Start](#-quick-start)
+- [Access Points & Test Accounts](#-access-points--test-accounts)
+- [System Architecture](#-system-architecture)
+- [Technology Stack](#-technology-stack)
+- [Feature Overview](#-feature-overview)
+- [User Roles & Flows](#-user-roles--flows)
+- [Admin Dashboard](#-admin-dashboard)
+- [Verification & Document Review System](#-verification--document-review-system)
+- [Live Order & Approval Badges](#-live-order--approval-badges)
+- [Notification System](#-notification-system)
+- [Payment Integration](#-payment-integration)
+- [Environment Setup](#-environment-setup)
+- [Database Migrations](#-database-migrations)
+- [API Reference](#-api-reference)
+- [Troubleshooting](#-troubleshooting)
+
+---
 
 ## 🚀 Quick Start
 
 ### Option 1: One-Click Startup (Recommended)
 
 **Windows Batch File:**
-```bash
+```bat
 start-campusbite.bat
 ```
 
 **PowerShell:**
-```bash
+```powershell
 powershell -ExecutionPolicy Bypass -File start-campusbite.ps1
 ```
 
@@ -23,123 +45,385 @@ npm start
 
 ### Option 2: Manual Startup
 
-1. **Start PostgreSQL Database**
-   - Ensure PostgreSQL is running on port 5432
-   - Create database `campusbite_db` if needed
+1. **Start PostgreSQL** — ensure it is running on port 5432 and `campusbite_db` exists.
 
-2. **Start Backend Server**
+2. **Start the Backend:**
    ```bash
    cd CampusBite_Backend-main
    npm start
    ```
 
-3. **Start Frontend Server**
+3. **Start the Frontend:**
    ```bash
-   cd CampusBite_App-main
+   cd CampusBite_App-main/CampusBite_App-main
    npx expo start --web --port 8082
    ```
 
-## 📱 Access Points
+---
 
-- **Frontend Application:** http://localhost:8082
-- **Backend API:** http://localhost:5000
-- **API Health Check:** http://localhost:5000/api/health
+## 📱 Access Points & Test Accounts
 
-## 🔐 Test Accounts
+| Service | URL |
+|---|---|
+| Frontend | http://localhost:8082 |
+| Backend API | http://localhost:5000 |
+| API Health Check | http://localhost:5000/api/health |
 
-### Consumer Accounts (Ready to Use)
-- **Mark Grayson:** `mark@campusbite.com` / `password123`
-- **Test User:** `testuser@campusbite.com` / `password123`
+### Test Accounts
 
-### Admin Account (Ready to Use)
-- **System Admin:** `sysadmin@campusbite.com` / `password123`
+| Role | Email | Password | Status |
+|---|---|---|---|
+| Consumer | mark@campusbite.com | password123 | Ready |
+| Consumer | testuser@campusbite.com | password123 | Ready |
+| Admin | sysadmin@campusbite.com | password123 | Ready |
+| Vendor | vendor2@campusbite.com | password123 | Needs Admin Approval |
+| Food Courier | rider@campusbite.com | password123 | Needs Admin Approval |
 
-### Vendor Account (Needs Admin Approval)
-- **Campus Vendor:** `vendor2@campusbite.com` / `password123`
+> **Note:** Vendor and Food Courier accounts require admin approval and identity document verification before they can access their dashboards.
 
-### Rider Account (Needs Admin Approval)
-- **Campus Rider:** `rider@campusbite.com` / `password123`
+---
 
 ## 🏗️ System Architecture
 
 ```
-CampusBite System/
-├── CampusBite_App-main/          # React Native Frontend (Expo)
-│   ├── src/
-│   │   ├── screens/             # UI Screens
-│   │   │   ├── consumer/        # Consumer screens (Home, Cart, Orders, Profile)
-│   │   │   ├── vendor/          # Vendor screens (Dashboard, Menu, Orders, Profile)
-│   │   │   ├── foodCourier/     # Food Courier screens (Tasks, Earnings, Profile, Notifications)
-│   │   │   ├── admin/           # Admin screens (Stats, Approvals, Vendors, Orders, Users)
-│   │   │   └── shared/          # Shared screens (Profile)
-│   │   ├── navigation/          # Navigation Setup (ConsumerNavigator, VendorNavigator, FoodCourierNavigator, AdminNavigator)
-│   │   ├── api/                 # API Client (orders, vendors, menu, payments, reviews, notifications, foodCourier, admin)
-│   │   ├── stores/              # State Management (Zustand)
-│   │   └── constants/           # App Constants (COLORS, STATUS_COLORS)
-│   └── package.json
-├── CampusBite_Backend-main/      # Node.js Backend
-│   ├── src/
-│   │   ├── controllers/         # API Controllers (auth, vendor, menu, order, payment, review, notification, foodCourierProfile, admin)
-│   │   ├── models/              # Database Models (User, Vendor, MenuItem, Order, OrderItem, Payment, Review, Notification, FoodCourierProfile)
-│   │   ├── routes/              # API Routes (auth, vendor, menu, order, payment, review, notification, foodCourierProfile, admin)
-│   │   ├── middleware/          # Auth Middleware (protect, restrictTo)
-│   │   └── services/            # Business Logic (email, notification)
-│   ├── migrations/             # Database Migration Scripts
-│   ├── .env                     # Environment Variables
-│   └── package.json
-├── start-campusbite.bat         # Windows Startup Script
-├── start-campusbite.ps1         # PowerShell Startup Script
-├── start-campusbite.js          # Node.js Startup Script
-└── README.md                    # This File
+CampusBite_App-main/
+├── CampusBite_App-main/
+│   └── CampusBite_App-main/
+│       └── src/
+│           ├── screens/
+│           │   ├── admin/
+│           │   │   ├── AdminStatsScreen.js         # Platform stats, charts, export
+│           │   │   ├── AdminApprovalsScreen.js      # Vendor/courier/document approvals
+│           │   │   ├── AdminVendorsScreen.js        # Vendor directory + doc review
+│           │   │   ├── AdminOrdersScreen.js         # All orders with status filter
+│           │   │   └── AdminUsersScreen.js          # User management + suspend
+│           │   ├── consumer/
+│           │   │   ├── HomeScreen.js               # Vendor discovery feed
+│           │   │   ├── ExploreScreen.js            # Search & browse
+│           │   │   ├── VendorDetailScreen.js        # Menu + add to cart
+│           │   │   ├── CartScreen.js               # Cart management
+│           │   │   ├── CheckoutScreen.js            # Address, promo, payment
+│           │   │   ├── PaymentStatusScreen.js       # M-Pesa polling
+│           │   │   ├── MyOrdersScreen.js            # Order history
+│           │   │   ├── OrderDetailScreen.js         # Live status tracker
+│           │   │   └── WriteReviewScreen.js         # Post-delivery review
+│           │   ├── vendor/
+│           │   │   ├── VendorDashboardScreen.js     # Today's orders overview
+│           │   │   ├── VendorOrdersScreen.js        # Order queue management
+│           │   │   ├── VendorOrderDetailScreen.js   # Order detail + advance status
+│           │   │   ├── MenuScreen.js               # Menu item list
+│           │   │   ├── AddMenuItemScreen.js         # Create menu item
+│           │   │   ├── EditMenuItemScreen.js        # Edit menu item
+│           │   │   ├── VendorPromoCodesScreen.js    # Promo code management
+│           │   │   ├── VendorProfileScreen.js       # Business profile
+│           │   │   └── VendorSettingsScreen.js      # Document upload + preferences
+│           │   ├── foodCourier/
+│           │   │   ├── AvailableOrdersScreen.js     # Orders ready for pickup
+│           │   │   ├── MyDeliveriesScreen.js        # Earnings + delivery history
+│           │   │   ├── RiderOrderDetailScreen.js    # Delivery detail + status advance
+│           │   │   ├── FoodCourierProfileScreen.js  # Courier profile
+│           │   │   ├── EditProfileScreen.js         # Edit courier profile
+│           │   │   ├── AppSettingsScreen.js         # Document upload + settings
+│           │   │   ├── NotificationsScreen.js       # In-app notification list
+│           │   │   ├── CustomerFeedbackScreen.js    # View customer feedback
+│           │   │   └── SupportScreen.js            # Help & support
+│           │   ├── auth/
+│           │   │   ├── LoginScreen.js              # Login
+│           │   │   ├── RegisterScreen.js           # Step 1: account details
+│           │   │   ├── VerificationScreen.js       # Step 2: document upload
+│           │   │   └── SubmitInfoScreen.js         # Resubmit when admin requests more info
+│           │   └── shared/
+│           │       ├── ProfileScreen.js            # Universal profile screen
+│           │       └── PendingApprovalScreen.js    # Shown while account is under review
+│           ├── navigation/
+│           │   ├── AdminNavigator.js               # Admin tabs + live approval & order badges
+│           │   ├── ConsumerNavigator.js            # Consumer tabs + live order badge
+│           │   ├── VendorNavigator.js              # Vendor tabs + live order badge
+│           │   ├── FoodCourierNavigator.js         # Courier tabs + live task/delivery badges
+│           │   ├── AuthNavigator.js                # Auth flow
+│           │   └── PendingNavigator.js             # Pending approval holding screen
+│           ├── api/
+│           │   └── index.js                        # Axios API client (all endpoints)
+│           ├── stores/
+│           │   └── cartStore.js                    # Zustand cart state
+│           └── constants/
+│               └── index.js                        # COLORS, STATUS_COLORS
+│
+└── CampusBite_Backend-main/
+    ├── src/
+    │   ├── controllers/
+    │   │   ├── auth.controller.js                  # Register, login, profile, device token
+    │   │   ├── order.controller.js                 # Full order lifecycle
+    │   │   ├── vendor.controller.js                # Vendor profile + approval
+    │   │   ├── menu.controller.js                  # Menu CRUD
+    │   │   ├── payment.controller.js               # M-Pesa STK Push + callback
+    │   │   ├── review.controller.js                # Order reviews
+    │   │   ├── notification.controller.js          # In-app notifications CRUD
+    │   │   ├── verification.controller.js          # Document upload + status
+    │   │   ├── foodCourierProfile.controller.js    # Courier profile + availability
+    │   │   └── admin.controller.js                 # Stats, vendors, users, doc review
+    │   ├── models/
+    │   │   ├── User.js                             # Auth + verification fields
+    │   │   ├── Vendor.js                           # Business profile
+    │   │   ├── MenuItem.js                         # Menu items
+    │   │   ├── Order.js                            # Orders + rider location
+    │   │   ├── OrderItem.js                        # Line items
+    │   │   ├── Payment.js                          # M-Pesa payments
+    │   │   ├── Review.js                           # Consumer reviews
+    │   │   ├── Notification.js                     # In-app notifications
+    │   │   ├── FoodCourierProfile.js               # Courier-specific data
+    │   │   └── index.js                            # Sequelize associations
+    │   ├── routes/                                 # Express routers (one per domain)
+    │   ├── middleware/
+    │   │   └── auth.middleware.js                  # JWT protect + restrictTo
+    │   └── services/
+    │       ├── notification.service.js             # Firebase Cloud Messaging
+    │       └── mpesa.service.js                    # Safaricom Daraja STK Push
+    ├── migrations/                                 # Sequential DB migration scripts
+    ├── uploads/
+    │   ├── menu/                                   # Menu item images
+    │   └── verification/                           # Identity documents (gitignored)
+    └── .env                                        # Environment variables
 ```
+
+---
 
 ## 🛠️ Technology Stack
 
 ### Frontend
-- **React Native** with Expo
-- **React Navigation** for navigation
-- **Zustand** for state management
-- **Axios** for API calls
-- **Expo Image Picker** for photo uploads
+| Package | Purpose |
+|---|---|
+| React Native + Expo | Cross-platform mobile / web UI |
+| React Navigation | Stack + bottom-tab navigation |
+| Zustand | Lightweight cart state management |
+| Axios | HTTP client with JWT interceptor |
+| expo-image-picker | Camera & gallery document uploads |
 
 ### Backend
-- **Node.js** with Express
-- **PostgreSQL** database
-- **Sequelize** ORM
-- **JWT** authentication
-- **bcryptjs** password hashing
-- **M-Pesa** integration for payments
+| Package | Purpose |
+|---|---|
+| Node.js + Express | REST API server |
+| PostgreSQL | Relational database |
+| Sequelize | ORM with model sync |
+| JSON Web Tokens | Stateless authentication |
+| bcryptjs | Password hashing |
+| Multer | Multipart file upload handling |
+| Firebase Admin SDK | FCM push notifications |
+| M-Pesa Daraja API | Mobile payment STK Push |
 
-### Features
-- **Multi-role authentication** (Consumer, Vendor, Food Courier, Admin)
-- **Real-time order tracking**
-- **Menu management** for vendors
-- **Review system**
-- **Payment integration**
-- **Push notifications** (Firebase)
-- **Admin Dashboard** with comprehensive management tools
-  - **Stats Dashboard:** View platform statistics, weekly orders, top vendors, and export reports
-  - **Approvals System:** Review and approve/reject vendor and courier applications
-  - **Vendor Management:** Monitor active vendors, pending applications, and vendor details
-  - **Order Management:** Track all orders with filtering by status and detailed order views
-  - **User Management:** Manage consumers and couriers with suspend/unsuspend capabilities
+---
 
-## 📋 Prerequisites
+## 🎯 Feature Overview
 
-1. **Node.js** (v16 or higher)
-2. **PostgreSQL** (running on port 5432)
-3. **Git** (to clone the repository)
+- **Multi-role authentication** — Consumer, Vendor, Food Courier, Admin with role-based navigation
+- **Multi-step registration with identity verification** — Document upload during onboarding
+- **Document management** — Vendors and couriers can update their ID/Passport and Passport Sized Photo post-registration
+- **Admin document review** — Approve or reject document resubmissions with written feedback
+- **Live order & approval badges** — Real-time counts on every tab, refreshed every 30 seconds
+- **Full order lifecycle** — Received → Preparing → Ready → Collected → In Transit → Delivered
+- **Real-time rider location tracking** — Courier broadcasts GPS coordinates during transit
+- **M-Pesa STK Push payments** — Integrated Safaricom Daraja API with dev-mode simulation
+- **Promo codes** — Vendor-created discount codes with percentage or flat-amount discounts
+- **Consumer reviews** — Star ratings and written feedback after delivery
+- **In-app notification system** — Persistent DB-backed notifications with unread indicators
+- **FCM push notifications** — Optional Firebase integration for background device alerts
+- **Admin dashboard** — Stats, vendor management, order tracking, user management, and approval flows
+
+---
+
+## 👤 User Roles & Flows
+
+### Consumer
+1. Browse vendors on the Home or Explore tab
+2. Select items → add to cart → proceed to checkout
+3. Enter delivery address, apply promo code, choose payment (M-Pesa / Cash / Card)
+4. Track order in real-time through the Orders tab (status + rider location)
+5. Write a review after delivery
+
+### Vendor
+1. Register → upload ID/Passport + Passport Sized Photo during onboarding
+2. Wait for admin approval (shown in PendingApprovalScreen)
+3. Manage menu items (add, edit, delete, toggle availability)
+4. Receive new orders on the Orders tab (badge shows active count)
+5. Advance order status: Received → Preparing → Ready
+6. Manage promo codes via the Menu tab
+7. Update verification documents anytime via Profile → Settings
+
+### Food Courier
+1. Register → upload identity documents during onboarding
+2. Wait for admin approval
+3. Browse available orders on the Tasks tab (badge shows available count)
+4. Accept an order → head to vendor to collect
+5. Advance: Collected → In Transit → Delivered
+6. Broadcast live GPS location during transit
+7. Confirm cash collection for cash-on-delivery orders
+8. Update verification documents via Profile → Settings
+
+### Admin
+1. View platform stats (revenue, orders, active counts, top vendors)
+2. Review pending vendor and food courier applications → Approve or Reject
+3. Review pending verification document submissions → Approve or Reject with note
+4. Manage all vendors — view details, inline document review
+5. Monitor all platform orders with status filtering
+6. Manage users — search, view details, suspend or unsuspend accounts
+7. Live badges on the Approvals and Orders tabs show pending work at a glance
+
+---
+
+## 🛡️ Admin Dashboard
+
+### Stats Tab
+- Platform totals: orders, revenue, consumers, active vendors, couriers, reviews
+- Weekly order trend bar chart
+- Top vendors leaderboard ranked by order count
+- Export statistics as CSV (web only)
+- Pull-to-refresh for live data
+
+### Approvals Tab
+- **Red badge** on tab icon showing total pending items (vendors + couriers + document reviews)
+- Tabs: All · Vendors · Couriers · Documents · Rejected
+- Alert banners for applications waiting over 24 hours
+- Quick Approve / Reject actions with confirmation
+- **Documents sub-tab**: Review ID/Passport and Passport Sized Photo submitted by already-approved vendors/couriers; write a rejection note if documents are unclear
+
+### Vendors Tab
+- Directory of all vendors with search and status filter
+- Yellow pending banner on cards where the vendor has resubmitted documents
+- Tap a vendor → full detail modal with:
+  - Business info, owner contact, approval date
+  - Verification Documents section with status badge (Approved / Pending Review / Info Requested)
+  - Inline Approve / Reject controls when documents are pending review
+
+### Orders Tab
+- **Red badge** showing count of active orders platform-wide (Received → In Transit)
+- Filter by status: All, Pending, In Progress, Completed
+- Search by order ID, customer, or vendor
+- Full order detail: consumer, vendor, rider, items, delivery address, payment status
+
+### Users Tab
+- Consumer and Courier directories
+- Search by name or phone
+- Suspend / Unsuspend with confirmation
+
+---
+
+## 📄 Verification & Document Review System
+
+CampusBite enforces identity verification for all Vendor and Food Courier accounts. The system uses **two separate document types** with distinct purposes:
+
+| Document | Purpose |
+|---|---|
+| **National ID / Passport** | Proves legal identity — a scan or photo of the ID document itself |
+| **Passport Sized Photo** | A clear portrait photo of the person — not the ID document |
+
+### Registration Flow (Step 2)
+After submitting basic account details, vendors and couriers are redirected to `VerificationScreen` where they:
+1. Select document type: **National ID** or **Passport**
+2. Upload a photo of the document (camera or gallery)
+3. Upload a passport-sized portrait photo
+
+All uploads are sent as `multipart/form-data`. The backend stores the files under `uploads/verification/` and sets `verification_status: 'pending'` on the user record.
+
+### Post-Registration Document Updates
+Approved vendors and couriers can update their documents at any time:
+- **Vendors**: Profile tab → Settings (`VendorSettingsScreen`)
+- **Food Couriers**: Profile tab → Settings (`AppSettingsScreen`)
+
+Each document type has its own card with:
+- Current document preview (tap to view full screen)
+- Status indicator (Approved / Pending Review / Info Requested)
+- Admin note banner if the admin requested changes
+- Independent upload button — update one document without affecting the other
+
+### Admin Review States
+
+| Status | Meaning |
+|---|---|
+| `pending` | Documents submitted, awaiting admin review |
+| `approved` | Admin has verified and accepted the documents |
+| `info_requested` | Admin rejected with a note — user must resubmit |
+
+When `info_requested`, the user sees an amber banner with the admin's note and can resubmit via `SubmitInfoScreen`.
+
+---
+
+## 🔴 Live Order & Approval Badges
+
+All tab bars show live red count badges that refresh automatically every **30 seconds** and immediately on tab press.
+
+| Navigator | Tab | Badge Shows |
+|---|---|---|
+| Admin | Approvals | Pending vendors + pending couriers + pending document reviews |
+| Admin | Orders | Active platform orders (Received → In Transit) |
+| Vendor | Orders | Vendor's own active orders (Received, Preparing, Ready) |
+| Consumer | Orders | Consumer's in-progress orders (Received → In Transit) |
+| Food Courier | Tasks | Available unassigned orders ready for pickup |
+| Food Courier | Earnings | Courier's active deliveries (Collected, In Transit) |
+
+Badges are hidden (not shown as `0`) when the count is zero. Counts above 99 display as `99+`.
+
+---
+
+## 🔔 Notification System
+
+CampusBite has a two-layer notification system:
+
+### Layer 1 — In-App Notifications (Always Active)
+All notifications are stored in the `notifications` PostgreSQL table. Users access them via the Notifications screen.
+
+| Type | Icon | Color |
+|---|---|---|
+| `order_status` | Receipt | Blue |
+| `payment` | Card | Purple |
+| `delivery` | Bicycle | Primary orange |
+| `feedback` | Chat bubble | Green |
+| `system` | Bell | Grey |
+
+Features: unread dot indicator, mark individual or all as read, pull-to-refresh.
+
+### Layer 2 — FCM Push Notifications (Optional)
+The backend includes Firebase Admin SDK integration (`notification.service.js`). When Firebase credentials are configured, push notifications are sent to devices even when the app is in the background.
+
+Currently triggered push events:
+- Order status changes → Consumer device
+- Rider assigned → Vendor device
+- Cash collected → Consumer device
+
+To enable push notifications, add Firebase credentials to the backend `.env` (see Environment Setup below).
+
+---
+
+## 💳 Payment Integration
+
+### M-Pesa STK Push
+The system integrates with Safaricom's Daraja API for mobile payments.
+
+**Flow:**
+1. Consumer initiates checkout with phone number
+2. Backend fires STK Push → Safaricom sends a PIN prompt to the consumer's phone
+3. Consumer enters M-Pesa PIN
+4. Safaricom posts a callback to the backend
+5. Backend confirms payment and creates the order
+
+**Dev Mode:** When real M-Pesa credentials are not set, the backend auto-generates a dev checkout ID. A "Simulate M-Pesa" button appears in the app to complete the payment without a real STK Push.
+
+### Cash on Delivery
+Order is created immediately. The courier confirms cash collection via the delivery detail screen, which marks the payment as confirmed.
+
+### Card
+Order is created immediately. Card charge is confirmed on delivery (placeholder — no card gateway integration currently).
+
+---
 
 ## 🔧 Environment Setup
 
-### Backend Environment Variables
-Create `.env` file in `CampusBite_Backend-main/`:
+Create a `.env` file in `CampusBite_Backend-main/`:
 
 ```env
 NODE_ENV=development
 PORT=5000
 
-# PostgreSQL Database
+# PostgreSQL
 DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=campusbite_db
@@ -151,6 +435,7 @@ JWT_SECRET=your_super_secret_jwt_key_here
 JWT_EXPIRES_IN=7d
 
 # M-Pesa Daraja API (Safaricom)
+# Leave as placeholder values to run in dev/simulation mode
 MPESA_CONSUMER_KEY=your_consumer_key
 MPESA_CONSUMER_SECRET=your_consumer_secret
 MPESA_SHORTCODE=174379
@@ -158,145 +443,20 @@ MPESA_PASSKEY=your_lipa_na_mpesa_passkey
 MPESA_CALLBACK_URL=https://your-public-url.ngrok.io/api/payments/callback
 MPESA_ENV=sandbox
 
-# Important: MPESA_PASSKEY is the STK Push (Lipa Na M-Pesa Online) passkey, NOT the Security Credential
-# For sandbox shortcode 174379, the passkey is: bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919
-# Obtain your production credentials from: https://developer.safaricom.co.ke/
+# Sandbox passkey for shortcode 174379:
+# bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919
 
-# Firebase Cloud Messaging (Optional - for push notifications)
+# Firebase Cloud Messaging (Optional — push notifications work without this)
 FIREBASE_PROJECT_ID=your_firebase_project_id
 FIREBASE_CLIENT_EMAIL=your_firebase_client_email
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour_Private_Key_Here\n-----END PRIVATE KEY-----\n"
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour_Key_Here\n-----END PRIVATE KEY-----\n"
 ```
 
-## 🚦 Development Workflow
-
-1. **Start the system** using any startup method
-2. **Open browser** at http://localhost:8082
-3. **Login** with test credentials
-4. **Test features** based on user role
-5. **Stop services** by closing the terminal windows
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-1. **PostgreSQL not running**
-   - Start PostgreSQL service via Windows Services
-   - Check port 5432 availability
-
-2. **Port conflicts**
-   - Backend uses port 5000
-   - Frontend uses port 8082
-   - PostgreSQL uses port 5432
-
-3. **Database connection errors**
-   - Verify PostgreSQL is running
-   - Check `.env` database credentials
-   - Ensure database `campusbite_db` exists
-
-4. **Frontend not loading**
-   - Wait for Expo to fully start
-   - Check console for error messages
-   - Clear browser cache if needed
-
-5. **Food courier profile errors**
-   - Run database migration to create `food_courier_profiles` table
-   - Check backend logs for model sync errors
-   - Ensure food courier user is approved by admin
-
-6. **Notification errors**
-   - Firebase is optional - notifications work without it
-   - Check Firebase credentials in `.env` if using push notifications
-   - Verify FCM token is saved on user registration
-
-7. **M-Pesa STK Push not working**
-   - Verify `MPESA_PASSKEY` is the STK Push passkey, NOT the Security Credential
-   - For sandbox shortcode 174379, use: `bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919`
-   - Ensure ngrok tunnel is running and callback URL is correctly set
-   - Check that phone number is in Kenyan format (2547XXXXXXXX)
-   - Verify Consumer Key and Secret match the environment (sandbox/production)
-   - Check backend logs for detailed Safaricom error responses
-
-## 🎯 Test Accounts
-
-| Role | Email | Password | Status |
-|------|-------|----------|--------|
-| Consumer | mark@campusbite.com | password123 | Ready |
-| Consumer | testuser@campusbite.com | password123 | Ready |
-| Admin | sysadmin@campusbite.com | password123 | Ready |
-| Vendor | vendor2@campusbite.com | password123 | Needs Approval |
-| Food Courier | rider@campusbite.com | password123 | Needs Approval |
-
-**Note:** Vendor and Food Courier accounts require admin approval before they can access their dashboards. Use the admin account to approve them.
-
-## � Multi-Step Registration & Admin Verification Gating
-
-CampusBite implements a robust trust-gating system for **Vendors** and **Food Couriers (Riders)** to ensure campus safety and vendor legitimacy:
-
-1. **Step 1 (Basic Details):** Accounts are registered on the backend with basic details. Consumers are auto-approved, while Vendors/Riders are created in a `pending` state.
-2. **Step 2 (Identity Verification):** For Vendors and Riders, the registration form transitions seamlessly to Step 2. Users select a document type (**National ID** or **Passport**) and upload a photo/scanned copy via Camera or Gallery.
-3. **Admin Gating on Login:** Unapproved Vendors or Riders attempting to log in will see a dedicated, polite inline status banner explaining that their account is awaiting review, rather than being let into the app prematurely.
-4. **Pending Navigator:** Once logged in, unapproved users are directed to a clean `PendingNavigator` showing their review status, guidelines, and document details, ensuring they cannot bypass verification.
-
-## 🎨 User Interface Theme Refresh
-
-The CampusBite auth screens have been modernized with a polished, lightweight visual signature:
-- **Background Palette:** A very soft, welcoming warm peach `#FFF5F0` backdrop with transparent decorative circles.
-- **Form Card:** A floating pure white `#FFFFFF` card with soft elevation shadows, detailed with a bold brand accent bar (`#E85D04`) on top.
-- **Minimalist Underlined Input Fields:** Fully customized, transparent-background inputs using a sleek bottom-line border instead of rigid rectangular boxes. Focused fields trigger a smooth brand accent highlight.
-- **No Clutter:** Browser-native black highlights and autocomplete blue background fills are completely disabled on Web, and validation checkmark icons have been removed for a premium, clean layout.
-
-## 📊 Admin Dashboard Features
-
-The admin panel provides comprehensive management capabilities for the CampusBite platform:
-
-### Stats Dashboard
-- **Platform Overview:** Total orders, revenue, consumers, active vendors, couriers, and reviews
-- **Weekly Orders:** Visual bar chart showing order trends over the week
-- **Top Vendors:** Leaderboard of vendors ranked by total orders
-- **Export Reports:** Download statistics as CSV files (web platform)
-- **Real-time Updates:** Pull-to-refresh for latest data
-
-### Approvals System
-- **Pending Applications:** View all pending vendor and courier applications
-- **Alert Banners:** Notifications for applications waiting over 24 hours
-- **Filtering:** Tabs for All, Vendors, Couriers, and Rejected applications
-- **Application Details:** View owner name, phone, location, menu items
-- **Quick Actions:** Approve or reject applications with confirmation dialogs
-- **Recently Approved:** Track recently approved entities
-
-### Vendor Management
-- **Vendor Directory:** List of all vendors with status indicators
-- **Search & Filter:** Search by name, owner, or location; filter by status
-- **Status Tracking:** Active, Pending, and Suspended vendors
-- **Vendor Details:** View business information, owner details, and approval dates
-- **Status Management:** Monitor vendor approval status
-
-### Order Management
-- **Order Tracking:** View all platform orders with status indicators
-- **Status Filtering:** All, Pending, In Progress, Completed, Cancelled
-- **Search:** Find orders by ID, customer name, or vendor name
-- **Order Details:** Comprehensive order information including customer, vendor, courier, and delivery details
-- **Real-time Status:** Color-coded status badges for quick identification
-
-### User Management
-- **User Directory:** List of all consumers and couriers
-- **Role Filtering:** Separate views for Consumers and Couriers
-- **Search:** Find users by name or phone number
-- **User Details:** View role, email, phone, join date, orders, and spending
-- **Account Control:** Suspend or unsuspend user accounts with confirmation
-- **Status Tracking:** Active and Suspended user sections
-
-## �📞 Support
-
-For issues and questions:
-1. Check the troubleshooting section
-2. Review console logs for error messages
-3. Verify all prerequisites are met
+---
 
 ## 🗄️ Database Migrations
 
-After updating the backend with new features (Food Courier Profile, Notifications, Identity Verification, Live Tracking, Reviews), run the database migrations:
+Run these in order after first setup or when adding new backend features:
 
 ```bash
 cd CampusBite_Backend-main
@@ -307,12 +467,133 @@ node migrations/006-add-rider-location-to-orders.js
 node migrations/007-create-reviews-table.js
 ```
 
-This will create/update the necessary tables:
-- `food_courier_profiles` - Stores courier-specific data (vehicle type, availability, earnings, rating)
-- `notifications` - Stores in-app notifications for all users
-- `users` (updates) - Appends verification document, document type, and admin review status columns to authorize securely.
-- `orders` (updates) - Appends rider location fields (`rider_lat`, `rider_lng`, `location_updated_at`) for live transit mapping.
-- `reviews` - Stores order reviews written by consumers for food quality and delivery service.
+| Migration | Creates / Updates |
+|---|---|
+| `003` | `food_courier_profiles` — vehicle type, availability, earnings, rating |
+| `004` | `notifications` — in-app notifications with type, read status, JSON payload |
+| `005` | `users` — adds `verification_status`, `verification_document`, `verification_type`, `passport_photo`, `admin_note`, `requested_docs` |
+| `006` | `orders` — adds `rider_lat`, `rider_lng`, `location_updated_at` for live tracking |
+| `007` | `reviews` — consumer star ratings and written feedback |
+
+Sequelize `sync({ alter: false })` runs on every server start and will create any missing tables automatically, but migrations handle column additions cleanly.
+
+---
+
+## 📡 API Reference
+
+### Auth
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| POST | `/api/auth/register` | Public | Create account |
+| POST | `/api/auth/login` | Public | Login → JWT |
+| GET | `/api/auth/me` | Any | Current user profile |
+| PUT | `/api/auth/profile` | Any | Update profile |
+| PUT | `/api/auth/password` | Any | Change password |
+| PUT | `/api/auth/device-token` | Any | Save FCM token |
+| POST | `/api/auth/forgot-password` | Public | Request password reset |
+| POST | `/api/auth/reset-password` | Public | Submit new password |
+
+### Verification
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| POST | `/api/verification/upload` | Vendor/Courier | Upload/replace documents (`multipart/form-data`) |
+| GET | `/api/verification/status` | Vendor/Courier | Get own verification status |
+| POST | `/api/verification/submit-info` | Vendor/Courier | Resubmit after `info_requested` |
+
+### Orders
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| POST | `/api/orders/initiate` | Consumer | Start checkout (M-Pesa / cash / card) |
+| GET | `/api/orders` | Consumer | My order history |
+| GET | `/api/orders/:id` | Any | Single order detail |
+| GET | `/api/orders/vendor` | Vendor | Vendor's order queue |
+| PATCH | `/api/orders/:id/status` | Vendor/Courier | Advance order status |
+| GET | `/api/orders/food-courier/available` | Courier | Unassigned ready orders |
+| PATCH | `/api/orders/:id/assign-food-courier` | Courier | Accept a delivery |
+| GET | `/api/orders/food-courier/mine` | Courier | My active deliveries |
+| PATCH | `/api/orders/:id/collect-cash` | Courier | Confirm cash payment |
+| PATCH | `/api/orders/:id/location` | Courier | Update rider GPS |
+| POST | `/api/orders/dev-confirm/:id` | Dev only | Simulate M-Pesa callback |
+
+### Admin
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| GET | `/api/admin/stats` | Admin | Platform-wide stats |
+| GET | `/api/admin/stats/weekly-orders` | Admin | Orders per day this week |
+| GET | `/api/admin/stats/top-vendors` | Admin | Top 10 vendors by orders |
+| GET | `/api/admin/orders` | Admin | All orders (paginated, filterable) |
+| GET | `/api/admin/users` | Admin | All users (paginated, filterable) |
+| GET | `/api/admin/vendors` | Admin | All vendors with owner info |
+| PATCH | `/api/admin/users/:id/suspend` | Admin | Toggle account suspension |
+| PATCH | `/api/admin/users/:id/request-info` | Admin | Ask user to resubmit info |
+| GET | `/api/admin/users/pending-docs` | Admin | Users with pending doc review |
+| PATCH | `/api/admin/users/:id/approve-docs` | Admin | Approve resubmitted documents |
+| PATCH | `/api/admin/users/:id/reject-docs` | Admin | Reject docs with a note |
+
+### Vendor Approvals (Admin)
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/vendors/admin/pending` | Pending vendor applications |
+| PATCH | `/api/vendors/admin/:id/approve` | Approve vendor |
+| PATCH | `/api/vendors/admin/:id/reject` | Reject vendor |
+
+### Food Courier Approvals (Admin)
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/food-courier/admin/pending` | Pending courier applications |
+| PATCH | `/api/food-courier/admin/:id/approve` | Approve courier |
+| PATCH | `/api/food-courier/admin/:id/reject` | Reject courier |
+
+### Notifications
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| GET | `/api/notifications` | Any | All notifications for current user |
+| GET | `/api/notifications/unread-count` | Any | Count of unread notifications |
+| PATCH | `/api/notifications/:id/mark-read` | Any | Mark one as read |
+| PATCH | `/api/notifications/mark-all-read` | Any | Mark all as read |
+
+---
+
+## 🐛 Troubleshooting
+
+### PostgreSQL not running
+- Open Windows Services and start the PostgreSQL service
+- Verify port 5432 is not blocked
+
+### Backend fails to start
+- Check `.env` exists in `CampusBite_Backend-main/` with correct `DB_PASSWORD`
+- Ensure `campusbite_db` database exists: `createdb campusbite_db`
+- Run database migrations (see above)
+
+### Frontend not loading (localhost:8082)
+- Wait ~30 seconds for Expo to fully bundle
+- Clear browser cache and hard-reload
+- Check terminal for compilation errors
+
+### M-Pesa STK Push not triggering
+- Verify `MPESA_PASSKEY` is the Lipa Na M-Pesa Online passkey, **not** the Security Credential
+- Sandbox passkey for shortcode 174379: `bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919`
+- Ensure ngrok is running and `MPESA_CALLBACK_URL` points to it
+- Phone number must be in format `2547XXXXXXXX` (no `+`)
+- Leave credentials as placeholder values to use dev simulation mode instead
+
+### Document uploads failing
+- Confirm `uploads/menu/` and `uploads/verification/` directories exist in `CampusBite_Backend-main/`
+- Check backend logs — Multer will log file size or type errors
+- On web, images are fetched as Blobs before upload; ensure the browser allows it
+
+### Push notifications not arriving
+- Firebase is optional — the app works fully without it
+- To enable: create a Firebase project, download the service account JSON, add the three `FIREBASE_*` env vars
+- Confirm `fcm_token` is saved on the User record after login (`PUT /api/auth/device-token`)
+
+### Order badges showing 0 when orders exist
+- Confirm the backend is running and reachable at port 5000
+- Check browser console for failed API calls — JWT may have expired (log out and back in)
+- Badges refresh every 30 seconds or immediately on tab press
+
+---
 
 ## 📄 License
-MIT License - CampusBite Team
+
+MIT License — CampusBite Team
