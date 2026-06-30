@@ -53,7 +53,7 @@ async function startServer() {
     }
     console.log('[DB] Column migrations applied.');
 
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`[SERVER] CampusBite API running on http://localhost:${PORT}`);
       console.log(`[SERVER] Environment: ${process.env.NODE_ENV}`);
       console.log(`[SERVER] Health check: http://localhost:${PORT}/api/health`);
