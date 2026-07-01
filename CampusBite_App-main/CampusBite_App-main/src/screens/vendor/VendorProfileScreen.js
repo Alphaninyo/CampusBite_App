@@ -1,10 +1,63 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Switch, Image, Platform, TextInput, Modal, KeyboardAvoidingView } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Switch, Image, Platform, TextInput, Modal, KeyboardAvoidingView, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
 import { COLORS, API_BASE_URL } from '../../constants';
+
+// 24-hour time options: 00:00 to 23:30 in 30-min steps
+const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
+  const h = String(Math.floor(i / 2)).padStart(2, '0');
+  const m = i % 2 === 0 ? '00' : '30';
+  return `${h}:${m}`;
+});
+
+const PREP_OPTIONS = [
+  '5-10 mins','10-15 mins','15-20 mins','20-30 mins',
+  '30-45 mins','45-60 mins','60+ mins',
+];
+
+// Fix 1 & 5 — clean 24-hour formatter. Extracts digits, auto-inserts colon.
+// Hours 00-23, minutes 00-59 enforced in real-time.
+function processTimeInput(text) {
+  const digits = text.replace(/\D/g, '').slice(0, 4);
+  if (digits.length === 0) return '';
+
+  // Single digit: if ≥ 3 it can never start a valid 24-h hour, auto-pad + colon
+  if (digits.length === 1) {
+    return parseInt(digits[0]) >= 3 ? `0${digits[0]}:` : digits[0];
+  }
+
+  // 2+ digits: first two are always the hour
+  let h = digits.slice(0, 2);
+  if (parseInt(h) > 23) h = '23';
+
+  let m = digits.slice(2, 4);
+  if (m.length === 0) return `${h}:`;
+
+  // Cap minute tens digit at 5 (60+ is impossible)
+  if (parseInt(m[0]) > 5) m = '5' + m.slice(1);
+  // Cap full minute at 59
+  if (m.length === 2 && parseInt(m) > 59) m = '59';
+
+  return `${h}:${m}`;
+}
+
+// Fix 1 — find nearest TIME_OPTIONS index for any HH:MM value (incl. non-30-min)
+function nearestTimeIndex(value) {
+  const exact = TIME_OPTIONS.indexOf(value);
+  if (exact !== -1) return exact;
+  const [hStr, mStr] = value.split(':');
+  const totalMins = (parseInt(hStr) || 0) * 60 + (parseInt(mStr) || 0);
+  let best = 0, bestDiff = Infinity;
+  TIME_OPTIONS.forEach((t, idx) => {
+    const [th, tm] = t.split(':').map(s => parseInt(s) || 0);
+    const diff = Math.abs(th * 60 + tm - totalMins);
+    if (diff < bestDiff) { bestDiff = diff; best = idx; }
+  });
+  return best;
+}
 
 export default function VendorProfileScreen({ navigation = {} }) {
   const { user, logout, updateUser } = useAuthStore();
@@ -12,6 +65,44 @@ export default function VendorProfileScreen({ navigation = {} }) {
   const [vendor, setVendor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(false);
+
+  // Finance modals
+  const [showBankModal, setShowBankModal]       = useState(false);
+  const [editMpesa, setEditMpesa]               = useState('');
+  const [showPayoutModal, setShowPayoutModal]   = useState(false);
+  const [payouts, setPayouts]                   = useState([]);
+  const [loadingPayouts, setLoadingPayouts]     = useState(false);
+  const [showTaxModal, setShowTaxModal]         = useState(false);
+  const [editKraPin, setEditKraPin]             = useState('');
+  const [savingFinance, setSavingFinance]       = useState(false);
+
+  // Customer Reviews modal
+  const [showReviewsModal, setShowReviewsModal] = useState(false);
+  const [reviews, setReviews]                   = useState([]);
+  const [loadingReviews, setLoadingReviews]     = useState(false);
+
+  // Contact Support modal
+  const [showSupportModal, setShowSupportModal] = useState(false);
+  const [expandedFaq, setExpandedFaq]           = useState(null);
+
+  // Business hours modal
+  const [showHoursModal, setShowHoursModal]   = useState(false);
+  const [editOpenTime, setEditOpenTime]       = useState('');
+  const [editCloseTime, setEditCloseTime]     = useState('');
+  const [savingHours, setSavingHours]         = useState(false);
+
+  // Prep time modal
+  const [showPrepModal, setShowPrepModal]     = useState(false);
+  const [editPrepTime, setEditPrepTime]       = useState('');
+  const [savingPrep, setSavingPrep]           = useState(false);
+
+  // Edit store profile modal
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editName, setEditName]           = useState('');
+  const [editLocation, setEditLocation]   = useState('');
+  const [editDesc, setEditDesc]           = useState('');
+  const [editCoverImage, setEditCoverImage] = useState(null);
+  const [savingEdit, setSavingEdit]       = useState(false);
 
   // Security modal states
   const [showSecurityModal, setShowSecurityModal] = useState(false);
@@ -48,43 +139,204 @@ export default function VendorProfileScreen({ navigation = {} }) {
   }, [user]);
 
   const toggleStoreStatus = async () => {
+    if (toggling) return;
+    const previous = vendor?.is_open;
+    setVendor(v => ({ ...v, is_open: !v?.is_open })); // optimistic update
     setToggling(true);
     try {
       const { data } = await api.vendors.updateStatus();
-      setVendor(v => ({ ...v, is_open: data.is_open }));
+      setVendor(v => ({ ...v, is_open: data.is_open })); // confirm with server value
     } catch (err) {
-      Alert.alert('Error', err.message);
+      setVendor(v => ({ ...v, is_open: previous })); // revert on error
+      Alert.alert('Error', err?.response?.data?.message || err.message || 'Failed to update store status.');
     } finally {
       setToggling(false);
     }
   };
 
-  const handleBusinessHours = () => {
-    Alert.alert('Business Hours', 'Feature coming soon! This will allow you to set your store opening and closing times.');
+  const openHoursModal = () => {
+    setEditOpenTime(vendor?.opening_time || '08:00');
+    setEditCloseTime(vendor?.closing_time || '22:00');
+    setShowHoursModal(true);
   };
 
-  const handlePrepTime = () => {
-    Alert.alert('Preparation Time', 'Feature coming soon! This will allow you to set your estimated food preparation time.');
+  const saveHours = async () => {
+    const validRe = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!validRe.test(editOpenTime) || !validRe.test(editCloseTime)) {
+      Alert.alert('Invalid time', 'Please enter complete times in HH:MM format (e.g. 08:00 or 22:30).');
+      return;
+    }
+    setSavingHours(true);
+    try {
+      const { data } = await api.vendors.updateProfile({ opening_time: editOpenTime, closing_time: editCloseTime });
+      setVendor(data.vendor);
+      setShowHoursModal(false);
+    } catch (err) {
+      Alert.alert('Error', err?.response?.data?.message || err.message || 'Failed to save.');
+    } finally {
+      setSavingHours(false);
+    }
   };
+
+  const openPrepModal = () => {
+    setEditPrepTime(vendor?.prep_time || '');
+    setShowPrepModal(true);
+  };
+
+  const savePrepTime = async (selected) => {
+    setSavingPrep(true);
+    try {
+      const { data } = await api.vendors.updateProfile({ prep_time: selected });
+      setVendor(data.vendor);
+      setShowPrepModal(false);
+    } catch (err) {
+      Alert.alert('Error', err?.response?.data?.message || err.message || 'Failed to save.');
+    } finally {
+      setSavingPrep(false);
+    }
+  };
+
+  const openEditModal = () => {
+    setEditName(vendor?.business_name || '');
+    setEditLocation(vendor?.location || '');
+    setEditDesc(vendor?.description || '');
+    setEditCoverImage(null);
+    setShowEditModal(true);
+  };
+
+  const pickCoverImage = async () => {
+    if (Platform.OS === 'web') {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') { Alert.alert('Permission needed', 'Allow photo library access.'); return; }
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [16, 9], quality: 0.85 });
+      if (!result.canceled && result.assets?.[0]?.uri) setEditCoverImage(result.assets[0].uri);
+      return;
+    }
+    Alert.alert('Cover Image', 'Choose an option', [
+      {
+        text: 'Take Photo',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+          if (status !== 'granted') { Alert.alert('Permission needed', 'Allow camera access.'); return; }
+          const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [16, 9], quality: 0.85 });
+          if (!result.canceled && result.assets?.[0]?.uri) setEditCoverImage(result.assets[0].uri);
+        },
+      },
+      {
+        text: 'Choose from Gallery',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== 'granted') { Alert.alert('Permission needed', 'Allow photo library access.'); return; }
+          const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [16, 9], quality: 0.85 });
+          if (!result.canceled && result.assets?.[0]?.uri) setEditCoverImage(result.assets[0].uri);
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!editName.trim()) { Alert.alert('Error', 'Business name cannot be empty.'); return; }
+    setSavingEdit(true);
+    try {
+      const payload = {
+        business_name: editName.trim(),
+        location:      editLocation.trim(),
+        description:   editDesc.trim(),
+      };
+      if (editCoverImage) payload.image = editCoverImage;
+      const { data } = await api.vendors.updateProfile(payload);
+      setVendor(data.vendor);
+      setShowEditModal(false);
+      Alert.alert('Success', 'Store profile updated.');
+    } catch (err) {
+      Alert.alert('Error', err?.response?.data?.message || err.message || 'Failed to update profile.');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleBusinessHours = () => openHoursModal();
+  const handlePrepTime      = () => openPrepModal();
 
   const handleBankDetails = () => {
-    Alert.alert('Bank Details', 'Feature coming soon! This will allow you to manage your payment information.');
+    setEditMpesa(vendor?.mpesa_phone || '');
+    setShowBankModal(true);
   };
 
-  const handlePayoutHistory = () => {
-    Alert.alert('Payout History', 'Feature coming soon! This will show your earnings and payout history.');
+  const saveBankDetails = async () => {
+    const phone = editMpesa.trim();
+    if (phone && !/^(\+?254|0)[17]\d{8}$/.test(phone)) {
+      Alert.alert('Invalid number', 'Enter a valid Kenyan M-Pesa number, e.g. 0712345678 or +254712345678');
+      return;
+    }
+    setSavingFinance(true);
+    try {
+      const { data } = await api.vendors.updateProfile({ mpesa_phone: phone });
+      setVendor(data.vendor);
+      setShowBankModal(false);
+      Alert.alert('Saved', 'M-Pesa number updated.');
+    } catch (err) {
+      Alert.alert('Error', err?.response?.data?.message || err.message || 'Failed to save.');
+    } finally {
+      setSavingFinance(false);
+    }
+  };
+
+  const handlePayoutHistory = async () => {
+    setShowPayoutModal(true);
+    setLoadingPayouts(true);
+    try {
+      const { data } = await api.orders.getVendorOrders();
+      const orders = data.orders || [];
+      const delivered = orders.filter(o => o.status === 'Delivered');
+      setPayouts(delivered);
+    } catch (err) {
+      Alert.alert('Error', 'Could not load order history.');
+    } finally {
+      setLoadingPayouts(false);
+    }
   };
 
   const handleTaxInfo = () => {
-    Alert.alert('Tax Information', 'Feature coming soon! This will allow you to manage your tax documents.');
+    setEditKraPin(vendor?.kra_pin || '');
+    setShowTaxModal(true);
   };
 
-  const handleCustomerReviews = () => {
-    Alert.alert('Customer Reviews', 'Feature coming soon! This will show all your customer reviews and ratings.');
+  const saveTaxInfo = async () => {
+    const pin = editKraPin.trim().toUpperCase();
+    if (pin && !/^[A-Z]\d{9}[A-Z]$/.test(pin)) {
+      Alert.alert('Invalid KRA PIN', 'KRA PIN format: one letter, 9 digits, one letter (e.g. A000000000A)');
+      return;
+    }
+    setSavingFinance(true);
+    try {
+      const { data } = await api.vendors.updateProfile({ kra_pin: pin });
+      setVendor(data.vendor);
+      setShowTaxModal(false);
+      Alert.alert('Saved', 'Tax information updated.');
+    } catch (err) {
+      Alert.alert('Error', err?.response?.data?.message || err.message || 'Failed to save.');
+    } finally {
+      setSavingFinance(false);
+    }
+  };
+
+  const handleCustomerReviews = async () => {
+    setShowReviewsModal(true);
+    setLoadingReviews(true);
+    try {
+      const { data } = await api.reviews.getVendorReviews(vendor.id);
+      setReviews(data.reviews || []);
+    } catch {
+      Alert.alert('Error', 'Could not load reviews.');
+    } finally {
+      setLoadingReviews(false);
+    }
   };
 
   const handleContactSupport = () => {
-    Alert.alert('Contact Support', 'Feature coming soon! This will connect you with customer support.');
+    setShowSupportModal(true);
   };
 
   const handleAnalytics = () => {
@@ -304,13 +556,30 @@ export default function VendorProfileScreen({ navigation = {} }) {
         {/* Store Settings */}
         <Text style={styles.sectionTitle}>Store Settings</Text>
         <View style={styles.sectionCard}>
+          <TouchableOpacity style={styles.settingRow} onPress={openEditModal}>
+            <View style={[styles.settingIcon, { backgroundColor: COLORS.primary + '20' }]}>
+              <Ionicons name="storefront-outline" size={20} color={COLORS.primary} />
+            </View>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingLabel}>Edit Store Profile</Text>
+              <Text style={styles.settingValue}>Name, location, cover image</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={COLORS.gray} />
+          </TouchableOpacity>
+
+          <View style={styles.settingDivider} />
+
           <TouchableOpacity style={styles.settingRow} onPress={handleBusinessHours}>
             <View style={[styles.settingIcon, { backgroundColor: COLORS.primary + '20' }]}>
               <Ionicons name="time-outline" size={20} color={COLORS.primary} />
             </View>
             <View style={styles.settingInfo}>
               <Text style={styles.settingLabel}>Business Hours</Text>
-              <Text style={styles.settingValue}>Open until 10:00 PM</Text>
+              <Text style={styles.settingValue}>
+                {vendor?.opening_time && vendor?.closing_time
+                  ? `${vendor.opening_time} – ${vendor.closing_time}`
+                  : 'Tap to set hours'}
+              </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={COLORS.gray} />
           </TouchableOpacity>
@@ -323,7 +592,7 @@ export default function VendorProfileScreen({ navigation = {} }) {
             </View>
             <View style={styles.settingInfo}>
               <Text style={styles.settingLabel}>Estimated Prep Time</Text>
-              <Text style={styles.settingValue}>15-20 mins</Text>
+              <Text style={styles.settingValue}>{vendor?.prep_time || 'Tap to set'}</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={COLORS.gray} />
           </TouchableOpacity>
@@ -359,7 +628,11 @@ export default function VendorProfileScreen({ navigation = {} }) {
             </View>
             <View style={styles.settingInfo}>
               <Text style={styles.settingLabel}>Bank Details</Text>
-              <Text style={styles.settingValue}>Linked: M-Pesa ****4829</Text>
+              <Text style={styles.settingValue}>
+                {vendor?.mpesa_phone
+                  ? `M-Pesa ****${vendor.mpesa_phone.slice(-4)}`
+                  : 'Tap to add M-Pesa number'}
+              </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={COLORS.gray} />
           </TouchableOpacity>
@@ -372,7 +645,7 @@ export default function VendorProfileScreen({ navigation = {} }) {
             </View>
             <View style={styles.settingInfo}>
               <Text style={styles.settingLabel}>Payout History</Text>
-              <Text style={styles.settingValue}>Last payout: {new Date().toLocaleDateString()}</Text>
+              <Text style={styles.settingValue}>View delivered orders & earnings</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={COLORS.gray} />
           </TouchableOpacity>
@@ -451,6 +724,538 @@ export default function VendorProfileScreen({ navigation = {} }) {
 
         <View style={{ height: 30 }} />
       </ScrollView>
+
+      {/* Customer Reviews Modal */}
+      <Modal visible={showReviewsModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalSheet, { maxHeight: '85%' }]}>
+            <View style={styles.modalHandle} />
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setShowReviewsModal(false)}>
+                <Ionicons name="close" size={24} color={COLORS.subtext} />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Customer Reviews</Text>
+              <View style={{ width: 24 }} />
+            </View>
+
+            {loadingReviews ? (
+              <View style={{ paddingVertical: 48, alignItems: 'center' }}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
+              </View>
+            ) : reviews.length === 0 ? (
+              <View style={styles.reviewEmpty}>
+                <Ionicons name="star-outline" size={48} color={COLORS.border} />
+                <Text style={styles.reviewEmptyText}>No reviews yet</Text>
+                <Text style={styles.reviewEmptyHint}>Reviews will appear here once customers rate their orders</Text>
+              </View>
+            ) : (
+              <>
+                {/* Summary bar */}
+                <View style={styles.reviewSummary}>
+                  <Text style={styles.reviewAvgNum}>
+                    {(reviews.reduce((s, r) => s + r.vendor_rating, 0) / reviews.length).toFixed(1)}
+                  </Text>
+                  <View>
+                    <View style={styles.reviewStarsRow}>
+                      {[1,2,3,4,5].map(n => (
+                        <Ionicons key={n} name="star" size={16}
+                          color={(reviews.reduce((s,r)=>s+r.vendor_rating,0)/reviews.length) >= n ? '#FFB300' : COLORS.border} />
+                      ))}
+                    </View>
+                    <Text style={styles.reviewCount}>{reviews.length} review{reviews.length !== 1 ? 's' : ''}</Text>
+                  </View>
+                </View>
+
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  {reviews.map(r => (
+                    <View key={r.id} style={styles.reviewCard}>
+                      <View style={styles.reviewCardTop}>
+                        <View style={styles.reviewAvatar}>
+                          <Text style={styles.reviewAvatarText}>
+                            {(r.consumer?.name || 'A').charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.reviewerName}>{r.consumer?.name || 'Anonymous'}</Text>
+                          <Text style={styles.reviewDate}>{new Date(r.created_at).toLocaleDateString()}</Text>
+                        </View>
+                        <View style={styles.reviewStarsRow}>
+                          {[1,2,3,4,5].map(n => (
+                            <Ionicons key={n} name="star" size={13}
+                              color={r.vendor_rating >= n ? '#FFB300' : COLORS.border} />
+                          ))}
+                        </View>
+                      </View>
+                      {r.comment ? <Text style={styles.reviewComment}>{r.comment}</Text> : null}
+                    </View>
+                  ))}
+                  <View style={{ height: 20 }} />
+                </ScrollView>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Contact Support Modal */}
+      <Modal visible={showSupportModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalSheet, { maxHeight: '80%' }]}>
+            <View style={styles.modalHandle} />
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => { setShowSupportModal(false); setExpandedFaq(null); }}>
+                <Ionicons name="close" size={24} color={COLORS.subtext} />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Contact Support</Text>
+              <View style={{ width: 24 }} />
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <View style={styles.supportInfoCard}>
+                <Ionicons name="information-circle-outline" size={22} color={COLORS.primary} />
+                <Text style={styles.supportInfoText}>
+                  Our support team is available Mon–Fri, 8 AM – 8 PM. We typically respond within a few hours.
+                </Text>
+              </View>
+
+              <Text style={styles.supportSectionLabel}>CONTACT US</Text>
+
+              <TouchableOpacity style={styles.supportRow}
+                onPress={() => Linking.openURL('mailto:support@campusbite.com?subject=Vendor Support – ' + (vendor?.business_name || ''))}>
+                <View style={[styles.supportRowIcon, { backgroundColor: COLORS.primary + '18' }]}>
+                  <Ionicons name="mail-outline" size={22} color={COLORS.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.supportRowTitle}>Email Support</Text>
+                  <Text style={styles.supportRowSub}>support@campusbite.com</Text>
+                </View>
+                <Ionicons name="open-outline" size={16} color={COLORS.muted} />
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.supportRow}
+                onPress={() => Linking.openURL('tel:+254700000000')}>
+                <View style={[styles.supportRowIcon, { backgroundColor: '#E8F5E9' }]}>
+                  <Ionicons name="call-outline" size={22} color="#2E7D32" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.supportRowTitle}>Call Support</Text>
+                  <Text style={styles.supportRowSub}>+254 700 000 000</Text>
+                </View>
+                <Ionicons name="open-outline" size={16} color={COLORS.muted} />
+              </TouchableOpacity>
+
+              <Text style={[styles.supportSectionLabel, { marginTop: 20 }]}>HELP TOPICS</Text>
+
+              {[
+                { icon: 'help-circle-outline', title: 'Why is my store not visible?',
+                  body: 'Your store must be approved by an admin and toggled to OPEN in Store Status before customers can see it.' },
+                { icon: 'wallet-outline', title: 'When do I receive my earnings?',
+                  body: 'Earnings are paid out to your M-Pesa number after each delivered order. Make sure your M-Pesa number is saved in Bank Details.' },
+                { icon: 'receipt-outline', title: 'How do I dispute an order?',
+                  body: 'Email support with your order ID. Include the issue description and we will investigate within 24 hours.' },
+                { icon: 'shield-checkmark-outline', title: 'How do I update my KRA PIN?',
+                  body: 'Go to Finance & Payouts → Tax Information to update your KRA PIN at any time.' },
+              ].map((faq, i) => {
+                const open = expandedFaq === i;
+                return (
+                  <View key={i} style={styles.supportFaqItem}>
+                    <TouchableOpacity style={styles.supportFaqRow}
+                      onPress={() => setExpandedFaq(open ? null : i)}
+                      activeOpacity={0.7}>
+                      <Ionicons name={faq.icon} size={20} color={open ? COLORS.primary : COLORS.subtext} />
+                      <Text style={[styles.supportFaqText, open && { color: COLORS.primary }]}>{faq.title}</Text>
+                      <Ionicons
+                        name={open ? 'chevron-up' : 'chevron-down'}
+                        size={16}
+                        color={open ? COLORS.primary : COLORS.muted}
+                      />
+                    </TouchableOpacity>
+                    {open && (
+                      <View style={styles.supportFaqAnswer}>
+                        <Text style={styles.supportFaqAnswerText}>{faq.body}</Text>
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+
+              <View style={{ height: 24 }} />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Bank Details Modal */}
+      <Modal visible={showBankModal} animationType="slide" transparent>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setShowBankModal(false)}>
+                <Ionicons name="close" size={24} color={COLORS.subtext} />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Bank Details</Text>
+              <View style={{ width: 24 }} />
+            </View>
+
+            <View style={styles.financeIconRow}>
+              <View style={styles.financeIcon}>
+                <Ionicons name="phone-portrait-outline" size={32} color={COLORS.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.financeTitle}>M-Pesa Number</Text>
+                <Text style={styles.financeDesc}>Payments from orders will be sent to this number</Text>
+              </View>
+            </View>
+
+            <Text style={styles.modalLabel}>M-Pesa Phone Number</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={editMpesa}
+              onChangeText={(text) => {
+                // Allow + only at the start, then digits only, max 13 chars
+                let cleaned = text.replace(/[^0-9+]/g, '');
+                if (cleaned.indexOf('+') > 0) cleaned = cleaned.replace(/\+/g, '');
+                if (cleaned.length > 13) cleaned = cleaned.slice(0, 13);
+                setEditMpesa(cleaned);
+              }}
+              placeholder="e.g. 0712345678 or +254712345678"
+              placeholderTextColor={COLORS.muted}
+              keyboardType="phone-pad"
+              maxLength={13}
+            />
+            <Text style={styles.financeHint}>Accepts Safaricom M-Pesa numbers only (07xx or +2547xx)</Text>
+
+            <TouchableOpacity style={[styles.modalSaveBtn, { marginTop: 24 }]} onPress={saveBankDetails} disabled={savingFinance}>
+              {savingFinance ? <ActivityIndicator color={COLORS.white} /> : <Text style={styles.modalSaveBtnText}>Save Number</Text>}
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Payout History Modal */}
+      <Modal visible={showPayoutModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalSheet, { maxHeight: '80%' }]}>
+            <View style={styles.modalHandle} />
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setShowPayoutModal(false)}>
+                <Ionicons name="close" size={24} color={COLORS.subtext} />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Payout History</Text>
+              <View style={{ width: 24 }} />
+            </View>
+
+            {loadingPayouts ? (
+              <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
+              </View>
+            ) : payouts.length === 0 ? (
+              <View style={styles.payoutEmpty}>
+                <Ionicons name="wallet-outline" size={48} color={COLORS.border} />
+                <Text style={styles.payoutEmptyText}>No delivered orders yet</Text>
+                <Text style={styles.payoutEmptyHint}>Completed orders will appear here as earnings</Text>
+              </View>
+            ) : (
+              <>
+                <View style={styles.payoutTotal}>
+                  <Text style={styles.payoutTotalLabel}>Total Earnings</Text>
+                  <Text style={styles.payoutTotalValue}>
+                    KES {payouts.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0).toFixed(2)}
+                  </Text>
+                </View>
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  {payouts.map(order => (
+                    <View key={order.id} style={styles.payoutRow}>
+                      <View style={styles.payoutRowLeft}>
+                        <Text style={styles.payoutOrderId}>Order #{order.id.slice(-6).toUpperCase()}</Text>
+                        <Text style={styles.payoutDate}>{new Date(order.updated_at || order.created_at).toLocaleDateString()}</Text>
+                      </View>
+                      <Text style={styles.payoutAmount}>KES {parseFloat(order.total_amount || 0).toFixed(2)}</Text>
+                    </View>
+                  ))}
+                  <View style={{ height: 20 }} />
+                </ScrollView>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Tax Information Modal */}
+      <Modal visible={showTaxModal} animationType="slide" transparent>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setShowTaxModal(false)}>
+                <Ionicons name="close" size={24} color={COLORS.subtext} />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Tax Information</Text>
+              <View style={{ width: 24 }} />
+            </View>
+
+            <View style={styles.financeIconRow}>
+              <View style={[styles.financeIcon, { backgroundColor: COLORS.warning + '20' }]}>
+                <Ionicons name="document-text-outline" size={32} color={COLORS.warning} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.financeTitle}>KRA PIN</Text>
+                <Text style={styles.financeDesc}>Required for tax compliance on earnings above KES 100,000/year</Text>
+              </View>
+            </View>
+
+            <Text style={styles.modalLabel}>KRA PIN</Text>
+            <TextInput
+              style={[styles.modalInput, { letterSpacing: 2 }]}
+              value={editKraPin}
+              onChangeText={(t) => setEditKraPin(t.toUpperCase())}
+              placeholder="e.g. A000000000A"
+              placeholderTextColor={COLORS.muted}
+              autoCapitalize="characters"
+              maxLength={11}
+            />
+            <Text style={styles.financeHint}>Format: one letter + 9 digits + one letter</Text>
+
+            <TouchableOpacity style={[styles.modalSaveBtn, { marginTop: 24 }]} onPress={saveTaxInfo} disabled={savingFinance}>
+              {savingFinance ? <ActivityIndicator color={COLORS.white} /> : <Text style={styles.modalSaveBtnText}>Save KRA PIN</Text>}
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Business Hours Modal */}
+      <Modal visible={showHoursModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setShowHoursModal(false)}>
+                <Ionicons name="close" size={24} color={COLORS.subtext} />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Business Hours</Text>
+              <View style={{ width: 24 }} />
+            </View>
+
+            <View style={styles.stepperBlock}>
+              <Text style={styles.stepperLabel}>Opens at  <Text style={styles.stepperHint}>(00:00 – 23:59)</Text></Text>
+              <View style={styles.stepperRow}>
+                <TouchableOpacity
+                  style={styles.stepperBtn}
+                  onPress={() => {
+                    const i = nearestTimeIndex(editOpenTime); // Fix 6
+                    setEditOpenTime(TIME_OPTIONS[(i - 1 + TIME_OPTIONS.length) % TIME_OPTIONS.length]);
+                  }}
+                >
+                  <Ionicons name="chevron-back" size={22} color={COLORS.primary} />
+                </TouchableOpacity>
+                <TextInput
+                  style={styles.stepperInput}
+                  value={editOpenTime}
+                  onChangeText={(text) => {
+                    // Fix 2 — allow backspace freely; only auto-format on forward input
+                    if (text.length < editOpenTime.length) {
+                      setEditOpenTime(text.replace(/[^0-9:]/g, ''));
+                    } else {
+                      setEditOpenTime(processTimeInput(text));
+                    }
+                  }}
+                  onBlur={() => {
+                    const colonIdx = editOpenTime.indexOf(':');
+                    if (colonIdx !== -1) {
+                      const h = editOpenTime.slice(0, colonIdx).padStart(2, '0');
+                      const m = editOpenTime.slice(colonIdx + 1).padStart(2, '0').slice(0, 2); // Fix 3
+                      setEditOpenTime(`${h}:${m}`);
+                    } else if (editOpenTime.length > 0) {
+                      setEditOpenTime(`${editOpenTime.padStart(2, '0')}:00`);
+                    }
+                  }}
+                  placeholder="08:00"
+                  placeholderTextColor={COLORS.muted}
+                  keyboardType="numeric"
+                  maxLength={5}
+                  selectTextOnFocus
+                />
+                <TouchableOpacity
+                  style={styles.stepperBtn}
+                  onPress={() => {
+                    const i = nearestTimeIndex(editOpenTime); // Fix 6
+                    setEditOpenTime(TIME_OPTIONS[(i + 1) % TIME_OPTIONS.length]);
+                  }}
+                >
+                  <Ionicons name="chevron-forward" size={22} color={COLORS.primary} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.stepperBlock}>
+              <Text style={styles.stepperLabel}>Closes at  <Text style={styles.stepperHint}>(00:00 – 23:59)</Text></Text>
+              <View style={styles.stepperRow}>
+                <TouchableOpacity
+                  style={styles.stepperBtn}
+                  onPress={() => {
+                    const i = nearestTimeIndex(editCloseTime); // Fix 6
+                    setEditCloseTime(TIME_OPTIONS[(i - 1 + TIME_OPTIONS.length) % TIME_OPTIONS.length]);
+                  }}
+                >
+                  <Ionicons name="chevron-back" size={22} color={COLORS.primary} />
+                </TouchableOpacity>
+                <TextInput
+                  style={styles.stepperInput}
+                  value={editCloseTime}
+                  onChangeText={(text) => {
+                    // Fix 2 — allow backspace freely; only auto-format on forward input
+                    if (text.length < editCloseTime.length) {
+                      setEditCloseTime(text.replace(/[^0-9:]/g, ''));
+                    } else {
+                      setEditCloseTime(processTimeInput(text));
+                    }
+                  }}
+                  onBlur={() => {
+                    const colonIdx = editCloseTime.indexOf(':');
+                    if (colonIdx !== -1) {
+                      const h = editCloseTime.slice(0, colonIdx).padStart(2, '0');
+                      const m = editCloseTime.slice(colonIdx + 1).padStart(2, '0').slice(0, 2); // Fix 3
+                      setEditCloseTime(`${h}:${m}`);
+                    } else if (editCloseTime.length > 0) {
+                      setEditCloseTime(`${editCloseTime.padStart(2, '0')}:00`);
+                    }
+                  }}
+                  placeholder="22:00"
+                  placeholderTextColor={COLORS.muted}
+                  keyboardType="numeric"
+                  maxLength={5}
+                  selectTextOnFocus
+                />
+                <TouchableOpacity
+                  style={styles.stepperBtn}
+                  onPress={() => {
+                    const i = nearestTimeIndex(editCloseTime); // Fix 6
+                    setEditCloseTime(TIME_OPTIONS[(i + 1) % TIME_OPTIONS.length]);
+                  }}
+                >
+                  <Ionicons name="chevron-forward" size={22} color={COLORS.primary} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {editOpenTime && editCloseTime && (
+              <View style={styles.hoursSummary}>
+                <Ionicons name="time-outline" size={16} color={COLORS.primary} />
+                <Text style={styles.hoursSummaryText}>{editOpenTime} – {editCloseTime}</Text>
+              </View>
+            )}
+
+            <TouchableOpacity style={[styles.modalSaveBtn, { marginTop: 24 }]} onPress={saveHours} disabled={savingHours}>
+              {savingHours
+                ? <ActivityIndicator color={COLORS.white} />
+                : <Text style={styles.modalSaveBtnText}>Save Hours</Text>}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Prep Time Modal */}
+      <Modal visible={showPrepModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setShowPrepModal(false)}>
+                <Ionicons name="close" size={24} color={COLORS.subtext} />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Estimated Prep Time</Text>
+              <View style={{ width: 24 }} />
+            </View>
+            <Text style={styles.prepHint}>How long does it typically take to prepare an order?</Text>
+            <View style={styles.prepGrid}>
+              {PREP_OPTIONS.map(opt => (
+                <TouchableOpacity
+                  key={opt}
+                  style={[styles.prepChip, editPrepTime === opt && styles.prepChipActive, savingPrep && styles.prepChipDisabled]}
+                  onPress={() => { setEditPrepTime(opt); savePrepTime(opt); }}
+                  disabled={savingPrep}
+                >
+                  {savingPrep && editPrepTime === opt
+                    ? <ActivityIndicator size="small" color={COLORS.white} />
+                    : <Text style={[styles.prepChipText, editPrepTime === opt && styles.prepChipTextActive]}>{opt}</Text>}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Edit Store Profile Modal */}
+      <Modal visible={showEditModal} animationType="slide" transparent>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setShowEditModal(false)}>
+                <Ionicons name="close" size={24} color={COLORS.subtext} />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Edit Store Profile</Text>
+              <View style={{ width: 24 }} />
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Cover image picker */}
+              <TouchableOpacity style={styles.coverPickerBtn} onPress={pickCoverImage}>
+                {editCoverImage ? (
+                  <Image source={{ uri: editCoverImage }} style={styles.coverPreview} resizeMode="cover" />
+                ) : vendor?.image ? (
+                  <Image source={{ uri: `${API_BASE_URL}${vendor.image}` }} style={styles.coverPreview} resizeMode="cover" />
+                ) : (
+                  <View style={styles.coverPlaceholder}>
+                    <Ionicons name="image-outline" size={32} color={COLORS.subtext} />
+                    <Text style={styles.coverPlaceholderText}>Tap to add cover image</Text>
+                  </View>
+                )}
+                <View style={styles.coverEditBadge}>
+                  <Ionicons name="camera" size={14} color={COLORS.white} />
+                </View>
+              </TouchableOpacity>
+              <Text style={styles.coverHint}>This image appears on your store card</Text>
+
+              <Text style={styles.modalLabel}>Business Name</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={editName}
+                onChangeText={setEditName}
+                placeholder="e.g. Alpha's Kitchen"
+                placeholderTextColor={COLORS.muted}
+              />
+
+              <Text style={styles.modalLabel}>Location</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={editLocation}
+                onChangeText={setEditLocation}
+                placeholder="e.g. Block C, Campus"
+                placeholderTextColor={COLORS.muted}
+              />
+
+              <Text style={styles.modalLabel}>Description</Text>
+              <TextInput
+                style={[styles.modalInput, { height: 80, textAlignVertical: 'top' }]}
+                value={editDesc}
+                onChangeText={setEditDesc}
+                placeholder="Tell customers about your store..."
+                placeholderTextColor={COLORS.muted}
+                multiline
+              />
+
+              <TouchableOpacity style={styles.modalSaveBtn} onPress={handleSaveProfile} disabled={savingEdit}>
+                {savingEdit
+                  ? <ActivityIndicator color={COLORS.white} />
+                  : <Text style={styles.modalSaveBtnText}>Save Changes</Text>}
+              </TouchableOpacity>
+              <View style={{ height: 20 }} />
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       {/* Security Modal */}
       <Modal visible={showSecurityModal} animationType="slide" transparent>
@@ -989,6 +1794,83 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.gray,
   },
+  stepperBlock: { marginBottom: 20 },
+  stepperLabel: { fontSize: 13, fontWeight: '600', color: COLORS.subtext, marginBottom: 10 },
+  stepperHint:  { fontSize: 11, fontWeight: '400', color: COLORS.muted },
+  stepperRow: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: COLORS.inputBg, borderRadius: 14,
+    borderWidth: 1, borderColor: COLORS.border, overflow: 'hidden',
+  },
+  stepperBtn: {
+    paddingHorizontal: 20, paddingVertical: 16,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  stepperInput: {
+    flex: 1, textAlign: 'center',
+    fontSize: 20, fontWeight: '700', color: COLORS.text,
+    borderLeftWidth: 1, borderColor: COLORS.border,
+    paddingVertical: 16, paddingHorizontal: 8,
+  },
+  periodToggle: {
+    paddingHorizontal: 14, paddingVertical: 16,
+    borderLeftWidth: 1, borderRightWidth: 1, borderColor: COLORS.border,
+    backgroundColor: COLORS.primary + '12',
+    alignItems: 'center', justifyContent: 'center',
+    minWidth: 52,
+  },
+  periodText: { fontSize: 14, fontWeight: '800', color: COLORS.primary },
+  hoursSummary: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    marginTop: 12, padding: 12, borderRadius: 10,
+    backgroundColor: COLORS.primary + '12',
+  },
+  hoursSummaryText: { fontSize: 14, fontWeight: '600', color: COLORS.primary },
+
+  prepHint: { fontSize: 13, color: COLORS.subtext, marginBottom: 16, lineHeight: 18 },
+  prepGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  prepChip: {
+    paddingHorizontal: 18, paddingVertical: 12,
+    borderRadius: 10, borderWidth: 1.5,
+    borderColor: COLORS.border, backgroundColor: COLORS.inputBg,
+    minWidth: 110, alignItems: 'center',
+  },
+  prepChipActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primary },
+  prepChipDisabled: { opacity: 0.6 },
+  prepChipText: { fontSize: 14, fontWeight: '600', color: COLORS.text },
+  prepChipTextActive: { color: COLORS.white },
+
+  coverPickerBtn: {
+    width: '100%',
+    height: 140,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: COLORS.inputBg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    position: 'relative',
+    marginBottom: 4,
+  },
+  coverPreview: { width: '100%', height: '100%' },
+  coverPlaceholder: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  coverPlaceholderText: { fontSize: 13, color: COLORS.subtext },
+  coverEditBadge: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: COLORS.primary,
+    borderRadius: 16,
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  coverHint: { fontSize: 11, color: COLORS.muted, marginBottom: 12, marginLeft: 2 },
   backupCodesSection: {
     marginTop: 16,
   },
@@ -1006,4 +1888,107 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.primary,
   },
+
+  // Finance modals
+  financeIconRow: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 14, marginBottom: 20, marginTop: 8,
+  },
+  financeIcon: {
+    width: 56, height: 56, borderRadius: 16,
+    backgroundColor: COLORS.primary + '18',
+    alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0,
+  },
+  financeTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text, marginBottom: 4 },
+  financeDesc: { fontSize: 13, color: COLORS.subtext, lineHeight: 18 },
+  financeHint: { fontSize: 12, color: COLORS.muted, marginTop: 6, lineHeight: 17 },
+
+  payoutEmpty: {
+    paddingVertical: 48, alignItems: 'center', gap: 10,
+  },
+  payoutEmptyText: { fontSize: 16, fontWeight: '700', color: COLORS.subtext },
+  payoutEmptyHint: { fontSize: 13, color: COLORS.muted, textAlign: 'center' },
+
+  payoutTotal: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    backgroundColor: COLORS.primary + '12', borderRadius: 12,
+    paddingHorizontal: 16, paddingVertical: 14, marginBottom: 16,
+  },
+  payoutTotalLabel: { fontSize: 14, fontWeight: '600', color: COLORS.primary },
+  payoutTotalValue: { fontSize: 18, fontWeight: '800', color: COLORS.primary },
+
+  payoutRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingVertical: 12, borderBottomWidth: 1, borderColor: COLORS.border,
+  },
+  payoutRowLeft: { gap: 2 },
+  payoutOrderId: { fontSize: 14, fontWeight: '700', color: COLORS.text },
+  payoutDate: { fontSize: 12, color: COLORS.muted },
+  payoutAmount: { fontSize: 15, fontWeight: '700', color: COLORS.success },
+
+  // Customer Reviews
+  reviewEmpty: { paddingVertical: 48, alignItems: 'center', gap: 10 },
+  reviewEmptyText: { fontSize: 16, fontWeight: '700', color: COLORS.subtext },
+  reviewEmptyHint: { fontSize: 13, color: COLORS.muted, textAlign: 'center', paddingHorizontal: 20 },
+  reviewSummary: {
+    flexDirection: 'row', alignItems: 'center', gap: 16,
+    backgroundColor: COLORS.primary + '10', borderRadius: 14,
+    paddingHorizontal: 20, paddingVertical: 16, marginBottom: 16,
+  },
+  reviewAvgNum: { fontSize: 40, fontWeight: '800', color: COLORS.primary },
+  reviewStarsRow: { flexDirection: 'row', gap: 2 },
+  reviewCount: { fontSize: 12, color: COLORS.muted, marginTop: 4 },
+  reviewCard: {
+    backgroundColor: COLORS.card, borderRadius: 12,
+    padding: 14, marginBottom: 10,
+    borderWidth: 1, borderColor: COLORS.border,
+  },
+  reviewCardTop: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
+  reviewAvatar: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: COLORS.primary + '20',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  reviewAvatarText: { fontSize: 15, fontWeight: '700', color: COLORS.primary },
+  reviewerName: { fontSize: 14, fontWeight: '700', color: COLORS.text },
+  reviewDate: { fontSize: 11, color: COLORS.muted, marginTop: 1 },
+  reviewComment: { fontSize: 13, color: COLORS.subtext, lineHeight: 18 },
+
+  // Contact Support
+  supportInfoCard: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 10,
+    backgroundColor: COLORS.primary + '10', borderRadius: 12,
+    padding: 14, marginBottom: 20,
+  },
+  supportInfoText: { flex: 1, fontSize: 13, color: COLORS.subtext, lineHeight: 18 },
+  supportSectionLabel: {
+    fontSize: 11, fontWeight: '700', color: COLORS.muted,
+    letterSpacing: 1, marginBottom: 10,
+  },
+  supportRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: COLORS.card, borderRadius: 12,
+    padding: 14, marginBottom: 10,
+    borderWidth: 1, borderColor: COLORS.border,
+  },
+  supportRowIcon: {
+    width: 44, height: 44, borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+  },
+  supportRowTitle: { fontSize: 15, fontWeight: '600', color: COLORS.text },
+  supportRowSub: { fontSize: 12, color: COLORS.muted, marginTop: 2 },
+  supportFaqItem: {
+    borderBottomWidth: 1, borderColor: COLORS.border,
+  },
+  supportFaqRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingVertical: 13, paddingHorizontal: 4,
+  },
+  supportFaqText: { flex: 1, fontSize: 14, color: COLORS.text },
+  supportFaqAnswer: {
+    paddingHorizontal: 4, paddingBottom: 14, paddingTop: 2,
+    backgroundColor: COLORS.primary + '08',
+    borderRadius: 8, marginBottom: 4, paddingLeft: 36,
+  },
+  supportFaqAnswerText: { fontSize: 13, color: COLORS.subtext, lineHeight: 20 },
 });

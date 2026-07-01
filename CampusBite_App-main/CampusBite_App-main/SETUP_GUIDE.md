@@ -289,13 +289,47 @@ npm start       # Start fresh if problems persist
 
 ---
 
+## 🗄️ **Backend Setup (Required for full functionality)**
+
+The frontend connects to a Node.js + Express + PostgreSQL API at `http://localhost:5000`.
+
+### **Prerequisites**
+- PostgreSQL 14+ running locally or on a server
+- A database named `campusbite` (or any name — set in `.env`)
+
+### **Environment File**
+Create `CampusBite_Backend-main/.env`:
+```env
+PORT=5000
+NODE_ENV=development
+DATABASE_URL=postgres://user:password@localhost:5432/campusbite
+JWT_SECRET=your_secret_key_here
+```
+
+### **Start the backend**
+```bash
+cd CampusBite_Backend-main
+npm install
+npm run dev
+```
+
+On first start, the server automatically applies all `ALTER TABLE … ADD COLUMN IF NOT EXISTS` migrations. You will see `[DB] Column migrations applied.` in the console.
+
+### **Uploads folder**
+Vendor cover images and menu photos are stored in `CampusBite_Backend-main/uploads/`. This folder is created automatically on first upload.
+
+### **API Base URL**
+The frontend reads `API_BASE_URL` from `src/constants/index.js`. Default is `http://localhost:5000`. Change this to your server's IP for LAN or production use.
+
+---
+
 ## 🚀 **Next Steps After Setup**
 
 ### **🎯 Explore the App**
-1. **Test all features** mentioned in README
-2. **Try different platforms** (web, mobile)
-3. **Check functionality** of each screen
-4. **Test user flows** from home to checkout
+1. **Register as a vendor** → get admin approval → toggle store open → add menu items
+2. **Register as a consumer** → browse vendors → add to cart → checkout with M-Pesa
+3. **Check the vendor dashboard** — revenue, orders, and rating update automatically every 30 s
+4. **Test business hours & prep time** in vendor Profile → they appear on the consumer's vendor detail page
 
 ### **🔧 Development**
 1. **Read the code** to understand structure

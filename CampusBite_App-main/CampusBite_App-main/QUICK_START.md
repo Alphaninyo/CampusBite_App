@@ -212,12 +212,31 @@ npm run build:web
 
 After running the setup commands, your CampusBite app will be running with:
 
+**Consumer**
 - ✅ **8 Food Categories** - Complete food coverage
 - ✅ **Working Search** - Real-time filtering
-- ✅ **Notifications** - Modal with badges
-- ✅ **Profile System** - User management
+- ✅ **Vendor Detail** - Cover image, description, hours, prep time, open/closed status
 - ✅ **Shopping Cart** - Add/remove items
-- ✅ **Order History** - Track past orders
+- ✅ **M-Pesa Checkout** - STK Push payment (digits-only phone input)
+- ✅ **Order History & Tracking** - Live status + rider GPS map
+- ✅ **Reviews** - Star rating + comment after delivery
+
+**Vendor**
+- ✅ **Live Dashboard** - Real revenue, active orders, real average rating — auto-refreshes every 30 s
+- ✅ **Notifications** - Full notification screen with unread badge on bell
+- ✅ **Store Status Toggle** - Instant optimistic update
+- ✅ **Cover Image Upload** - Banner photo shown to consumers
+- ✅ **Business Hours** - 24-hour format stepper + text input with real-time validation
+- ✅ **Estimated Prep Time** - Chip selector visible to consumers
+- ✅ **Bank Details** - M-Pesa number (digits-only, validated)
+- ✅ **Payout History** - Delivered orders with KES earnings total
+- ✅ **Tax Information** - KRA PIN (validated format)
+- ✅ **Customer Reviews** - Real reviews with star summary
+- ✅ **Contact Support** - Email/call links + accordion FAQ
+
+**All Users**
+- ✅ **Profile System** - Photo upload, name, phone (digits-only)
+- ✅ **2FA Security** - Authenticator app support
 - ✅ **Mobile & Web** - Cross-platform support
 
 **Happy coding! 🚀**

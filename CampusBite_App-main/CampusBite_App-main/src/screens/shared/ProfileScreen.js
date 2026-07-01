@@ -417,8 +417,14 @@ export default function ProfileScreen({ navigation }) {
               <TextInput
                 style={styles.modalInput}
                 value={phone}
-                onChangeText={setPhone}
+                onChangeText={(text) => {
+                  let v = text.replace(/[^0-9+]/g, '');
+                  if (v.indexOf('+') > 0) v = v.replace(/\+/g, '');
+                  if (v.length > 13) v = v.slice(0, 13);
+                  setPhone(v);
+                }}
                 keyboardType="phone-pad"
+                maxLength={13}
                 placeholder="e.g. 0712345678"
                 placeholderTextColor={COLORS.muted}
               />

@@ -241,7 +241,7 @@ export default function RegisterScreen({ navigation }) {
             <Text style={styles.sectionLabel}>PERSONAL INFO</Text>
             <Field icon="person-outline"      placeholder="Full Name"               value={form.name}     onChangeText={(v) => set('name', v)} />
             <Field icon="mail-outline"        placeholder="Email address"           value={form.email}    onChangeText={(v) => set('email', v)}    keyboardType="email-address" autoCapitalize="none" />
-            <Field icon="call-outline"        placeholder="Phone (e.g. 0712345678)" value={form.phone}    onChangeText={(v) => set('phone', v)}    keyboardType="phone-pad" autoCapitalize="none" />
+            <Field icon="call-outline"        placeholder="Phone (e.g. 0712345678)" value={form.phone}    onChangeText={(text) => { let v = text.replace(/[^0-9+]/g, ''); if (v.indexOf('+') > 0) v = v.replace(/\+/g, ''); if (v.length > 13) v = v.slice(0, 13); set('phone', v); }}    keyboardType="phone-pad" autoCapitalize="none" />
             <Field icon="lock-closed-outline" placeholder="Password (min 6 chars)"  value={form.password} onChangeText={(v) => set('password', v)} secureTextEntry />
 
             {form.role === 'vendor' && (

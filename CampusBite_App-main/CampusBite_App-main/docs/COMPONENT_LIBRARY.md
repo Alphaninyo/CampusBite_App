@@ -971,4 +971,127 @@ components/
 
 ---
 
+## 🏪 **Vendor Profile Screen — Modal System**
+
+`VendorProfileScreen.js` uses a bottom-sheet modal pattern for all settings. Each modal:
+- Slides up (`animationType="slide"`, `transparent`)
+- Has a drag handle bar at the top
+- Has a close `×` icon (top-left) and a centred title
+- Uses `KeyboardAvoidingView` (`behavior="padding"` on iOS, `"height"` on Android) when it contains text inputs
+
+### Available modals
+
+| Modal | State flag | Opens via |
+|---|---|---|
+| Edit Store Profile | `showEditModal` | "Edit Profile" button |
+| Business Hours | `showHoursModal` | Business Hours row |
+| Estimated Prep Time | `showPrepModal` | Estimated Prep Time row |
+| Bank Details | `showBankModal` | Bank Details row |
+| Payout History | `showPayoutModal` | Payout History row |
+| Tax Information | `showTaxModal` | Tax Information row |
+| Customer Reviews | `showReviewsModal` | Customer Reviews row |
+| Contact Support | `showSupportModal` | Contact Support row |
+| Security (2FA) | `showSecurityModal` | Security row |
+| Change Password | `showPasswordModal` | Change Password row |
+
+### Time input helper functions
+
+```js
+// Converts raw digit input into HH:MM with real-time capping
+processTimeInput(text) // caps hours at 23, minutes at 59, auto-inserts ':'
+
+// Returns index in TIME_OPTIONS (48 half-hour slots, 00:00–23:30) nearest to a given HH:MM value
+nearestTimeIndex(value)
+```
+
+### Phone number input pattern (all screens)
+```js
+onChangeText={(text) => {
+  let v = text.replace(/[^0-9+]/g, '');        // digits and + only
+  if (v.indexOf('+') > 0) v = v.replace(/\+/g, ''); // + only at start
+  if (v.length > 13) v = v.slice(0, 13);        // max 13 chars
+  setter(v);
+}}
+```
+Applied to: `RegisterScreen`, `ProfileScreen` (shared), `CartScreen` (M-Pesa), `EditProfileScreen` (courier), `VendorProfileScreen` (Bank Details).
+
+---
+
+## 🔔 **VendorNotificationsScreen**
+
+`src/screens/vendor/VendorNotificationsScreen.js`
+
+Full-screen notification list for vendors. Registered in `HomeStack` inside `VendorNavigator` so it pushes from the dashboard.
+
+**Data:** `api.notifications.getAll()` — same endpoint used by all roles.
+
+**Actions:**
+- Tap unread notification → calls `api.notifications.markAsRead(id)`, updates state locally (no refetch)
+- "Mark all read" header button → calls `api.notifications.markAllAsRead()`, updates all local items
+
+**Badge:** `VendorDashboardScreen` fetches `api.notifications.getUnreadCount()` on every 30 s poll and shows a red badge on the bell icon when `count > 0`.
+
+**Notification type → icon mapping:**
+```js
+const TYPE_ICON = {
+  order_status: 'receipt-outline',
+  payment:      'card-outline',
+  delivery:     'bicycle-outline',
+  feedback:     'star-outline',
+  new_order:    'bag-add-outline',
+};
+```
+
+---
+
+## 📊 **VendorDashboardScreen — Live Stats**
+
+`src/screens/vendor/VendorDashboardScreen.js`
+
+### Stats computed locally from fetched data
+
+```js
+// Active orders count
+const activeOrderCount = allOrders.filter(o =>
+  ['Received', 'Preparing', 'Ready'].includes(o.status)
+).length;
+
+// Today's revenue
+const dailyRevenue = allOrders
+  .filter(o => new Date(o.created_at).toDateString() === new Date().toDateString())
+  .reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+
+// Average rating from all real reviews
+const avgRating = allReviews.length > 0
+  ? (allReviews.reduce((s, r) => s + (r.vendor_rating || 0), 0) / allReviews.length).toFixed(1)
+  : '—';
+```
+
+### Auto-polling
+```js
+useEffect(() => {
+  fetchData();
+  pollRef.current = setInterval(fetchData, 30000); // every 30 seconds
+  return () => clearInterval(pollRef.current);     // cleanup on unmount
+}, [fetchData]);
+```
+
+---
+
+## 🗄️ **Backend: Vendor Model Fields (current)**
+
+| Field | DB Type | Notes |
+|---|---|---|
+| `image` | VARCHAR(500) | Path under `/uploads/vendors/` |
+| `description` | VARCHAR(500) | |
+| `opening_time` | VARCHAR(20) | e.g. `08:00` |
+| `closing_time` | VARCHAR(20) | e.g. `22:30` |
+| `prep_time` | VARCHAR(30) | e.g. `15-20 mins` |
+| `mpesa_phone` | VARCHAR(20) | Kenyan M-Pesa, validated on save |
+| `kra_pin` | VARCHAR(20) | Format `A000000000A`, uppercased |
+
+All added via `ALTER TABLE vendors ADD COLUMN IF NOT EXISTS …` in `server.js` — idempotent on restart.
+
+---
+
 This component library provides a comprehensive guide to all reusable components in the CampusBite application, ensuring consistency and maintainability across the codebase.

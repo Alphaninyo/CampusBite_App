@@ -52,6 +52,40 @@ const Vendor = sequelize.define(
       allowNull: true,
       comment: 'Timestamp when admin rejected this vendor profile.',
     },
+    image: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      comment: 'Cover/banner photo path served from /uploads/vendors/',
+    },
+    description: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
+    mpesa_phone: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      comment: 'M-Pesa phone number for receiving payouts',
+    },
+    kra_pin: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      comment: 'Kenya Revenue Authority PIN for tax purposes',
+    },
+    opening_time: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      comment: 'Human-readable opening time, e.g. "8:00 AM"',
+    },
+    closing_time: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      comment: 'Human-readable closing time, e.g. "10:00 PM"',
+    },
+    prep_time: {
+      type: DataTypes.STRING(30),
+      allowNull: true,
+      comment: 'Estimated prep time label, e.g. "15-20 mins"',
+    },
   },
   {
     tableName: 'vendors',

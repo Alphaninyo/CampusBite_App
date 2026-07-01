@@ -107,10 +107,16 @@ export default function EditProfileScreen({ navigation, route }) {
           <TextInput
             style={styles.input}
             value={phone}
-            onChangeText={setPhone}
+            onChangeText={(text) => {
+              let v = text.replace(/[^0-9+]/g, '');
+              if (v.indexOf('+') > 0) v = v.replace(/\+/g, '');
+              if (v.length > 13) v = v.slice(0, 13);
+              setPhone(v);
+            }}
             placeholder="Enter phone number"
             placeholderTextColor={COLORS.gray}
             keyboardType="phone-pad"
+            maxLength={13}
           />
 
           <Text style={styles.label}>Email</Text>

@@ -29,7 +29,18 @@ export const api = {
     getAll:        (params) => client.get('/vendors', { params }),
     getById:       (id)     => client.get(`/vendors/${id}`),
     getProfile:    ()       => client.get('/vendors/profile/me'),
-    updateProfile: (data)   => client.put('/vendors/profile/me', data),
+    updateProfile: async (data) => {
+      if (data.image) {
+        const form = new FormData();
+        if (data.business_name !== undefined) form.append('business_name', data.business_name);
+        if (data.vendor_type   !== undefined) form.append('vendor_type', data.vendor_type);
+        if (data.location      !== undefined) form.append('location', data.location || '');
+        if (data.description   !== undefined) form.append('description', data.description || '');
+        await _appendImage(form, data.image, 'image');
+        return client.put('/vendors/profile/me', form, _multipartHeaders());
+      }
+      return client.put('/vendors/profile/me', data);
+    },
     updateStatus:  ()       => client.patch('/vendors/profile/me/toggle'),
   },
 

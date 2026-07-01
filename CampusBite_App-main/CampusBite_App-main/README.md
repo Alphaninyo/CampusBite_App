@@ -24,10 +24,16 @@ For detailed instructions, see [QUICK_START.md](./QUICK_START.md)
 - **📋 Order Management** - Track order history and status
 - **💳 M-Pesa STK Push** - Seamless mobile payments via Safaricom Daraja API
 - **👤 User Profile** - Account management with photo upload for all roles
-- **🔔 Push Notifications** - Order updates delivered via Expo push notifications
+- **🔔 Push Notifications** - Order updates delivered via Expo push notifications; vendor bell icon shows live unread count badge
 - **🔐 Security** - Two-Factor Authentication (2FA) and password management
 - **📍 Saved Addresses** - Manage delivery locations with current location support
-- **❓ Help & Support** - Role-based support and FAQ system
+- **❓ Help & Support** - Role-based support and accordion FAQ system
+- **📸 Vendor Cover Images** - Vendors can upload a banner photo shown on their store page
+- **⏰ Business Hours** - Vendors set opening/closing times (24-hour format, HH:MM); visible to consumers
+- **⏱️ Estimated Prep Time** - Vendors set a prep time range; visible to consumers on vendor detail
+- **💰 Finance & Payouts** - Vendors save M-Pesa number, view earnings from delivered orders, save KRA PIN for tax
+- **⭐ Live Ratings** - Vendor dashboard shows real average rating calculated from actual customer reviews
+- **📊 Real-time Dashboard** - Revenue, active orders, and rating auto-refresh every 30 seconds
 
 ### **🎨 User Experience**
 - **📱 Cross-Platform** - Web, iOS, and Android support
@@ -93,7 +99,7 @@ CampusBite integrates with Safaricom's Daraja API for seamless mobile payments v
 ### **🏠 Home Screen**
 - **🔍 Search Bar** - Search vendors and items
 - **📂 Category Filters** - Filter by food type
-- **🏪 Featured Vendors** - Popular restaurants
+- **🏪 Featured Vendors** - Popular restaurants with real cover images (initials placeholder when no image)
 - **🔥 Trending Items** - Popular food items
 - **🛒 Floating Cart** - Quick cart access
 - **👤 Profile Avatar** - Navigate to profile
@@ -149,8 +155,16 @@ CampusBite integrates with Safaricom's Daraja API for seamless mobile payments v
 ### **🏪 Vendor**
 - Manage menu items and pricing
 - View and process incoming orders — accept or decline (cancel) orders at the `Received` stage
-- Set store availability status
-- Access business analytics
+- Set store availability status with optimistic UI toggle
+- Upload store cover photo (banner image shown to consumers)
+- Configure business hours (24-hour, HH:MM) and estimated prep time
+- Save M-Pesa number for payouts (digits-only, validated Kenyan format)
+- View payout history — all delivered orders with earnings total in KES
+- Save KRA PIN for tax compliance
+- View real customer reviews with average rating breakdown
+- Contact support via email/call or browse accordion FAQ
+- Live dashboard: daily revenue, active orders, and real average star rating auto-refreshing every 30 s
+- Notification screen with unread badge on dashboard bell
 - Upload a profile photo
 - Configure 2FA for account security
 

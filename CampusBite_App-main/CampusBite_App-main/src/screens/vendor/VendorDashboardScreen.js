@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
@@ -7,20 +7,25 @@ import { COLORS } from '../../constants';
 const ACTIVE_STATUSES = ['Received', 'Preparing', 'Ready'];
 
 export default function VendorDashboardScreen({ navigation }) {
-  const [vendor, setVendor]     = useState(null);
-  const [allOrders, setAllOrders] = useState([]);
+  const [vendor, setVendor]         = useState(null);
+  const [allOrders, setAllOrders]   = useState([]);
   const [popularItems, setPopularItems] = useState([]);
-  const [reviews, setReviews] = useState([]);
-  const [loading, setLoading]   = useState(true);
+  const [reviews, setReviews]       = useState([]);   // shown in UI (up to 5)
+  const [allReviews, setAllReviews] = useState([]);   // full list for rating calc
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [toggling, setToggling] = useState(false);
+  const [toggling, setToggling]     = useState(false);
+  const pollRef = useRef(null);
 
   const fetchData = useCallback(async () => {
     try {
-      const [profileRes, ordersRes] = await Promise.all([
+      const [profileRes, ordersRes, notifRes] = await Promise.all([
         api.vendors.getProfile(),
         api.orders.getVendorOrders(),
+        api.notifications.getUnreadCount().catch(() => ({ data: { count: 0 } })),
       ]);
+      setUnreadCount(notifRes.data?.count ?? 0);
       const vendorData = profileRes.data.vendor;
       const ordersData = ordersRes.data.orders || [];
       setVendor(vendorData);
@@ -46,8 +51,11 @@ export default function VendorDashboardScreen({ navigation }) {
       if (vendorData?.id) {
         try {
           const { data: reviewData } = await api.reviews.getVendorReviews(vendorData.id);
-          setReviews((reviewData.reviews || []).slice(0, 5));
+          const fetched = reviewData.reviews || [];
+          setAllReviews(fetched);
+          setReviews(fetched.slice(0, 5));
         } catch {
+          setAllReviews([]);
           setReviews([]);
         }
       }
@@ -59,7 +67,11 @@ export default function VendorDashboardScreen({ navigation }) {
     }
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+    pollRef.current = setInterval(fetchData, 30000);
+    return () => clearInterval(pollRef.current);
+  }, [fetchData]);
 
   const toggleOpen = async () => {
     setToggling(true);
@@ -97,7 +109,7 @@ export default function VendorDashboardScreen({ navigation }) {
   };
 
   const handleNotifications = () => {
-    Alert.alert('Notifications', 'Feature coming soon! This will show your order notifications and alerts.');
+    navigation.navigate('VendorNotifications');
   };
 
   // Derived data
@@ -110,6 +122,10 @@ export default function VendorDashboardScreen({ navigation }) {
       return new Date(o.created_at).toDateString() === today;
     })
     .reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+
+  const avgRating = allReviews.length > 0
+    ? (allReviews.reduce((s, r) => s + (r.vendor_rating || 0), 0) / allReviews.length).toFixed(1)
+    : '—';
 
   const getTimeAgo = (dateStr) => {
     const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
@@ -150,6 +166,11 @@ export default function VendorDashboardScreen({ navigation }) {
           </View>
           <TouchableOpacity style={styles.notifBtn} onPress={handleNotifications}>
             <Ionicons name="notifications-outline" size={22} color={COLORS.black} />
+            {unreadCount > 0 && (
+              <View style={styles.notifBadge}>
+                <Text style={styles.notifBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -180,7 +201,7 @@ export default function VendorDashboardScreen({ navigation }) {
               <Ionicons name="star-outline" size={24} color={COLORS.success} />
             </View>
             <Text style={styles.statLabel}>Rating</Text>
-            <Text style={styles.statValue}>4.8</Text>
+            <Text style={styles.statValue}>{avgRating}</Text>
           </View>
         </View>
 
@@ -321,11 +342,11 @@ export default function VendorDashboardScreen({ navigation }) {
                 </View>
                 <View style={styles.reviewStars}>
                   {[1, 2, 3, 4, 5].map(star => (
-                    <Ionicons 
-                      key={star} 
-                      name={star <= (review.rating || 0) ? 'star' : 'star-outline'} 
-                      size={14} 
-                      color="#FFB300" 
+                    <Ionicons
+                      key={star}
+                      name={star <= (review.vendor_rating || 0) ? 'star' : 'star-outline'}
+                      size={14}
+                      color="#FFB300"
                     />
                   ))}
                 </View>
@@ -366,7 +387,15 @@ const styles = StyleSheet.create({
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   openLabel: { fontWeight: 'bold', fontSize: 12, color: COLORS.text },
-  notifBtn: { padding: 4 },
+  notifBtn: { padding: 4, position: 'relative' },
+  notifBadge: {
+    position: 'absolute', top: 0, right: 0,
+    backgroundColor: COLORS.danger || '#EF4444',
+    borderRadius: 8, minWidth: 16, height: 16,
+    alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  notifBadgeText: { color: '#fff', fontSize: 9, fontWeight: '800' },
   
   scrollView: { flex: 1, paddingHorizontal: 16 },
   

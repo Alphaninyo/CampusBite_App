@@ -77,29 +77,73 @@ export default function VendorDetailScreen({ route, navigation }) {
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={styles.vendorName}>{vendor.business_name}</Text>
-            {vendor.location && (
-              <View style={styles.locationContainer}>
-                <Ionicons name="location-outline" size={14} color={COLORS.gray} />
-                <Text style={styles.location}>{vendor.location}</Text>
+            {/* Cover image */}
+            {vendor.image ? (
+              <Image
+                source={{ uri: `${API_BASE_URL}${vendor.image}` }}
+                style={styles.coverImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={[styles.coverImage, styles.coverPlaceholder]}>
+                <Ionicons name="storefront-outline" size={36} color={COLORS.primary} />
               </View>
             )}
-            <View style={styles.statusRow}>
-              <View style={[styles.statusDot, { backgroundColor: vendor.is_open ? COLORS.success : COLORS.gray }]} />
-              <Text style={[styles.statusLabel, { color: vendor.is_open ? COLORS.success : COLORS.gray }]}>
-                {vendor.is_open ? 'Open Now' : 'Closed'}
-              </Text>
+
+            <View style={styles.headerBody}>
+              <Text style={styles.vendorName}>{vendor.business_name}</Text>
+
+              {vendor.description ? (
+                <Text style={styles.description}>{vendor.description}</Text>
+              ) : null}
+
+              {vendor.location ? (
+                <View style={styles.infoRow}>
+                  <Ionicons name="location-outline" size={14} color={COLORS.gray} />
+                  <Text style={styles.infoText}>{vendor.location}</Text>
+                </View>
+              ) : null}
+
+              <View style={styles.pillsRow}>
+                {/* Open / Closed status */}
+                <View style={[styles.pill, { backgroundColor: vendor.is_open ? COLORS.successBg : COLORS.inputBg }]}>
+                  <View style={[styles.statusDot, { backgroundColor: vendor.is_open ? COLORS.success : COLORS.gray }]} />
+                  <Text style={[styles.pillText, { color: vendor.is_open ? COLORS.success : COLORS.gray }]}>
+                    {vendor.is_open ? 'Open Now' : 'Closed'}
+                  </Text>
+                </View>
+
+                {/* Business hours */}
+                {vendor.opening_time && vendor.closing_time ? (
+                  <View style={styles.pill}>
+                    <Ionicons name="time-outline" size={13} color={COLORS.subtext} />
+                    <Text style={styles.pillText}>{vendor.opening_time} – {vendor.closing_time}</Text>
+                  </View>
+                ) : null}
+
+                {/* Prep time */}
+                {vendor.prep_time ? (
+                  <View style={styles.pill}>
+                    <Ionicons name="timer-outline" size={13} color={COLORS.subtext} />
+                    <Text style={styles.pillText}>{vendor.prep_time}</Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+
+            <View style={styles.menuDivider}>
+              <Text style={styles.menuTitle}>Menu</Text>
             </View>
           </View>
         }
         renderItem={({ item }) => (
           <View style={styles.item}>
-            <Image
-              source={item.image
-                ? { uri: `${API_BASE_URL}${item.image}` }
-                : { uri: 'https://via.placeholder.com/70x70/FFF0EB/E85D04?text=Food' }}
-              style={styles.itemImage}
-            />
+            {item.image
+              ? <Image source={{ uri: `${API_BASE_URL}${item.image}` }} style={styles.itemImage} resizeMode="cover" />
+              : <View style={[styles.itemImage, styles.itemImagePlaceholder]}>
+                  <Ionicons name="fast-food-outline" size={24} color={COLORS.primary} />
+                </View>
+            }
             <View style={styles.itemInfo}>
               <Text style={styles.itemName}>{item.name}</Text>
               {item.description && <Text style={styles.itemDesc}>{item.description}</Text>}
@@ -143,13 +187,35 @@ export default function VendorDetailScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  header: { marginBottom: 16 },
-  vendorName: { fontSize: 22, fontWeight: 'bold', color: COLORS.text },
-  locationContainer: { flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 },
-  location: { color: COLORS.gray, fontSize: 13 },
-  statusRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
-  statusDot: { width: 8, height: 8, borderRadius: 4 },
-  statusLabel: { fontSize: 13, fontWeight: '500' },
+
+  header: { marginBottom: 8 },
+  coverImage: {
+    width: '100%', height: 180,
+    borderRadius: 14, marginBottom: 12,
+    backgroundColor: COLORS.inputBg,
+  },
+  coverPlaceholder: {
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: COLORS.primary + '12',
+  },
+  headerBody: { paddingHorizontal: 2, marginBottom: 12 },
+  vendorName: { fontSize: 22, fontWeight: 'bold', color: COLORS.text, marginBottom: 4 },
+  description: { fontSize: 13, color: COLORS.subtext, lineHeight: 18, marginBottom: 8 },
+  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 10 },
+  infoText: { fontSize: 13, color: COLORS.gray },
+
+  pillsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  pill: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: COLORS.inputBg, borderRadius: 20,
+    paddingHorizontal: 10, paddingVertical: 5,
+    borderWidth: 1, borderColor: COLORS.border,
+  },
+  pillText: { fontSize: 12, color: COLORS.subtext, fontWeight: '500' },
+  statusDot: { width: 7, height: 7, borderRadius: 4 },
+
+  menuDivider: { borderTopWidth: 1, borderColor: COLORS.border, paddingTop: 14, marginTop: 4 },
+  menuTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text },
   item: {
     backgroundColor: COLORS.card,
     borderRadius: 14,
@@ -162,11 +228,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   itemImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 10,
-    backgroundColor: COLORS.primary + '20',
-    flexShrink: 0,
+    width: 64, height: 64,
+    borderRadius: 10, flexShrink: 0,
+  },
+  itemImagePlaceholder: {
+    backgroundColor: COLORS.primary + '12',
+    alignItems: 'center', justifyContent: 'center',
   },
   itemInfo: { flex: 1 },
   itemName: { fontSize: 15, fontWeight: 'bold', color: COLORS.text },

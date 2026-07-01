@@ -16,7 +16,7 @@ router.patch('/admin/:id/reject',  protect, restrictTo('admin'), vendorControlle
 // ── Vendor profile routes (authenticated vendor only) ─────────────────────────
 router.post( '/profile',           protect, restrictTo('vendor'), vendorController.createProfile);
 router.get(  '/profile/me',        protect, restrictTo('vendor'), vendorController.getMyProfile);
-router.put(  '/profile/me',        protect, restrictTo('vendor'), vendorController.updateMyProfile);
+router.put(  '/profile/me',        protect, restrictTo('vendor'), vendorController.uploadCoverMiddleware, vendorController.updateMyProfile);
 router.patch('/profile/me/toggle', protect, restrictTo('vendor'), vendorController.toggleShopStatus);
 
 // ── Public routes ─────────────────────────────────────────────────────────────

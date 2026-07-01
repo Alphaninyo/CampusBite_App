@@ -5,12 +5,27 @@ import { api } from '../../api';
 import { COLORS, API_BASE_URL } from '../../constants';
 import useCartStore from '../../stores/cartStore';
 
+function VendorImagePlaceholder({ name }) {
+  const initials = name ? name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : '?';
+  const hue = name ? name.charCodeAt(0) % 360 : 0;
+  return (
+    <View style={[styles.featuredImage, { backgroundColor: `hsl(${hue},55%,60%)`, alignItems: 'center', justifyContent: 'center' }]}>
+      <Text style={{ fontSize: 32, fontWeight: '700', color: '#fff' }}>{initials}</Text>
+    </View>
+  );
+}
+
 function FeaturedVendorCard({ vendor, onPress }) {
   const vendorType = vendor.vendor_type === 'home_based' ? 'Home-based' : 'Restaurant';
+  const imageUri = vendor.image
+    ? (vendor.image.startsWith('http') ? vendor.image : `${API_BASE_URL}${vendor.image}`)
+    : null;
   return (
     <TouchableOpacity style={styles.featuredCard} onPress={onPress}>
       <View style={styles.imageContainer}>
-        <Image source={{ uri: vendor.image || 'https://via.placeholder.com/150x100/FF6B6B/FFFFFF?text=Vendor' }} style={styles.featuredImage} />
+        {imageUri
+          ? <Image source={{ uri: imageUri }} style={styles.featuredImage} />
+          : <VendorImagePlaceholder name={vendor.business_name} />}
         <View style={styles.ratingOverlay}>
           <Text style={styles.ratingText}>{vendorType}</Text>
         </View>
@@ -22,10 +37,25 @@ function FeaturedVendorCard({ vendor, onPress }) {
   );
 }
 
+function MenuImagePlaceholder({ name }) {
+  const initials = name ? name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : '?';
+  const hue = name ? (name.charCodeAt(0) * 7) % 360 : 30;
+  return (
+    <View style={[styles.trendingImage, { backgroundColor: `hsl(${hue},55%,65%)`, alignItems: 'center', justifyContent: 'center' }]}>
+      <Text style={{ fontSize: 22, fontWeight: '700', color: '#fff' }}>{initials}</Text>
+    </View>
+  );
+}
+
 function TrendingItemCard({ item, onPress }) {
+  const imageUri = item.image
+    ? (item.image.startsWith('http') ? item.image : `${API_BASE_URL}${item.image}`)
+    : null;
   return (
     <TouchableOpacity style={styles.trendingCard} onPress={onPress}>
-      <Image source={{ uri: item.image || 'https://via.placeholder.com/120x120/FF6B6B/FFFFFF?text=Food' }} style={styles.trendingImage} />
+      {imageUri
+        ? <Image source={{ uri: imageUri }} style={styles.trendingImage} />
+        : <MenuImagePlaceholder name={item.name} />}
       <Text style={styles.itemVendor}>{item.vendor_name}</Text>
       <Text style={styles.itemName}>{item.name}</Text>
       <View style={styles.priceContainer}>

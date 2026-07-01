@@ -45,6 +45,14 @@ async function startServer() {
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN NOT NULL DEFAULT false`,
       // User profile photo
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_photo VARCHAR(500)`,
+      // Vendor cover image, description, hours, prep time
+      `ALTER TABLE vendors ADD COLUMN IF NOT EXISTS image VARCHAR(500)`,
+      `ALTER TABLE vendors ADD COLUMN IF NOT EXISTS description VARCHAR(500)`,
+      `ALTER TABLE vendors ADD COLUMN IF NOT EXISTS mpesa_phone VARCHAR(20)`,
+      `ALTER TABLE vendors ADD COLUMN IF NOT EXISTS kra_pin VARCHAR(20)`,
+      `ALTER TABLE vendors ADD COLUMN IF NOT EXISTS opening_time VARCHAR(20)`,
+      `ALTER TABLE vendors ADD COLUMN IF NOT EXISTS closing_time VARCHAR(20)`,
+      `ALTER TABLE vendors ADD COLUMN IF NOT EXISTS prep_time VARCHAR(30)`,
       // Order cancellation
       `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel='Cancelled' AND enumtypid=(SELECT oid FROM pg_type WHERE typname='enum_orders_status')) THEN ALTER TYPE "enum_orders_status" ADD VALUE 'Cancelled'; END IF; END $$`,
     ];

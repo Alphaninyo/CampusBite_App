@@ -1,5 +1,32 @@
+const path   = require('path');
+const fs     = require('fs');
+const multer = require('multer');
 const { Op, literal }   = require('sequelize');
 const { Vendor, User, MenuItem, sequelize } = require('../models');
+
+// ─── Multer Setup for Vendor Cover Images ─────────────────────────────────────
+
+const VENDOR_UPLOAD_DIR = path.join(__dirname, '../../uploads/vendors');
+if (!fs.existsSync(VENDOR_UPLOAD_DIR)) fs.mkdirSync(VENDOR_UPLOAD_DIR, { recursive: true });
+
+const vendorStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, VENDOR_UPLOAD_DIR),
+  filename:    (req, file, cb) => {
+    const ext = path.extname(file.originalname) || '.jpg';
+    cb(null, `vendor-${req.user.id}-${Date.now()}${ext}`);
+  },
+});
+
+const vendorFileFilter = (_req, file, cb) =>
+  /image\/(jpeg|jpg|png|webp)/.test(file.mimetype)
+    ? cb(null, true)
+    : cb(new Error('Only JPEG, PNG, or WEBP images are accepted.'), false);
+
+exports.uploadCoverMiddleware = multer({
+  storage: vendorStorage,
+  fileFilter: vendorFileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 },
+}).single('image');
 
 // ─── Vendor Profile ───────────────────────────────────────────────────────────
 
@@ -105,7 +132,7 @@ exports.updateMyProfile = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Vendor profile not found.' });
     }
 
-    const { business_name, vendor_type, location } = req.body;
+    const { business_name, vendor_type, location, description, opening_time, closing_time, prep_time, mpesa_phone, kra_pin } = req.body;
 
     if (vendor_type && !['restaurant', 'home_based'].includes(vendor_type)) {
       return res.status(400).json({
@@ -114,10 +141,26 @@ exports.updateMyProfile = async (req, res) => {
       });
     }
 
+    let imagePath = vendor.image;
+    if (req.file) {
+      if (vendor.image) {
+        const oldPath = path.join(__dirname, '../..', vendor.image);
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      }
+      imagePath = `/uploads/vendors/${req.file.filename}`;
+    }
+
     await vendor.update({
       business_name: business_name ? business_name.trim() : vendor.business_name,
-      vendor_type:   vendor_type   || vendor.vendor_type,
-      location:      location !== undefined ? location.trim() : vendor.location,
+      vendor_type:    vendor_type   || vendor.vendor_type,
+      location:       location      !== undefined ? location.trim()     : vendor.location,
+      description:    description   !== undefined ? description.trim()  : vendor.description,
+      opening_time:   opening_time  !== undefined ? opening_time.trim()  : vendor.opening_time,
+      closing_time:   closing_time  !== undefined ? closing_time.trim()  : vendor.closing_time,
+      prep_time:      prep_time     !== undefined ? prep_time.trim()     : vendor.prep_time,
+      mpesa_phone:    mpesa_phone   !== undefined ? mpesa_phone.trim()   : vendor.mpesa_phone,
+      kra_pin:        kra_pin       !== undefined ? kra_pin.trim().toUpperCase() : vendor.kra_pin,
+      image:          imagePath,
     });
 
     res.status(200).json({ success: true, message: 'Profile updated.', vendor });

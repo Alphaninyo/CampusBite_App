@@ -5,7 +5,8 @@ import { StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
-import VendorDashboardScreen from '../screens/vendor/VendorDashboardScreen';
+import VendorDashboardScreen       from '../screens/vendor/VendorDashboardScreen';
+import VendorNotificationsScreen   from '../screens/vendor/VendorNotificationsScreen';
 import VendorOrdersScreen from '../screens/vendor/VendorOrdersScreen';
 import VendorOrderDetailScreen from '../screens/vendor/VendorOrderDetailScreen';
 import MenuScreen            from '../screens/vendor/MenuScreen';
@@ -25,7 +26,8 @@ const Stack = createNativeStackNavigator();
 function HomeStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Dashboard" component={VendorDashboardScreen} />
+      <Stack.Screen name="Dashboard"             component={VendorDashboardScreen} />
+      <Stack.Screen name="VendorNotifications"   component={VendorNotificationsScreen} />
     </Stack.Navigator>
   );
 }

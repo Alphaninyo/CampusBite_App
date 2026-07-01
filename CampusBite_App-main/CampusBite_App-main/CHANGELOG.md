@@ -65,6 +65,91 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2026-07-01
+
+### 🎉 New Features
+
+#### Vendor — Finance & Payouts
+- **Bank Details modal** — Vendors can save their M-Pesa phone number. Input enforces digits-only (+ allowed at start only), max 13 characters. Kenyan phone format (`/^(\+?254|0)[17]\d{8}$/`) validated before saving. Saved to new `mpesa_phone` column.
+- **Payout History modal** — Lists all delivered orders with date and amount. Running total in KES shown at the top. Fetches from existing `GET /orders/vendor` endpoint filtered by `status === 'Delivered'`.
+- **Tax Information modal** — Vendors can save their KRA PIN (auto-uppercased, format `A000000000A` validated). Saved to new `kra_pin` column.
+
+#### Vendor — Performance & Support
+- **Customer Reviews modal** — Fetches all real reviews via `api.reviews.getVendorReviews`. Shows average star rating + count summary bar and per-review cards with consumer initial avatar, name, date, star rating, and comment.
+- **Contact Support modal** — Email and phone call links (`Linking.openURL`). Accordion FAQ section: four common questions expand inline on tap (chevron rotates up/down, answer shown with tinted background). No more `Alert.alert` popups.
+
+#### Vendor — Notifications
+- **VendorNotificationsScreen** (`src/screens/vendor/VendorNotificationsScreen.js`) — Full notification list with pull-to-refresh, per-item mark-as-read, and "Mark all read" header button. Notification type determines icon and colour (`order_status`, `payment`, `delivery`, `feedback`, `new_order`).
+- **Notification bell badge** — Dashboard header bell now shows a red badge with unread count. Count fetched alongside other data on every 30 s poll.
+
+#### Vendor — Dashboard live data
+- **Real average rating** — Rating stat card now computed from actual `vendor_rating` values across all reviews. Was previously hardcoded `4.8`.
+- **Auto-polling** — `fetchData` runs every 30 seconds via `setInterval` with cleanup on unmount. Daily Revenue, Active Orders, and Rating all update automatically without manual pull-to-refresh.
+
+#### All users — Phone number validation
+- **Digits-only phone inputs** across all screens: letters stripped on every keystroke, `+` allowed at position 0 only, max 13 characters enforced
+  - `RegisterScreen` — registration phone field
+  - `ProfileScreen` (shared) — profile edit phone field
+  - `CartScreen` (consumer) — M-Pesa phone at checkout
+  - `EditProfileScreen` (food courier) — profile phone field
+  - `VendorProfileScreen` — Bank Details M-Pesa input
+
+### 🔧 Improvements
+
+- **Vendor cover image** — Vendors can now upload a banner/cover image from their profile. Stored at `uploads/vendors/`. Shown as a 180 px image banner on the consumer's `VendorDetailScreen`.
+- **VendorDetailScreen rebuilt header** — Now shows cover image, description, location pill, open/closed status pill, business hours pill (`HH:MM – HH:MM`), and prep time pill. All pills render only when the value is set.
+- **Business hours — 24-hour stepper** — Replaced scrollable chips with a stepper + inline text input. Real-time digit capping: hours max 23, minutes max 59. Arrow buttons snap to nearest 30-minute slot. Backspace handled correctly. Blur auto-pads to `HH:MM`. Regex validation before save.
+- **Estimated Prep Time** — Chip selector with options from `5-10 mins` to `60+ mins`. Saved to `prep_time` and visible on consumer vendor detail page.
+- **Store Status toggle** — Now uses optimistic UI update (immediate state flip, reverts to previous on API error). Error message uses `err?.response?.data?.message` for clarity.
+- **HomeScreen vendor images** — Vendor cards now load real cover images from `API_BASE_URL + vendor.image`. Initials placeholder (coloured background) shown when no image. All broken `via.placeholder.com` URLs removed.
+- **Menu item image placeholders** — Broken external placeholder URLs replaced with inline `View` + `Ionicons name="fast-food-outline"` icon.
+
+### 🐛 Bug Fixes
+
+- **Rating always showing `4.8`** — VendorDashboardScreen had a hardcoded literal `4.8`. Now computed from `allReviews` state.
+- **Star rendering broken in review cards** — `review.rating` (always `undefined`) was used instead of `review.vendor_rating`.
+- **Time input backspace trapped** — `processTimeInput` would re-insert the colon when deleting, making it impossible to backspace past position 3. Fixed by checking `text.length < prev.length` and allowing free deletion in that branch.
+- **Minute padding using `padEnd` instead of `padStart`** — `'3'.padEnd(2,'0')` produced `'30'` instead of `'03'`. Changed to `padStart`.
+- **Arrow buttons jumping to wrong slot** — When a custom time was typed, `TIME_OPTIONS.indexOf()` returned `-1` causing arrows to jump to slot 0. Fixed with `nearestTimeIndex()` function.
+- **No time validation before save** — Incomplete times like `'08:'` could be saved. Added regex `/^([01][0-9]|2[0-3]):[0-5][0-9]$/` validation in `saveHours`.
+
+### 🗄️ Database Migrations (all idempotent — `ADD COLUMN IF NOT EXISTS`)
+
+```sql
+ALTER TABLE vendors ADD COLUMN IF NOT EXISTS image       VARCHAR(500);
+ALTER TABLE vendors ADD COLUMN IF NOT EXISTS description VARCHAR(500);
+ALTER TABLE vendors ADD COLUMN IF NOT EXISTS opening_time VARCHAR(20);
+ALTER TABLE vendors ADD COLUMN IF NOT EXISTS closing_time VARCHAR(20);
+ALTER TABLE vendors ADD COLUMN IF NOT EXISTS prep_time   VARCHAR(30);
+ALTER TABLE vendors ADD COLUMN IF NOT EXISTS mpesa_phone VARCHAR(20);
+ALTER TABLE vendors ADD COLUMN IF NOT EXISTS kra_pin     VARCHAR(20);
+```
+
+### 📁 New files
+
+| File | Purpose |
+|---|---|
+| `src/screens/vendor/VendorNotificationsScreen.js` | Full notification list screen for vendors |
+
+### 🔄 Modified files (key)
+
+| File | What changed |
+|---|---|
+| `src/screens/vendor/VendorDashboardScreen.js` | Auto-poll, real rating, real review stars, unread badge, notification navigation |
+| `src/screens/vendor/VendorProfileScreen.js` | All finance modals, reviews modal, support accordion, hours/prep time stepper, cover image, phone validation |
+| `src/screens/consumer/HomeScreen.js` | Real vendor images + initials placeholder |
+| `src/screens/consumer/VendorDetailScreen.js` | Full header rebuild with all vendor info pills |
+| `src/screens/consumer/CartScreen.js` | Digits-only M-Pesa input |
+| `src/screens/shared/ProfileScreen.js` | Digits-only phone input |
+| `src/screens/auth/RegisterScreen.js` | Digits-only phone input |
+| `src/screens/foodCourier/EditProfileScreen.js` | Digits-only phone input |
+| `src/navigation/VendorNavigator.js` | Added `VendorNotifications` to `HomeStack` |
+| `CampusBite_Backend-main/src/models/Vendor.js` | Added 7 new fields |
+| `CampusBite_Backend-main/src/controllers/vendor.controller.js` | Multer setup, all new fields in `updateMyProfile` |
+| `CampusBite_Backend-main/server.js` | 7 new `IF NOT EXISTS` migrations |
+
+---
+
 ## [Unreleased] - Development
 
 ### 🚀 Upcoming Features

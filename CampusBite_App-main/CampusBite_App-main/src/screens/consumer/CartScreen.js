@@ -406,11 +406,16 @@ export default function CartScreen({ navigation }) {
                 <TextInput
                   style={styles.paymentDetailInput}
                   value={mpesaPhone}
-                  onChangeText={setMpesaPhone}
+                  onChangeText={(text) => {
+                    let v = text.replace(/[^0-9+]/g, '');
+                    if (v.indexOf('+') > 0) v = v.replace(/\+/g, '');
+                    if (v.length > 13) v = v.slice(0, 13);
+                    setMpesaPhone(v);
+                  }}
                   placeholder="+254 7XX XXX XXX"
                   placeholderTextColor={COLORS.muted}
                   keyboardType="phone-pad"
-                  maxLength={15}
+                  maxLength={13}
                 />
               </View>
               <Text style={styles.paymentDetailHint}>STK push will be sent to this number</Text>
