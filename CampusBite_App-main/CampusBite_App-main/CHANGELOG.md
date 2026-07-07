@@ -150,6 +150,19 @@ ALTER TABLE vendors ADD COLUMN IF NOT EXISTS kra_pin     VARCHAR(20);
 
 ---
 
+## [1.2.1] - 2026-07-07
+
+### 🐛 Bug Fixes
+- **Explore page vendor images missing** — `ExploreScreen.js` used `vendor.image` directly as the `<Image>` `uri`, but the field is a relative path (e.g. `/uploads/vendors/xxx.jpg`). Every other screen (`HomeScreen.js`, `VendorDetailScreen.js`, `VendorProfileScreen.js`) correctly prefixes it with `API_BASE_URL`; Explore was the one screen that didn't, so vendor cover photos rendered as blank/placeholder there even though they displayed fine everywhere else. Fixed by importing `API_BASE_URL` and building the full URL the same way the other screens do.
+
+### 🔧 Improvements
+- **Rate limiter skipped in development** — The global `express-rate-limit` (100 requests / 15 min per IP) in `CampusBite_Backend-main/src/app.js` now only applies when `NODE_ENV !== 'development'`. It was tripping during normal local dev/testing (every request counts against the same IP), returning `429 Too many requests` on all routes including `/api/health`. Production behavior is unchanged.
+
+### ⚠️ Known Gap (not fixed yet)
+- **Silent image-upload failures** — `src/api/index.js`'s `_appendImage()` helper swallows any error from fetching the picked image's blob URL on web (`catch { /* ignore — upload without image */ }`). If that fetch fails for any reason, the profile/menu-item save still succeeds and shows "Success" to the vendor, but silently omits the image. Worth surfacing as a visible warning instead of a silent no-op.
+
+---
+
 ## [Unreleased] - Development
 
 ### 🚀 Upcoming Features

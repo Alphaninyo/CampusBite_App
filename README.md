@@ -452,6 +452,8 @@ FIREBASE_CLIENT_EMAIL=your_firebase_client_email
 FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour_Key_Here\n-----END PRIVATE KEY-----\n"
 ```
 
+> **Note:** With `NODE_ENV=development`, the global API rate limiter (100 requests / 15 min per IP) is skipped entirely, so local testing won't hit `429 Too many requests`. It's enforced normally whenever `NODE_ENV` is anything else.
+
 ---
 
 ## 🗄️ Database Migrations
@@ -591,6 +593,11 @@ Sequelize `sync({ alter: false })` runs on every server start and will create an
 - Confirm the backend is running and reachable at port 5000
 - Check browser console for failed API calls — JWT may have expired (log out and back in)
 - Badges refresh every 30 seconds or immediately on tab press
+
+### Vendor/menu images not displaying
+- Open the browser console — `net::ERR_BLOCKED_BY_ORB` on a `/uploads/...` request means the referenced file doesn't exist on disk (common on a fresh checkout, since `uploads/menu/` and `uploads/verification/` are gitignored — user-uploaded content never ships with the repo, but a shared/seeded database may still reference old filenames). Re-upload the image through the app to fix it for that vendor/item.
+- If the list itself is fine but only a couple of images are blank, check that the specific screen prefixes `vendor.image` / `item.image` with `API_BASE_URL` — it's a relative path (`/uploads/...`), not a full URL. All consumer/vendor screens should build the URL the same way (see `HomeScreen.js` or `VendorDetailScreen.js`).
+- Vendor cover/menu-item uploads can fail silently on web if converting the picked image to a Blob fails — the save still reports "Success" without the image attached (see Changelog `[1.2.1]`, Known Gap). If a fresh upload doesn't show up, just try again.
 
 ---
 
