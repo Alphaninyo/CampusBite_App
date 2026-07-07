@@ -59,6 +59,92 @@ function nearestTimeIndex(value) {
   return best;
 }
 
+// Buckets this vendor's delivered orders into the last 7 rolling days, and
+// compares this week (last 7 days) against the prior 7 days for growth %.
+function computeWeeklyAnalytics(orders) {
+  const dayMs = 24 * 60 * 60 * 1000;
+  const now = new Date();
+  const delivered = orders.filter(o => o.status === 'Delivered');
+
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now.getTime() - i * dayMs);
+    days.push({ label: d.toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 3), key: d.toDateString(), orders: 0, revenue: 0 });
+  }
+  const dayIndexByKey = Object.fromEntries(days.map((d, i) => [d.key, i]));
+
+  const startThisWeek = new Date(now.getTime() - 6 * dayMs);
+  const startLastWeek = new Date(now.getTime() - 13 * dayMs);
+
+  let thisWeekRevenue = 0, thisWeekOrders = 0;
+  let lastWeekRevenue = 0, lastWeekOrders = 0;
+  const itemCounts = {};
+
+  delivered.forEach(o => {
+    const d = new Date(o.updated_at || o.created_at);
+    const amount = parseFloat(o.total_amount || 0);
+
+    const key = d.toDateString();
+    if (key in dayIndexByKey) {
+      days[dayIndexByKey[key]].orders += 1;
+      days[dayIndexByKey[key]].revenue += amount;
+    }
+
+    if (d >= startThisWeek) {
+      thisWeekRevenue += amount;
+      thisWeekOrders += 1;
+      (o.items || []).forEach(item => {
+        const name = item.menuItem?.name || item.name || 'Item';
+        itemCounts[name] = (itemCounts[name] || 0) + (item.quantity || 0);
+      });
+    } else if (d >= startLastWeek) {
+      lastWeekRevenue += amount;
+      lastWeekOrders += 1;
+    }
+  });
+
+  const growthPct = (curr, prev) => {
+    if (prev > 0) return ((curr - prev) / prev) * 100;
+    return curr > 0 ? 100 : 0;
+  };
+
+  const topItems = Object.entries(itemCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([name, count]) => ({ name, count }));
+
+  return {
+    days,
+    thisWeekRevenue, thisWeekOrders, lastWeekRevenue, lastWeekOrders,
+    revenueGrowth: growthPct(thisWeekRevenue, lastWeekRevenue),
+    orderGrowth:   growthPct(thisWeekOrders, lastWeekOrders),
+    topItems,
+  };
+}
+
+// Simple 7-day order-count bar chart for the Business Analytics modal.
+function WeeklyOrdersChart({ days }) {
+  const maxVal = Math.max(...days.map(d => d.orders), 1);
+  const todayLabel = new Date().toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 3);
+  return (
+    <View style={styles.chartBars}>
+      {days.map((d, i) => {
+        const isToday = d.label === todayLabel && i === days.length - 1;
+        const barH = Math.max((d.orders / maxVal) * 90, 4);
+        return (
+          <View key={i} style={styles.chartBarWrapper}>
+            <Text style={[styles.chartBarCount, isToday && { color: COLORS.primary }]}>
+              {d.orders > 0 ? d.orders : ''}
+            </Text>
+            <View style={[styles.chartBar, { height: barH, backgroundColor: isToday ? COLORS.primary : COLORS.border }]} />
+            <Text style={[styles.chartDayLabel, isToday && { color: COLORS.primary, fontWeight: '700' }]}>{d.label}</Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
 export default function VendorProfileScreen({ navigation = {} }) {
   const { user, logout, updateUser } = useAuthStore();
   console.log('VendorProfileScreen: user state =', user);
@@ -80,6 +166,11 @@ export default function VendorProfileScreen({ navigation = {} }) {
   const [showReviewsModal, setShowReviewsModal] = useState(false);
   const [reviews, setReviews]                   = useState([]);
   const [loadingReviews, setLoadingReviews]     = useState(false);
+
+  // Business Analytics modal
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+  const [analyticsOrders, setAnalyticsOrders]       = useState([]);
+  const [loadingAnalytics, setLoadingAnalytics]     = useState(false);
 
   // Contact Support modal
   const [showSupportModal, setShowSupportModal] = useState(false);
@@ -339,8 +430,17 @@ export default function VendorProfileScreen({ navigation = {} }) {
     setShowSupportModal(true);
   };
 
-  const handleAnalytics = () => {
-    Alert.alert('Business Analytics', 'Feature coming soon! This will show detailed analytics about your business performance.');
+  const handleAnalytics = async () => {
+    setShowAnalyticsModal(true);
+    setLoadingAnalytics(true);
+    try {
+      const { data } = await api.orders.getVendorOrders();
+      setAnalyticsOrders(data.orders || []);
+    } catch (err) {
+      Alert.alert('Error', 'Could not load analytics.');
+    } finally {
+      setLoadingAnalytics(false);
+    }
   };
 
   const handleSecurity = () => {
@@ -982,6 +1082,80 @@ export default function VendorProfileScreen({ navigation = {} }) {
         </View>
       </Modal>
 
+      {/* Business Analytics Modal */}
+      <Modal visible={showAnalyticsModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalSheet, { maxHeight: '85%' }]}>
+            <View style={styles.modalHandle} />
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setShowAnalyticsModal(false)}>
+                <Ionicons name="close" size={24} color={COLORS.subtext} />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Business Analytics</Text>
+              <View style={{ width: 24 }} />
+            </View>
+
+            {loadingAnalytics ? (
+              <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
+              </View>
+            ) : (() => {
+              const a = computeWeeklyAnalytics(analyticsOrders);
+              return (
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  <View style={styles.analyticsGrowthRow}>
+                    <View style={styles.analyticsGrowthCard}>
+                      <Text style={styles.analyticsGrowthLabel}>This week's revenue</Text>
+                      <Text style={styles.analyticsGrowthValue}>KES {a.thisWeekRevenue.toFixed(0)}</Text>
+                      <View style={styles.analyticsGrowthBadgeRow}>
+                        <Ionicons
+                          name={a.revenueGrowth >= 0 ? 'trending-up' : 'trending-down'}
+                          size={13}
+                          color={a.revenueGrowth >= 0 ? COLORS.success : COLORS.danger}
+                        />
+                        <Text style={[styles.analyticsGrowthBadge, { color: a.revenueGrowth >= 0 ? COLORS.success : COLORS.danger }]}>
+                          {a.revenueGrowth >= 0 ? '+' : ''}{a.revenueGrowth.toFixed(0)}% vs last week
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.analyticsGrowthCard}>
+                      <Text style={styles.analyticsGrowthLabel}>Orders delivered</Text>
+                      <Text style={styles.analyticsGrowthValue}>{a.thisWeekOrders}</Text>
+                      <View style={styles.analyticsGrowthBadgeRow}>
+                        <Ionicons
+                          name={a.orderGrowth >= 0 ? 'trending-up' : 'trending-down'}
+                          size={13}
+                          color={a.orderGrowth >= 0 ? COLORS.success : COLORS.danger}
+                        />
+                        <Text style={[styles.analyticsGrowthBadge, { color: a.orderGrowth >= 0 ? COLORS.success : COLORS.danger }]}>
+                          {a.orderGrowth >= 0 ? '+' : ''}{a.orderGrowth.toFixed(0)}% vs last week
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <Text style={styles.analyticsSectionTitle}>Orders — last 7 days</Text>
+                  <WeeklyOrdersChart days={a.days} />
+
+                  <Text style={styles.analyticsSectionTitle}>Top items this week</Text>
+                  {a.topItems.length === 0 ? (
+                    <Text style={styles.emptyAnalyticsText}>No delivered orders this week yet</Text>
+                  ) : (
+                    a.topItems.map((item, i) => (
+                      <View key={i} style={styles.analyticsItemRow}>
+                        <Text style={styles.analyticsItemName} numberOfLines={1}>{item.name}</Text>
+                        <Text style={styles.analyticsItemCount}>{item.count} sold</Text>
+                      </View>
+                    ))
+                  )}
+                  <View style={{ height: 20 }} />
+                </ScrollView>
+              );
+            })()}
+          </View>
+        </View>
+      </Modal>
+
       {/* Tax Information Modal */}
       <Modal visible={showTaxModal} animationType="slide" transparent>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
@@ -1603,6 +1777,32 @@ const styles = StyleSheet.create({
   },
   analyticsTitle: { color: COLORS.white, fontWeight: 'bold', fontSize: 15 },
   analyticsSubtext: { color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 2 },
+
+  // Business Analytics modal
+  analyticsGrowthRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
+  analyticsGrowthCard: {
+    flex: 1, backgroundColor: COLORS.inputBg, borderRadius: 14,
+    padding: 14, borderWidth: 1, borderColor: COLORS.border,
+  },
+  analyticsGrowthLabel: { fontSize: 12, color: COLORS.subtext, marginBottom: 6 },
+  analyticsGrowthValue: { fontSize: 22, fontWeight: '800', color: COLORS.text },
+  analyticsGrowthBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
+  analyticsGrowthBadge: { fontSize: 11, fontWeight: '700' },
+  analyticsSectionTitle: { fontSize: 14, fontWeight: '700', color: COLORS.text, marginBottom: 12, marginTop: 4 },
+  emptyAnalyticsText: { fontSize: 13, color: COLORS.subtext, textAlign: 'center', paddingVertical: 16 },
+  analyticsItemRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: COLORS.borderWarm,
+  },
+  analyticsItemName: { fontSize: 14, color: COLORS.text, flex: 1, marginRight: 8 },
+  analyticsItemCount: { fontSize: 13, fontWeight: '700', color: COLORS.primary },
+
+  // Weekly bar chart (Business Analytics modal)
+  chartBars: { flexDirection: 'row', alignItems: 'flex-end', height: 110, marginBottom: 20 },
+  chartBarWrapper: { flex: 1, alignItems: 'center', justifyContent: 'flex-end' },
+  chartBarCount: { fontSize: 10, color: COLORS.muted, marginBottom: 3 },
+  chartBar: { width: '65%', borderRadius: 4, minHeight: 4 },
+  chartDayLabel: { fontSize: 11, color: COLORS.subtext, marginTop: 6 },
 
   // Logout
   logoutBtn: {
