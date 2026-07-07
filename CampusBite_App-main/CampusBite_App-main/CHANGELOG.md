@@ -163,6 +163,13 @@ ALTER TABLE vendors ADD COLUMN IF NOT EXISTS kra_pin     VARCHAR(20);
 
 ---
 
+## [1.3.0] - 2026-07-07
+
+### 🎉 New Features
+- **Working Business Analytics for vendors** — The "Business Analytics" card on the Vendor Profile screen previously just showed a "Feature coming soon!" alert. It now opens a real modal with weekly growth metrics computed from the vendor's own delivered orders: this week's revenue and order count vs. last week (with growth % badges), a 7-day order-count bar chart, and the top 5 best-selling items this week. Computed entirely client-side from `api.orders.getVendorOrders()` — no backend changes needed, following the same pattern already used by the Payout History modal.
+
+---
+
 ## [Unreleased] - Development
 
 ### 🚀 Upcoming Features

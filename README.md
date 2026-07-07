@@ -248,6 +248,7 @@ CampusBite_App-main/
 5. Advance order status: Received → Preparing → Ready
 6. Manage promo codes via the Menu tab
 7. Update verification documents anytime via Profile → Settings
+8. View Business Analytics from Profile — weekly revenue/order growth vs. last week, a 7-day order chart, and top-selling items
 
 ### Food Courier
 1. Register → upload identity documents during onboarding
