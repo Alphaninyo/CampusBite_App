@@ -216,7 +216,11 @@ Received → Preparing → Ready → Collected → In Transit → Delivered
 ---
 
 ### POST /orders/initiate
-Consumer initiates checkout. For M-Pesa: returns a `checkout_request_id` to poll. For cash/card: creates the order immediately.
+Consumer initiates checkout. Orders are only created once payment is confirmed — except cash, which creates the order immediately.
+
+- **M-Pesa**: returns a `checkout_request_id` to poll (STK Push sent to the phone).
+- **Card (Stripe)**: creates a Stripe `PaymentIntent` and returns a `client_secret` + `publishable_key` for the checkout page. Not immediate.
+- **Cash**: creates the order immediately.
 
 **Auth:** required (`consumer`)
 
@@ -232,6 +236,7 @@ Consumer initiates checkout. For M-Pesa: returns a `checkout_request_id` to poll
   "special_instructions": "No onions"
 }
 ```
+`payment_method` is one of `"mpesa"`, `"card"`, `"cash"`.
 
 **Response `200` (M-Pesa):**
 ```json
@@ -243,7 +248,20 @@ Consumer initiates checkout. For M-Pesa: returns a `checkout_request_id` to poll
 }
 ```
 
-**Response `201` (cash/card):**
+**Response `200` (Card):**
+```json
+{
+  "success": true,
+  "payment_id": "uuid",
+  "client_secret": "pi_..._secret_...",
+  "publishable_key": "pk_test_...",
+  "immediate": false,
+  "dev_mode": false
+}
+```
+When Stripe isn't configured (`STRIPE_SECRET_KEY` left as placeholder), `dev_mode` is `true` and a simulated `DEV-CARD-...` payment ID is returned instead of a real PaymentIntent.
+
+**Response `201` (cash):**
 ```json
 {
   "success": true,
@@ -255,9 +273,26 @@ Consumer initiates checkout. For M-Pesa: returns a `checkout_request_id` to poll
 ---
 
 ### POST /orders/dev-confirm/:checkoutRequestId
-Development only — simulates a successful M-Pesa callback and creates the order.
+Development only — simulates a successful M-Pesa or card callback and creates the order. Generic across payment methods; used by both the M-Pesa "Simulate Payment" button and the card "Simulate Card Payment" button when `dev_mode` is true.
 
 **Auth:** required (`consumer`)
+
+---
+
+### POST /orders/confirm-card-payment/:paymentId
+Live-mode card confirmation. Re-verifies the PaymentIntent's status directly with Stripe's API (`status === 'succeeded'`) before creating the order — the client's own confirmation is never trusted alone. Called by the `/checkout/card` page after Stripe confirms the card on the client side.
+
+**Auth:** required (`consumer`)
+
+**Response `200`:**
+```json
+{ "success": true, "order_id": "uuid" }
+```
+
+---
+
+### GET /checkout/card?paymentId=...&clientSecret=...&publishableKey=...&token=...
+Public (no JWT middleware), server-rendered HTML page embedding Stripe.js + Stripe Elements. Not a JSON API route — it's the page a card checkout `Linking.openURL`s to. The JWT is passed as a query param so the page's own confirmation request can authenticate; postal code is hidden since the app targets Kenya.
 
 ---
 
@@ -380,13 +415,15 @@ Mark all of the user's notifications as read.
 
 ## Payments
 
+These routes are payment-method-agnostic — they work the same for M-Pesa and card checkout sessions, keyed by `checkout_request_id` (M-Pesa) or `payment_id` (card).
+
 ### GET /payments/status/:checkoutRequestId
-Poll the status of an M-Pesa checkout session.
+Poll the status of a pending checkout session.
 
 **Response:** `{ "status": "pending" | "confirmed" | "failed", "order_id": "..." }`
 
 ### POST /payments/:checkoutRequestId/cancel
-Cancel a pending M-Pesa checkout session.
+Cancel a pending checkout session.
 
 ---
 

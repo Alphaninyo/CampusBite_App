@@ -210,6 +210,7 @@ CampusBite_App-main/
 | Multer | Multipart file upload handling |
 | Firebase Admin SDK | FCM push notifications |
 | M-Pesa Daraja API | Mobile payment STK Push |
+| Stripe | Card payment processing (test mode) |
 
 ---
 
@@ -223,6 +224,7 @@ CampusBite_App-main/
 - **Full order lifecycle** — Received → Preparing → Ready → Collected → In Transit → Delivered
 - **Real-time rider location tracking** — Courier broadcasts GPS coordinates during transit
 - **M-Pesa STK Push payments** — Integrated Safaricom Daraja API with dev-mode simulation
+- **Stripe card payments** — Real test-mode card checkout via a secure Stripe-hosted page, with dev-mode simulation when no Stripe keys are configured
 - **Promo codes** — Vendor-created discount codes with percentage or flat-amount discounts
 - **Consumer reviews** — Star ratings and written feedback after delivery
 - **In-app notification system** — Persistent DB-backed notifications with unread indicators
@@ -413,8 +415,19 @@ The system integrates with Safaricom's Daraja API for mobile payments.
 ### Cash on Delivery
 Order is created immediately. The courier confirms cash collection via the delivery detail screen, which marks the payment as confirmed.
 
-### Card
-Order is created immediately. Card charge is confirmed on delivery (placeholder — no card gateway integration currently).
+### Card (Stripe)
+Real Stripe test-mode integration — orders are only created once payment is confirmed, same as M-Pesa.
+
+**Flow:**
+1. Consumer selects Card at checkout
+2. Backend creates a Stripe `PaymentIntent` and returns a `client_secret`
+3. Consumer taps "Enter Card Details" → opens `GET /checkout/card`, a server-rendered page embedding Stripe.js + Stripe Elements (postal code hidden — app targets Kenya)
+4. Card is confirmed client-side with Stripe, then the page calls `POST /api/orders/confirm-card-payment/:paymentId`
+5. Backend re-verifies the PaymentIntent's status directly with Stripe's API (`status === 'succeeded'`) before creating the order — the client's confirmation is never trusted alone
+
+**Dev Mode:** When `STRIPE_SECRET_KEY`/`STRIPE_PUBLISHABLE_KEY` are left as placeholder values, the backend generates a `DEV-CARD-...` payment ID instead of a real PaymentIntent, and a "Simulate Card Payment" button appears in the app — reusing the same generic `POST /api/orders/dev-confirm/:id` endpoint already used for M-Pesa dev mode.
+
+**Test card:** `4242 4242 4242 4242`, any future expiry, any 3-digit CVC — no real charge is made.
 
 ---
 
@@ -453,6 +466,11 @@ MPESA_ENV=sandbox
 FIREBASE_PROJECT_ID=your_firebase_project_id
 FIREBASE_CLIENT_EMAIL=your_firebase_client_email
 FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour_Key_Here\n-----END PRIVATE KEY-----\n"
+
+# Stripe (test mode) — Debit/Credit card checkout
+# Leave as placeholder values to run in dev/simulation mode
+STRIPE_SECRET_KEY=your_stripe_secret_key
+STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
 ```
 
 > **Note:** With `NODE_ENV=development`, the global API rate limiter (100 requests / 15 min per IP) is skipped entirely, so local testing won't hit `429 Too many requests`. It's enforced normally whenever `NODE_ENV` is anything else.
@@ -508,7 +526,7 @@ Sequelize `sync({ alter: false })` runs on every server start and will create an
 ### Orders
 | Method | Endpoint | Access | Description |
 |---|---|---|---|
-| POST | `/api/orders/initiate` | Consumer | Start checkout (M-Pesa / cash / card) |
+| POST | `/api/orders/initiate` | Consumer | Start checkout (M-Pesa / cash / card) — card returns a Stripe `client_secret`, not immediate |
 | GET | `/api/orders` | Consumer | My order history |
 | PATCH | `/api/orders/:id/report-issue` | Consumer | Flag a delivery problem (reason + optional note) |
 | GET | `/api/orders/:id` | Any | Single order detail |
@@ -520,7 +538,9 @@ Sequelize `sync({ alter: false })` runs on every server start and will create an
 | GET | `/api/orders/food-courier/mine` | Courier | My active deliveries |
 | PATCH | `/api/orders/:id/collect-cash` | Courier | Confirm cash payment |
 | PATCH | `/api/orders/:id/location` | Courier | Update rider GPS |
-| POST | `/api/orders/dev-confirm/:id` | Dev only | Simulate M-Pesa callback |
+| POST | `/api/orders/dev-confirm/:id` | Dev only | Simulate M-Pesa or card callback |
+| POST | `/api/orders/confirm-card-payment/:paymentId` | Consumer | Verify a Stripe PaymentIntent server-side and create the order |
+| GET | `/checkout/card` | Public | Server-rendered Stripe Elements card checkout page (not a JSON API route) |
 
 ### Admin
 | Method | Endpoint | Access | Description |
@@ -605,9 +625,19 @@ Sequelize `sync({ alter: false })` runs on every server start and will create an
 - If the list itself is fine but only a couple of images are blank, check that the specific screen prefixes `vendor.image` / `item.image` with `API_BASE_URL` — it's a relative path (`/uploads/...`), not a full URL. All consumer/vendor screens should build the URL the same way (see `HomeScreen.js` or `VendorDetailScreen.js`).
 - Vendor cover/menu-item uploads can fail silently on web if converting the picked image to a Blob fails — the save still reports "Success" without the image attached (see Changelog `[1.2.1]`, Known Gap). If a fresh upload doesn't show up, just try again.
 
+### Backend crashes on start with `Cannot find module 'sharp'`
+- Run `npm install` inside `CampusBite_Backend-main/` — `sharp` (used for vendor image processing) is a declared dependency; a stale `node_modules` from before it was added to `package.json` will be missing it.
+
+### Stripe checkout page is blank or Stripe.js fails to load
+- Check the browser console for a Content-Security-Policy violation. The `/checkout/card` route sets its own CSP header permitting `https://js.stripe.com`; if `helmet()`'s global config changed, that route-scoped override may need to be re-applied.
+
+### Stripe card form says "Your postal code is incomplete"
+- Shouldn't happen — the checkout page hides the postal code field (`hidePostalCode: true`) since this app targets Kenya. If you see this, the Stripe Elements config in `checkout.routes.js` has regressed.
+
 ### A confirmation button does nothing on web (no dialog, no network request)
 - React Native's `Alert.alert(title, message, [button, button])` — i.e. with **more than one button** — does not render on web. Tapping the triggering button silently no-ops: no dialog appears, no API call fires. This has bitten this codebase multiple times (photo upload dialog in `[1.1.0]`; vendor "Cancel Order"/"Mark as Preparing" and the food courier's "Confirm Cash Received" in `[1.4.0]`).
 - Fix pattern: branch on `Platform.OS === 'web'` and use the browser's native `window.confirm(message)` there instead, keeping `Alert.alert` for native iOS/Android (see `VendorOrderDetailScreen.js` or `RiderOrderDetailScreen.js` for the pattern). A single-button `Alert.alert` (just showing a message, no branching) is unaffected.
+- This bug has resurfaced more than once from otherwise-correct-looking fixes (see Changelog `[1.5.0]` — the Vendor Dashboard's Decline button regressed this way while fixing an unrelated stub). Grep for `Alert.alert(` calls with a button array before assuming an existing one works cross-platform.
 - If you add a new confirm-before-action button, test it on web specifically — it'll look identical to a working button until clicked.
 
 ---

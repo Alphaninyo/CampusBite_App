@@ -23,6 +23,7 @@ For detailed instructions, see [QUICK_START.md](./QUICK_START.md)
 - **🛒 Shopping Cart** - Add/remove items with real-time updates
 - **📋 Order Management** - Track order history and status
 - **💳 M-Pesa STK Push** - Seamless mobile payments via Safaricom Daraja API
+- **💳 Card Payments (Stripe)** - Real Stripe test-mode card checkout via a secure hosted payment page; dev-mode simulation when live keys aren't configured
 - **👤 User Profile** - Account management with photo upload for all roles
 - **🔔 Push Notifications** - Order updates delivered via Expo push notifications; vendor bell icon shows live unread count badge
 - **🔐 Security** - Two-Factor Authentication (2FA) and password management
@@ -74,6 +75,33 @@ CampusBite integrates with Safaricom's Daraja API for seamless mobile payments v
 - **Wrong credentials error**: Verify MPESA_PASSKEY is the STK Push passkey, not Security Credential
 - **No STK Push received**: Check phone number format and ensure backend logs show successful initiation
 - **Callback failures**: Verify ngrok tunnel is running and callback URL is accessible
+
+---
+
+## 💳 **Card Payment Integration (Stripe)**
+
+CampusBite integrates with Stripe for debit/credit card checkout, using the same "pay first, then create the order" pattern as M-Pesa.
+
+### **Payment Flow**
+1. **Consumer selects Debit/Credit Card** as the payment method at checkout
+2. **Backend creates a Stripe `PaymentIntent`** and returns a `client_secret`
+3. **A secure checkout page opens** (`GET /checkout/card`) with Stripe Elements — card details are entered there, never seen by the CampusBite backend directly
+4. **Backend re-verifies the payment with Stripe's API** before creating the order (the client's confirmation is never trusted alone)
+5. **Order confirmation** displayed upon successful payment
+
+### **Setup Requirements**
+- Backend needs `STRIPE_SECRET_KEY` and `STRIPE_PUBLISHABLE_KEY` in `.env` (see `.env.example`)
+- Leave both as their placeholder values to run in **dev/simulation mode** — a "Simulate Card Payment" button appears instead of a real Stripe form, useful for testing without any Stripe account
+- For real test-mode charges, sign up for a free Stripe account and use its test-mode keys (`sk_test_...` / `pk_test_...`) — no code changes needed
+
+### **Test Card (Stripe test mode)**
+- Card number: `4242 4242 4242 4242`
+- Any future expiry date, any 3-digit CVC
+- No real charge is ever made in test mode
+
+### **Troubleshooting**
+- **"Your postal code is incomplete"**: Not expected — the checkout page hides the postal code field since this is a Kenya-focused app. If you see this, the Stripe Elements config on `checkout.routes.js` may have regressed.
+- **Blank/broken checkout page**: Usually a Content-Security-Policy issue if `helmet()` defaults were changed — the `/checkout/card` route needs its own CSP override permitting `https://js.stripe.com`.
 
 ---
 
@@ -129,6 +157,7 @@ CampusBite integrates with Safaricom's Daraja API for seamless mobile payments v
 - **🗑️ Remove Items** - Delete from cart
 - **🧾 Checkout** - Proceed to payment
 - **💳 M-Pesa Payment** - STK Push integration for seamless mobile payments
+- **💳 Card Payment** - Real Stripe test-mode checkout on a secure hosted page (dev-mode simulation available)
 
 ### **👤 Profile Screen**
 - **📊 User Stats** - Total orders, favorite vendor, total spent
@@ -408,6 +437,9 @@ npm install
 - Restart Expo Go app
 - Ensure same network connection
 - Clear Expo Go cache
+
+### **Confirmation dialogs not responding on web**
+- React Native's `Alert.alert(title, message, [buttonA, buttonB])` does not render on web — tapping the action does nothing, with no error and no dialog. If a confirm/cancel-style button silently fails on web, check whether it uses a multi-button `Alert.alert`; the fix is to branch on `Platform.OS === 'web'` and use the browser's native `window.confirm()` there instead. See `AGENTS.md` for the full pattern.
 
 ---
 

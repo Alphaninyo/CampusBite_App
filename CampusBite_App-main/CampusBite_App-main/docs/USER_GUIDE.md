@@ -508,24 +508,20 @@ A: Go to Orders tab to view all platform orders,
 ### **Payment Methods**
 ```javascript
 // Supported Payment Options
-💳 Credit/Debit Cards
-  - Visa, Mastercard, American Express
-  - Save cards for future use
-  - Secure payment processing
+📱 M-Pesa
+  - STK Push sent straight to your phone
+  - Enter your M-Pesa PIN to authorize
+  - Powered by Safaricom's Daraja API
 
-📱 Mobile Payments
-  - Apple Pay (iOS)
-  - Google Pay (Android)
-  - Samsung Pay
+💳 Debit/Credit Card
+  - Visa, Mastercard, and other cards supported via Stripe
+  - You enter your card on a secure Stripe checkout page —
+    CampusBite never sees or stores your card number
+  - Test mode: use 4242 4242 4242 4242, any future expiry, any CVC
+    (no real charge is made)
 
 💵 Cash on Delivery
-  - Pay when order arrives
-  - Available for select vendors
-
-🎫 Campus Meal Plans
-  - Use campus meal credits
-  - Student dining plans
-  - Campus card integration
+  - Pay the food courier when your order arrives
 ```
 
 ### **Checkout Process**
@@ -539,12 +535,13 @@ A: Go to Orders tab to view all platform orders,
 2. 📍 Delivery Information
    - Select delivery address
    - Add delivery instructions
-   - Choose delivery time
 
 3. 💳 Payment Method
-   - Select payment option
-   - Enter payment details
-   - Add tip for driver
+   - Select M-Pesa, Card, or Cash
+   - M-Pesa: confirm the STK Push prompt on your phone
+   - Card: tap "Enter Card Details" to open the secure Stripe
+     checkout page, enter your card, and submit
+   - Cash: no further action — pay on delivery
 
 4. ✅ Review Order
    - Confirm all details
@@ -552,6 +549,8 @@ A: Go to Orders tab to view all platform orders,
    - Place order
 
 5. 🎉 Order Confirmation
+   - Order is created once payment is confirmed (M-Pesa/card)
+     or immediately for cash
    - Receive order number
    - Track order status
    - Get delivery updates

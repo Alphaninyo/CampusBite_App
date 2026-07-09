@@ -1,23 +1,41 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, ActivityIndicator, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, ActivityIndicator, TouchableOpacity, StyleSheet, Alert, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
-import { COLORS } from '../../constants';
+import { COLORS, API_BASE_URL } from '../../constants';
 import useCartStore from '../../stores/cartStore';
+import useAuthStore from '../../stores/authStore';
 
 export default function PaymentStatusScreen({ route, navigation }) {
   const {
     checkoutRequestId,
-    initialStatus,   // 'confirmed' for card — skips polling
+    initialStatus,   // 'confirmed' for cash — skips polling
     orderId: initialOrderId,
     paymentMethod,
-    devMode = false, // true when M-Pesa credentials are placeholder
+    devMode = false,      // true when M-Pesa/Stripe credentials are placeholder
+    paymentId,            // card only — used to build the Stripe checkout URL
+    clientSecret,          // card only
+    publishableKey,        // card only
+    amount,                // card only — shown on the checkout page
   } = route.params;
 
   const [status,      setStatus]      = useState(initialStatus || 'pending');
   const [orderId,     setOrderId]     = useState(initialOrderId || null);
   const [simulating,  setSimulating]  = useState(false);
   const intervalRef = useRef(null);
+  const isCardMethod = paymentMethod === 'card';
+
+  const openCardCheckout = () => {
+    const token = useAuthStore.getState().token;
+    const params = new URLSearchParams({
+      client_secret:   clientSecret,
+      publishable_key: publishableKey,
+      payment_id:      paymentId,
+      amount:          String(amount || ''),
+      token,
+    });
+    Linking.openURL(`${API_BASE_URL}/checkout/card?${params.toString()}`);
+  };
 
   useEffect(() => {
     // Cash / card orders are confirmed immediately — clear cart and stop
@@ -101,7 +119,7 @@ export default function PaymentStatusScreen({ route, navigation }) {
           {isCash
             ? 'Your order is confirmed. Pay the rider in cash when your food arrives.'
             : isCard
-            ? 'Your order is confirmed. Card payment will be collected on delivery.'
+            ? 'Your card payment was successful and your order is confirmed.'
             : 'Your order has been placed and is being prepared.'}
         </Text>
         <TouchableOpacity style={styles.button} onPress={goToOrder}>
@@ -141,10 +159,14 @@ export default function PaymentStatusScreen({ route, navigation }) {
       ) : null}
 
       <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: devMode ? 16 : 0 }} />
-      <Text style={styles.title}>{devMode ? 'Order Ready to Confirm' : 'Waiting for M-Pesa...'}</Text>
+      <Text style={styles.title}>
+        {devMode ? 'Order Ready to Confirm' : isCardMethod ? 'Complete Card Payment' : 'Waiting for M-Pesa...'}
+      </Text>
       <Text style={styles.subtitle}>
         {devMode
-          ? 'No M-Pesa credentials configured. Tap the button below to simulate a successful payment.'
+          ? `No ${isCardMethod ? 'Stripe' : 'M-Pesa'} credentials configured. Tap the button below to simulate a successful payment.`
+          : isCardMethod
+          ? 'Tap below to enter your card details on a secure Stripe checkout page.'
           : 'Enter your PIN on your phone to confirm payment.'}
       </Text>
 
@@ -158,8 +180,13 @@ export default function PaymentStatusScreen({ route, navigation }) {
             ? <ActivityIndicator color={COLORS.card} size="small" />
             : <>
                 <Ionicons name="checkmark-circle-outline" size={20} color={COLORS.card} />
-                <Text style={styles.simulateBtnText}>Simulate M-Pesa Payment</Text>
+                <Text style={styles.simulateBtnText}>Simulate {isCardMethod ? 'Card' : 'M-Pesa'} Payment</Text>
               </>}
+        </TouchableOpacity>
+      ) : isCardMethod ? (
+        <TouchableOpacity style={styles.simulateBtn} onPress={openCardCheckout}>
+          <Ionicons name="card-outline" size={20} color={COLORS.card} />
+          <Text style={styles.simulateBtnText}>Enter Card Details</Text>
         </TouchableOpacity>
       ) : (
         <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel}>

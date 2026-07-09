@@ -190,6 +190,49 @@ ALTER TABLE vendors ADD COLUMN IF NOT EXISTS kra_pin     VARCHAR(20);
 
 ---
 
+## [1.5.0] - 2026-07-10
+
+### 🎉 New Features
+- **Real Stripe card payments (test mode)** — Debit/credit card checkout now runs through an actual Stripe integration instead of a cosmetic form. The Cart screen's card option no longer collects raw card digits itself; it explains that card entry happens on a secure Stripe-hosted page next. On checkout, the backend creates a real `PaymentIntent` via the Stripe API (or a `DEV-CARD-...` simulated one if no live keys are configured, mirroring the existing M-Pesa dev-mode pattern) and returns a `client_secret`. The Payment Status screen opens a new server-rendered checkout page (`GET /checkout/card`) embedding Stripe.js + Stripe Elements, where the shopper enters their card. In dev/simulation mode a "Simulate Card Payment" button appears instead, reusing the same generic dev-confirm endpoint already used by M-Pesa.
+- **Server-verified card payment confirmation** — New `POST /api/orders/confirm-card-payment/:paymentId` endpoint re-checks the PaymentIntent's status directly with Stripe's API (`status === 'succeeded'`) before creating the order — the client's word alone is never trusted. Orders are still only created after payment is confirmed, consistent with the existing M-Pesa/cash flow design.
+
+### 🔧 Improvements
+- **Card flow split out from cash flow** — `order.controller.js`'s combined "create order immediately" branch for card/cash was split into a dedicated Stripe branch (creates a `pending` Payment row with a `cart_data` snapshot, returns `client_secret` / `publishable_key`, `immediate: false`) and an unchanged cash branch (still creates the order immediately). No changes were needed to the existing payment-status polling or cancel endpoints — both were already payment-method-agnostic.
+- **Payment Status screen is now payment-method aware** — Button labels and success messages adapt to whether the order was paid by card or M-Pesa (e.g. "Simulate Card Payment" vs "Simulate M-Pesa Payment"), and a live-mode "Enter Card Details" button opens the Stripe checkout page via `Linking.openURL`. The old placeholder success message ("Card payment will be collected on delivery") was replaced with an accurate one.
+
+### 🐛 Bug Fixes
+- **Vendor "Decline" button stopped working again** — Fixing the Dashboard's original no-op Decline stub (see `[1.4.0]`) had reintroduced the same multi-button `Alert.alert`-is-broken-on-web bug it was supposed to avoid, and the same bug was independently present — and previously unnoticed — in the Orders tab's own Decline button. Both `VendorDashboardScreen.js` and `VendorOrdersScreen.js` now use `window.confirm()` on web, matching the established pattern (see `AGENTS.md`).
+- **"Orders in Progress" cards overlapping on the Vendor Dashboard** — The customer name/order-id text had no truncation and its flex container was missing `minWidth: 0`, so on longer names it visually overlapped the "Ready" button and "Waiting pick-up" label. Fixed with `numberOfLines`/`ellipsizeMode` on the text, `minWidth: 0` on the flex row, and `flexShrink: 0` on the button/label so they no longer get squeezed.
+- **Backend crashed on restart with `Cannot find module 'sharp'`** — `sharp` (used for image processing in `vendor.controller.js`) was never declared in `package.json`; it had only been present in `node_modules` from an earlier untracked install, and installing the `stripe` package incidentally pruned it. Added `sharp` as a proper dependency.
+- **Stripe checkout page blocked by Content Security Policy** — The app-wide `helmet()` CSP blocked both `https://js.stripe.com` and the checkout page's own inline script. Fixed with a CSP override scoped to just the `/checkout/card` route (every other route is a JSON API where CSP doesn't apply).
+- **Stripe card form demanded a postal code** — Kenya doesn't use the postal-code field the default Stripe card Element expects, causing a confusing "incomplete" validation error. Fixed with `hidePostalCode: true` on the Element.
+
+### 🔒 Security Notes
+- The `/checkout/card` page is intentionally public (no JWT middleware) since it must be reachable from a plain browser tab; the JWT is instead passed through as a URL query parameter so the page's own confirmation request can authenticate. Acceptable for the current test/dev deployment; revisit before a public production launch.
+- Real Stripe keys live only in the backend's `.env` (confirmed `.gitignore`d) — never committed, never sent to the frontend except the publishable key.
+
+### 📁 New files
+| File | Purpose |
+|---|---|
+| `CampusBite_Backend-main/src/services/stripe.service.js` | Thin wrapper around the Stripe SDK (dev-mode detection, PaymentIntent create/retrieve) |
+| `CampusBite_Backend-main/src/routes/checkout.routes.js` | Public `GET /checkout/card` — Stripe Elements checkout page |
+
+### 🔄 Modified files (key)
+| File | What changed |
+|---|---|
+| `CampusBite_Backend-main/src/controllers/order.controller.js` | Split card/cash flows, added `confirmCardPayment` |
+| `CampusBite_Backend-main/src/routes/order.routes.js` | New `confirm-card-payment/:paymentId` route |
+| `CampusBite_Backend-main/src/app.js` | Mounted `/checkout` routes |
+| `CampusBite_Backend-main/.env.example` | Added `STRIPE_SECRET_KEY` / `STRIPE_PUBLISHABLE_KEY` placeholders |
+| `CampusBite_Backend-main/package.json` | Added `stripe` and `sharp` dependencies |
+| `src/api/index.js` | Added `orders.confirmCardPayment()` |
+| `src/screens/consumer/CartScreen.js` | Replaced raw card inputs with a Stripe explainer panel |
+| `src/screens/consumer/PaymentStatusScreen.js` | Method-aware labels, "Enter Card Details" button, Stripe checkout hand-off |
+| `src/screens/vendor/VendorDashboardScreen.js` | Decline button web-confirm fix, Orders-in-Progress layout fix |
+| `src/screens/vendor/VendorOrdersScreen.js` | Decline button web-confirm fix |
+
+---
+
 ## [Unreleased] - Development
 
 ### 🚀 Upcoming Features

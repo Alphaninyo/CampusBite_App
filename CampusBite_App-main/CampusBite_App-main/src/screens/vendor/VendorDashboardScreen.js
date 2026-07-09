@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Switch, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Switch, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../api';
@@ -106,20 +106,23 @@ export default function VendorDashboardScreen({ navigation }) {
   };
 
   const handleDeclineOrder = (orderId) => {
+    const doDecline = async () => {
+      try {
+        await api.orders.cancel(orderId);
+        fetchData();
+      } catch (err) {
+        console.error('Decline error:', err.message);
+      }
+    };
+
+    // Alert.alert with multiple buttons doesn't render on web — see AGENTS.md.
+    if (Platform.OS === 'web') {
+      if (window.confirm('Are you sure you want to decline this order?')) doDecline();
+      return;
+    }
     Alert.alert('Decline Order', 'Are you sure you want to decline this order?', [
       { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Decline',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await api.orders.cancel(orderId);
-            fetchData();
-          } catch (err) {
-            console.error('Decline error:', err.message);
-          }
-        },
-      },
+      { text: 'Decline', style: 'destructive', onPress: doDecline },
     ]);
   };
 
@@ -296,25 +299,25 @@ export default function VendorDashboardScreen({ navigation }) {
                     color={order.status === 'Ready' ? COLORS.success : COLORS.primary} 
                   />
                 </View>
-                <View>
+                <View style={styles.progressTextWrap}>
                   <Text style={[styles.progressStatus, { color: order.status === 'Ready' ? COLORS.success : COLORS.primary }]}>
                     {order.status.toUpperCase()}
                   </Text>
-                  <Text style={styles.progressOrderId}>
+                  <Text style={styles.progressOrderId} numberOfLines={1} ellipsizeMode="tail">
                     #CB-{order.id.slice(0, 4).toUpperCase()} • {order.consumer?.name || 'Customer'}
                   </Text>
                 </View>
               </View>
               {order.status === 'Preparing' ? (
-                <TouchableOpacity 
-                  style={styles.readyBtn} 
+                <TouchableOpacity
+                  style={styles.readyBtn}
                   onPress={() => handleMarkReady(order.id)}
                 >
                   <Text style={styles.readyBtnText}>Ready</Text>
                   <Ionicons name="checkmark-circle" size={14} color={COLORS.white} />
                 </TouchableOpacity>
               ) : (
-                <Text style={styles.waitingText}>Waiting pick-up</Text>
+                <Text style={styles.waitingText} numberOfLines={1}>Waiting pick-up</Text>
               )}
             </View>
           ))
@@ -528,7 +531,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.borderWarm,
   },
-  progressLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  progressLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, minWidth: 0 },
   progressIcon: {
     width: 40,
     height: 40,
@@ -536,7 +539,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+    flexShrink: 0,
   },
+  progressTextWrap: { flex: 1, minWidth: 0 },
   progressStatus: { fontSize: 11, fontWeight: 'bold', marginBottom: 2 },
   progressOrderId: { fontSize: 13, color: COLORS.text },
   readyBtn: {
@@ -547,9 +552,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    flexShrink: 0,
+    marginLeft: 10,
   },
   readyBtnText: { color: COLORS.white, fontWeight: 'bold', fontSize: 12 },
-  waitingText: { color: COLORS.gray, fontSize: 12, maxWidth: 80, textAlign: 'right' },
+  waitingText: { color: COLORS.gray, fontSize: 12, flexShrink: 0, marginLeft: 10 },
   
   // Empty states
   emptySection: { 

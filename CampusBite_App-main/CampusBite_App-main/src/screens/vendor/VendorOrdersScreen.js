@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
 import { COLORS, STATUS_COLORS } from '../../constants';
@@ -44,21 +44,24 @@ export default function VendorOrdersScreen({ navigation }) {
     }
   };
 
-  const handleDecline = async (orderId) => {
+  const handleDecline = (orderId) => {
+    const doDecline = async () => {
+      try {
+        await api.orders.cancel(orderId);
+        fetchOrders();
+      } catch (err) {
+        console.error('Decline error:', err.message);
+      }
+    };
+
+    // Alert.alert with multiple buttons doesn't render on web — see AGENTS.md.
+    if (Platform.OS === 'web') {
+      if (window.confirm('Are you sure you want to decline this order?')) doDecline();
+      return;
+    }
     Alert.alert('Decline Order', 'Are you sure you want to decline this order?', [
       { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Decline',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await api.orders.cancel(orderId);
-            fetchOrders();
-          } catch (err) {
-            console.error('Decline error:', err.message);
-          }
-        }
-      }
+      { text: 'Decline', style: 'destructive', onPress: doDecline },
     ]);
   };
 

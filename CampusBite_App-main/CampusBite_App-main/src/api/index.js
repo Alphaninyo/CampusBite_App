@@ -81,6 +81,7 @@ export const api = {
   orders: {
     initiate:            (data)   => client.post('/orders/initiate', data),
     devConfirm:          (id)     => client.post(`/orders/dev-confirm/${id}`),
+    confirmCardPayment:  (paymentId) => client.post(`/orders/confirm-card-payment/${paymentId}`),
     getMyOrders:         ()       => client.get('/orders'),
     getById:             (id)     => client.get(`/orders/${id}`),
     getVendorOrders:     ()       => client.get('/orders/vendor'),

@@ -54,10 +54,6 @@ export default function CartScreen({ navigation }) {
   const [showConfirm,         setShowConfirm]         = useState(false);
   const [showMapPicker,       setShowMapPicker]       = useState(false);
   const [mpesaPhone,          setMpesaPhone]          = useState(() => useAuthStore.getState().user?.phone || '');
-  const [cardNumber,          setCardNumber]          = useState('');
-  const [cardExpiry,          setCardExpiry]          = useState('');
-  const [cardCvv,             setCardCvv]             = useState('');
-  const [cardName,            setCardName]            = useState('');
 
   useFocusEffect(
     useCallback(() => {
@@ -200,6 +196,10 @@ export default function CartScreen({ navigation }) {
           checkoutRequestId: data.checkout_request_id,
           paymentMethod,
           devMode:           data.dev_mode || false,
+          paymentId:         data.payment_id,
+          clientSecret:      data.client_secret,
+          publishableKey:    data.publishable_key,
+          amount:            data.summary?.total_amount,
         });
       }
     } catch (err) {
@@ -425,67 +425,15 @@ export default function CartScreen({ navigation }) {
           {/* ── Card detail ── */}
           {paymentMethod === 'card' && (
             <View style={styles.paymentDetail}>
-              <Text style={styles.paymentDetailLabel}>Card Number</Text>
-              <View style={styles.paymentDetailInputWrap}>
-                <Ionicons name="card-outline" size={18} color={COLORS.primary} />
-                <TextInput
-                  style={styles.paymentDetailInput}
-                  value={cardNumber}
-                  onChangeText={(t) => {
-                    const d = t.replace(/\D/g, '').slice(0, 16);
-                    setCardNumber(d.replace(/(.{4})/g, '$1 ').trim());
-                  }}
-                  placeholder="0000 0000 0000 0000"
-                  placeholderTextColor={COLORS.muted}
-                  keyboardType="number-pad"
-                  maxLength={19}
-                />
-              </View>
-              <View style={styles.paymentDetailRow}>
-                <View style={[styles.paymentDetailInputWrap, { flex: 1 }]}>
-                  <Ionicons name="calendar-outline" size={16} color={COLORS.primary} />
-                  <TextInput
-                    style={styles.paymentDetailInput}
-                    value={cardExpiry}
-                    onChangeText={(t) => {
-                      const d = t.replace(/\D/g, '').slice(0, 4);
-                      setCardExpiry(d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d);
-                    }}
-                    placeholder="MM/YY"
-                    placeholderTextColor={COLORS.muted}
-                    keyboardType="number-pad"
-                    maxLength={5}
-                  />
-                </View>
-                <View style={[styles.paymentDetailInputWrap, { flex: 1 }]}>
-                  <Ionicons name="lock-closed-outline" size={16} color={COLORS.primary} />
-                  <TextInput
-                    style={styles.paymentDetailInput}
-                    value={cardCvv}
-                    onChangeText={(t) => setCardCvv(t.replace(/\D/g, '').slice(0, 3))}
-                    placeholder="CVV"
-                    placeholderTextColor={COLORS.muted}
-                    keyboardType="number-pad"
-                    maxLength={3}
-                    secureTextEntry
-                  />
-                </View>
-              </View>
-              <Text style={styles.paymentDetailLabel}>Cardholder Name</Text>
-              <View style={styles.paymentDetailInputWrap}>
-                <Ionicons name="person-outline" size={18} color={COLORS.primary} />
-                <TextInput
-                  style={styles.paymentDetailInput}
-                  value={cardName}
-                  onChangeText={setCardName}
-                  placeholder="Name on card"
-                  placeholderTextColor={COLORS.muted}
-                  autoCapitalize="words"
-                />
+              <View style={styles.cardInfoRow}>
+                <Ionicons name="shield-checkmark-outline" size={18} color={COLORS.primary} />
+                <Text style={styles.cardInfoText}>
+                  You'll enter your card details on a secure Stripe checkout page after you place the order — CampusBite never sees or stores your card number.
+                </Text>
               </View>
               <View style={styles.testModeBadge}>
                 <Ionicons name="information-circle-outline" size={14} color={COLORS.warningText} />
-                <Text style={styles.testModeBadgeText}>Test mode — no real charge will be made</Text>
+                <Text style={styles.testModeBadgeText}>Test mode — use card 4242 4242 4242 4242, no real charge will be made</Text>
               </View>
             </View>
           )}
@@ -863,6 +811,8 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: COLORS.warningBorder,
   },
   testModeBadgeText: { fontSize: 12, color: COLORS.warningText, fontWeight: '500' },
+  cardInfoRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 10 },
+  cardInfoText: { flex: 1, fontSize: 13, color: COLORS.gray, lineHeight: 18 },
 
   suggestionCard: {
     width: 100, marginRight: 10, alignItems: 'center', borderRadius: 12, padding: 8,
