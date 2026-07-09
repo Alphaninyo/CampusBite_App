@@ -2,9 +2,18 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
-import { COLORS } from '../../constants';
+import { COLORS, STATUS_COLORS } from '../../constants';
 
 const TABS = ['Incoming', 'In Progress', 'Completed'];
+
+const STATUS_ICONS = {
+  Received:    'time-outline',
+  Preparing:   'restaurant-outline',
+  Ready:       'checkmark-circle-outline',
+  Collected:   'bicycle-outline',
+  'In Transit':'car-outline',
+  Delivered:   'checkmark-done-circle-outline',
+};
 
 export default function VendorOrdersScreen({ navigation }) {
   const [allOrders, setAllOrders] = useState([]);
@@ -92,7 +101,10 @@ export default function VendorOrdersScreen({ navigation }) {
     }));
   };
 
-  const incomingCount = allOrders.filter(o => o.status === 'Received').length;
+  const incomingCount   = allOrders.filter(o => o.status === 'Received').length;
+  const inProgressCount = allOrders.filter(o => o.status === 'Preparing' || o.status === 'Ready').length;
+  const completedCount  = allOrders.filter(o => o.status === 'Delivered' || o.status === 'Collected').length;
+  const TAB_COUNTS = { Incoming: incomingCount, 'In Progress': inProgressCount, Completed: completedCount };
   const filteredOrders = getFilteredOrders();
 
   if (loading) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
@@ -113,17 +125,17 @@ export default function VendorOrdersScreen({ navigation }) {
       {/* Tabs */}
       <View style={styles.tabRow}>
         {TABS.map(tab => (
-          <TouchableOpacity 
-            key={tab} 
+          <TouchableOpacity
+            key={tab}
             style={[styles.tab, activeTab === tab && styles.tabActive]}
             onPress={() => setActiveTab(tab)}
           >
             <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
               {tab}
             </Text>
-            {tab === 'Incoming' && incomingCount > 0 && (
+            {TAB_COUNTS[tab] > 0 && (
               <View style={styles.tabBadge}>
-                <Text style={styles.tabBadgeText}>{incomingCount}</Text>
+                <Text style={styles.tabBadgeText}>{TAB_COUNTS[tab]}</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -145,16 +157,27 @@ export default function VendorOrdersScreen({ navigation }) {
           </View>
         ) : (
           filteredOrders.map(order => (
-            <View key={order.id} style={styles.orderCard}>
+            <TouchableOpacity
+              key={order.id}
+              style={styles.orderCard}
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate('VendorOrderDetail', { orderId: order.id })}
+            >
               {/* Order Header */}
               <View style={styles.orderHeader}>
                 <View>
                   <Text style={styles.orderNumber}>ORDER #{order.id.slice(0, 4).toUpperCase()}</Text>
                   <Text style={styles.customerName}>{order.consumer?.name || 'Customer'}</Text>
                 </View>
-                <View style={styles.timeRow}>
-                  <Ionicons name="time-outline" size={14} color={COLORS.primary} />
-                  <Text style={styles.timeText}>{getTimeAgo(order.created_at)}</Text>
+                <View style={{ alignItems: 'flex-end', gap: 6 }}>
+                  <View style={styles.timeRow}>
+                    <Ionicons name="time-outline" size={14} color={COLORS.primary} />
+                    <Text style={styles.timeText}>{getTimeAgo(order.created_at)}</Text>
+                  </View>
+                  <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[order.status] || COLORS.gray }]}>
+                    <Ionicons name={STATUS_ICONS[order.status] || 'help-circle-outline'} size={11} color={COLORS.white} />
+                    <Text style={styles.statusBadgeText}>{order.status}</Text>
+                  </View>
                 </View>
               </View>
 
@@ -205,7 +228,7 @@ export default function VendorOrdersScreen({ navigation }) {
                   <Text style={styles.statusBannerText}>Ready for pick-up</Text>
                 </View>
               )}
-            </View>
+            </TouchableOpacity>
           ))
         )}
         <View style={{ height: 20 }} />
@@ -282,6 +305,11 @@ const styles = StyleSheet.create({
   customerName: { fontSize: 16, fontWeight: 'bold', color: COLORS.text, marginTop: 2 },
   timeRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   timeText: { fontSize: 12, color: COLORS.primary, fontWeight: '500' },
+  statusBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10,
+  },
+  statusBadgeText: { color: COLORS.white, fontSize: 10, fontWeight: 'bold' },
 
   divider: { height: 1, backgroundColor: COLORS.borderWarm, marginVertical: 12 },
 

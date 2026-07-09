@@ -10,6 +10,14 @@ import { COLORS, STATUS_COLORS } from '../../constants';
 
 const TABS = ['All', 'Pending', 'In Progress', 'Completed', 'Cancelled'];
 
+const ISSUE_REASON_LABELS = {
+  not_delivered: 'Order not delivered',
+  wrong_items:   'Wrong items',
+  missing_items: 'Missing items',
+  poor_quality:  'Poor quality',
+  other:         'Something else',
+};
+
 export default function AdminOrdersScreen() {
   const [activeTab, setActiveTab] = useState('All');
   const [orders, setOrders] = useState([]);
@@ -23,6 +31,7 @@ export default function AdminOrdersScreen() {
   const [inProgressCount, setInProgressCount] = useState(0);
   const [completedCount, setCompletedCount] = useState(0);
   const [cancelledCount, setCancelledCount] = useState(0);
+  const [resolvingIssue, setResolvingIssue] = useState(false);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -88,6 +97,24 @@ export default function AdminOrdersScreen() {
   const openOrderDetail = (order) => {
     setSelectedOrder(order);
     setShowDetailModal(true);
+  };
+
+  const handleResolveIssue = async () => {
+    if (!selectedOrder) return;
+    setResolvingIssue(true);
+    try {
+      const { data } = await api.admin.resolveOrderIssue(selectedOrder.id);
+      // The resolve-issue response is a bare Order row with no consumer/vendor/rider
+      // includes — merge in just the resolved timestamp so the detail view keeps
+      // the joined data already loaded from the orders list.
+      const resolvedAt = data.order.issue_resolved_at;
+      setSelectedOrder(prev => ({ ...prev, issue_resolved_at: resolvedAt }));
+      setOrders(prev => prev.map(o => o.id === selectedOrder.id ? { ...o, issue_resolved_at: resolvedAt } : o));
+    } catch (err) {
+      Alert.alert('Error', err?.response?.data?.message || err.message || 'Could not resolve the issue.');
+    } finally {
+      setResolvingIssue(false);
+    }
   };
 
   if (loading) {
@@ -169,10 +196,18 @@ export default function AdminOrdersScreen() {
                   <View style={styles.orderIdContainer}>
                     <Text style={styles.orderId}>#{order.id?.slice(0, 8) || 'N/A'}</Text>
                   </View>
-                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) + '20' }]}>
-                    <Text style={[styles.statusBadgeText, { color: getStatusColor(order.status) }]}>
-                      {getStatusLabel(order.status)}
-                    </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    {order.has_issue && !order.issue_resolved_at && (
+                      <View style={styles.issueFlag}>
+                        <Ionicons name="flag" size={11} color={COLORS.danger} />
+                        <Text style={styles.issueFlagText}>Issue</Text>
+                      </View>
+                    )}
+                    <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) + '20' }]}>
+                      <Text style={[styles.statusBadgeText, { color: getStatusColor(order.status) }]}>
+                        {getStatusLabel(order.status)}
+                      </Text>
+                    </View>
                   </View>
                 </View>
                 
@@ -267,6 +302,46 @@ export default function AdminOrdersScreen() {
                   <Text style={styles.detailValue}>{selectedOrder?.delivery_address || 'N/A'}</Text>
                 </View>
               </View>
+
+              {selectedOrder?.has_issue && (
+                <View style={[styles.detailSection, styles.issueSection]}>
+                  <View style={styles.issueSectionHeader}>
+                    <Ionicons name="flag" size={16} color={COLORS.danger} />
+                    <Text style={styles.detailSectionTitle}>Reported Issue</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Reason</Text>
+                    <Text style={styles.detailValue}>{ISSUE_REASON_LABELS[selectedOrder.issue_reason] || selectedOrder.issue_reason}</Text>
+                  </View>
+                  {selectedOrder.issue_note ? (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Note</Text>
+                      <Text style={[styles.detailValue, { flex: 1, textAlign: 'right' }]}>{selectedOrder.issue_note}</Text>
+                    </View>
+                  ) : null}
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Reported</Text>
+                    <Text style={styles.detailValue}>{selectedOrder.issue_reported_at ? new Date(selectedOrder.issue_reported_at).toLocaleString() : 'N/A'}</Text>
+                  </View>
+
+                  {selectedOrder.issue_resolved_at ? (
+                    <View style={styles.resolvedBadge}>
+                      <Ionicons name="checkmark-circle" size={16} color="#388E3C" />
+                      <Text style={styles.resolvedBadgeText}>Resolved on {new Date(selectedOrder.issue_resolved_at).toLocaleDateString()}</Text>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={[styles.resolveBtn, resolvingIssue && { opacity: 0.6 }]}
+                      onPress={handleResolveIssue}
+                      disabled={resolvingIssue}
+                    >
+                      {resolvingIssue
+                        ? <ActivityIndicator color={COLORS.white} size="small" />
+                        : <Text style={styles.resolveBtnText}>Mark as Resolved</Text>}
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
             </ScrollView>
           </View>
         </View>
@@ -493,4 +568,37 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.text,
   },
+
+  // Issue flag (order card)
+  issueFlag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: COLORS.danger + '15',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  issueFlagText: { fontSize: 10, fontWeight: '700', color: COLORS.danger },
+
+  // Issue section (order detail modal)
+  issueSection: {
+    backgroundColor: '#FEF2F2',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 0,
+  },
+  issueSectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+  resolvedBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: '#e8f5e9', borderRadius: 10,
+    paddingVertical: 10, paddingHorizontal: 12, marginTop: 10,
+    justifyContent: 'center',
+  },
+  resolvedBadgeText: { color: '#388E3C', fontWeight: '600', fontSize: 13 },
+  resolveBtn: {
+    marginTop: 10, backgroundColor: COLORS.danger,
+    borderRadius: 10, paddingVertical: 12, alignItems: 'center',
+  },
+  resolveBtnText: { color: COLORS.white, fontWeight: '700', fontSize: 14 },
 });

@@ -1,6 +1,7 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Switch } from 'react-native';
+import React, { useState, useCallback, useRef } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Switch, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../api';
 import { COLORS } from '../../constants';
 
@@ -67,11 +68,21 @@ export default function VendorDashboardScreen({ navigation }) {
     }
   }, []);
 
-  useEffect(() => {
-    fetchData();
-    pollRef.current = setInterval(fetchData, 30000);
-    return () => clearInterval(pollRef.current);
-  }, [fetchData]);
+  // Refetch every time the Home tab regains focus (e.g. right after marking an
+  // order ready from the Orders tab), not just once on mount — otherwise this
+  // screen shows stale data until the next 30s poll tick catches up.
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+      pollRef.current = setInterval(fetchData, 30000);
+      return () => {
+        if (pollRef.current) {
+          clearInterval(pollRef.current);
+          pollRef.current = null;
+        }
+      };
+    }, [fetchData])
+  );
 
   const toggleOpen = async () => {
     setToggling(true);
@@ -94,9 +105,22 @@ export default function VendorDashboardScreen({ navigation }) {
     }
   };
 
-  const handleDeclineOrder = async (orderId) => {
-    // For now, just refresh — could add a decline/cancel endpoint later
-    console.log('Decline order:', orderId);
+  const handleDeclineOrder = (orderId) => {
+    Alert.alert('Decline Order', 'Are you sure you want to decline this order?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Decline',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await api.orders.cancel(orderId);
+            fetchData();
+          } catch (err) {
+            console.error('Decline error:', err.message);
+          }
+        },
+      },
+    ]);
   };
 
   const handleMarkReady = async (orderId) => {
@@ -222,27 +246,32 @@ export default function VendorDashboardScreen({ navigation }) {
           </View>
         ) : (
           incomingOrders.map(order => (
-            <View key={order.id} style={styles.incomingCard}>
+            <TouchableOpacity
+              key={order.id}
+              style={styles.incomingCard}
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate('OrdersTab', { screen: 'VendorOrderDetail', params: { orderId: order.id } })}
+            >
               <View style={styles.incomingHeader}>
                 <Text style={styles.incomingOrderId}>#CB-{order.id.slice(0, 4).toUpperCase()}</Text>
                 <Text style={styles.incomingTime}>{getTimeAgo(order.created_at)}</Text>
               </View>
               <Text style={styles.incomingItems}>{getOrderItems(order)}</Text>
               <View style={styles.incomingActions}>
-                <TouchableOpacity 
-                  style={styles.acceptBtn} 
+                <TouchableOpacity
+                  style={styles.acceptBtn}
                   onPress={() => handleAcceptOrder(order.id)}
                 >
                   <Text style={styles.acceptBtnText}>Accept</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.declineBtn} 
+                <TouchableOpacity
+                  style={styles.declineBtn}
                   onPress={() => handleDeclineOrder(order.id)}
                 >
                   <Text style={styles.declineBtnText}>Decline</Text>
                 </TouchableOpacity>
               </View>
-            </View>
+            </TouchableOpacity>
           ))
         )}
 

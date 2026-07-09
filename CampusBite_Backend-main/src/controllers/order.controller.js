@@ -14,6 +14,8 @@ const TRANSITIONS = {
   'In Transit': { next: 'Delivered',  role: 'food_courier'  },
 };
 
+const ISSUE_REASONS = ['not_delivered', 'wrong_items', 'missing_items', 'poor_quality', 'other'];
+
 // ─── Internal Helpers ─────────────────────────────────────────────────────────
 
 /**
@@ -598,6 +600,45 @@ exports.cancelOrder = async (req, res) => {
   } catch (error) {
     await t.rollback();
     console.error('[ORDER] cancelOrder error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/**
+ * PATCH /api/orders/:id/report-issue
+ * Consumer only — flags a delivery problem on their own order for admin review.
+ */
+exports.reportIssue = async (req, res) => {
+  try {
+    const { reason, note } = req.body;
+    if (!ISSUE_REASONS.includes(reason)) {
+      return res.status(400).json({ success: false, message: 'Please select a valid issue reason.' });
+    }
+
+    const order = await Order.findByPk(req.params.id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found.' });
+    }
+    if (order.consumer_id !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'This order does not belong to you.' });
+    }
+    if (order.status === 'Cancelled') {
+      return res.status(400).json({ success: false, message: 'Cannot report an issue on a cancelled order.' });
+    }
+    if (order.has_issue) {
+      return res.status(400).json({ success: false, message: 'An issue has already been reported for this order.' });
+    }
+
+    await order.update({
+      has_issue: true,
+      issue_reason: reason,
+      issue_note: note || null,
+      issue_reported_at: new Date(),
+    });
+
+    res.status(200).json({ success: true, message: 'Issue reported. Our team will review it shortly.', order });
+  } catch (error) {
+    console.error('[ORDER] reportIssue error:', error);
     res.status(500).json({ success: false, message: 'Server error.' });
   }
 };

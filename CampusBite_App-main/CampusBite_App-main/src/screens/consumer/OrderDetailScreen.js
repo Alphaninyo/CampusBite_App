@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl, Modal, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../api';
@@ -7,6 +7,14 @@ import { COLORS, STATUS_COLORS } from '../../constants';
 import RiderMapView from '../../components/RiderMapView';
 
 const STEPS = ['Received', 'Preparing', 'Ready', 'Collected', 'In Transit', 'Delivered'];
+
+const ISSUE_REASONS = [
+  { key: 'not_delivered', label: 'Order not delivered' },
+  { key: 'wrong_items',   label: 'Wrong items' },
+  { key: 'missing_items', label: 'Missing items' },
+  { key: 'poor_quality',  label: 'Poor quality' },
+  { key: 'other',         label: 'Something else' },
+];
 
 const STEP_ICONS = {
   Received:    'hourglass-outline',
@@ -23,6 +31,10 @@ export default function OrderDetailScreen({ route, navigation }) {
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [hasReviewed, setHasReviewed] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [issueReason, setIssueReason]         = useState(null);
+  const [issueNote, setIssueNote]             = useState('');
+  const [reportingIssue, setReportingIssue]   = useState(false);
   const intervalRef = useRef(null);
 
   const checkReview = useCallback(async () => {
@@ -61,6 +73,26 @@ export default function OrderDetailScreen({ route, navigation }) {
     }, [fetchOrder])
   );
 
+  const submitIssueReport = async () => {
+    if (!issueReason) {
+      Alert.alert('Select a reason', 'Please choose what went wrong before submitting.');
+      return;
+    }
+    setReportingIssue(true);
+    try {
+      const { data } = await api.orders.reportIssue(orderId, { reason: issueReason, note: issueNote.trim() });
+      setOrder(data.order);
+      setShowReportModal(false);
+      setIssueReason(null);
+      setIssueNote('');
+      Alert.alert('Reported', 'Thanks — our team will review this and follow up.');
+    } catch (err) {
+      Alert.alert('Error', err?.response?.data?.message || err.message || 'Could not report the issue.');
+    } finally {
+      setReportingIssue(false);
+    }
+  };
+
   if (loading) return <View style={styles.loadingContainer}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
   if (!order) return (
     <View style={styles.loadingContainer}>
@@ -73,6 +105,7 @@ export default function OrderDetailScreen({ route, navigation }) {
   const subtotal = order.items?.reduce((sum, i) => sum + (parseFloat(i.unit_price) * i.quantity), 0) || 0;
 
   return (
+    <>
     <ScrollView
       style={styles.container}
       showsVerticalScrollIndicator={false}
@@ -88,8 +121,11 @@ export default function OrderDetailScreen({ route, navigation }) {
       <View style={styles.timelineCard}>
         <Text style={styles.timelineTitle}>Order Progress</Text>
         {STEPS.map((step, index) => {
-          const isPast = index < stepIndex;
-          const isCurrent = index === stepIndex;
+          // "Delivered" is the last step and also the terminal status — once the
+          // order reaches it, treat it as done rather than "current", otherwise
+          // it would show as permanently "in progress" and never tick over.
+          const isPast = index < stepIndex || (order.status === 'Delivered' && index === stepIndex);
+          const isCurrent = index === stepIndex && order.status !== 'Delivered';
           const isLast = index === STEPS.length - 1;
           return (
             <View key={step} style={styles.timelineRow}>
@@ -218,8 +254,82 @@ export default function OrderDetailScreen({ route, navigation }) {
         )
       )}
 
+      {/* Report a Problem */}
+      {order.status !== 'Cancelled' && (
+        order.has_issue ? (
+          <View style={[styles.issueBadge, order.issue_resolved_at && styles.issueBadgeResolved]}>
+            <Ionicons
+              name={order.issue_resolved_at ? 'checkmark-circle' : 'alert-circle'}
+              size={18}
+              color={order.issue_resolved_at ? '#388E3C' : COLORS.warning}
+            />
+            <Text style={[styles.issueBadgeText, order.issue_resolved_at && styles.issueBadgeTextResolved]}>
+              {order.issue_resolved_at ? 'Issue resolved' : "Issue reported — we're reviewing it"}
+            </Text>
+          </View>
+        ) : (
+          <TouchableOpacity style={styles.reportBtn} onPress={() => setShowReportModal(true)}>
+            <Ionicons name="flag-outline" size={16} color={COLORS.gray} />
+            <Text style={styles.reportBtnText}>Report a problem</Text>
+          </TouchableOpacity>
+        )
+      )}
+
       <View style={{ height: 30 }} />
     </ScrollView>
+
+    {/* Report a Problem Modal */}
+    <Modal visible={showReportModal} animationType="slide" transparent>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
+        <View style={styles.modalSheet}>
+          <View style={styles.modalHandle} />
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setShowReportModal(false)}>
+              <Ionicons name="close" size={24} color={COLORS.gray} />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Report a Problem</Text>
+            <View style={{ width: 24 }} />
+          </View>
+
+          <Text style={styles.modalLabel}>What went wrong?</Text>
+          <View style={styles.reasonList}>
+            {ISSUE_REASONS.map((r) => (
+              <TouchableOpacity
+                key={r.key}
+                style={[styles.reasonRow, issueReason === r.key && styles.reasonRowActive]}
+                onPress={() => setIssueReason(r.key)}
+              >
+                <View style={[styles.radioOuter, issueReason === r.key && styles.radioOuterActive]}>
+                  {issueReason === r.key && <View style={styles.radioInner} />}
+                </View>
+                <Text style={[styles.reasonText, issueReason === r.key && styles.reasonTextActive]}>{r.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.modalLabel}>Additional details (optional)</Text>
+          <TextInput
+            style={[styles.modalInput, { height: 90, textAlignVertical: 'top', overflow: 'hidden' }]}
+            value={issueNote}
+            onChangeText={setIssueNote}
+            placeholder="Tell us more about what happened..."
+            placeholderTextColor={COLORS.muted}
+            multiline
+          />
+
+          <TouchableOpacity
+            style={[styles.modalSubmitBtn, reportingIssue && { opacity: 0.6 }]}
+            onPress={submitIssueReport}
+            disabled={reportingIssue}
+          >
+            {reportingIssue
+              ? <ActivityIndicator color={COLORS.card} />
+              : <Text style={styles.modalSubmitBtnText}>Submit Report</Text>}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+    </>
   );
 }
 
@@ -379,4 +489,71 @@ const styles = StyleSheet.create({
     borderColor: '#a5d6a7',
   },
   reviewedText: { color: '#388E3C', fontWeight: '600', fontSize: 14 },
+
+  // Report a Problem
+  reportBtn: {
+    marginHorizontal: 16,
+    marginTop: 4,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  reportBtnText: { color: COLORS.gray, fontSize: 13, fontWeight: '600' },
+  issueBadge: {
+    marginHorizontal: 16,
+    marginTop: 4,
+    backgroundColor: '#FFF7ED',
+    borderRadius: 14,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#FED7AA',
+  },
+  issueBadgeText: { color: COLORS.warning, fontWeight: '600', fontSize: 13 },
+  issueBadgeResolved: { backgroundColor: '#e8f5e9', borderColor: '#a5d6a7' },
+  issueBadgeTextResolved: { color: '#388E3C' },
+
+  // Report a Problem modal
+  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
+  modalSheet: {
+    backgroundColor: COLORS.card,
+    borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    padding: 20, paddingBottom: 32, maxHeight: '85%',
+  },
+  modalHandle: {
+    width: 40, height: 4, borderRadius: 2,
+    backgroundColor: COLORS.border, alignSelf: 'center', marginBottom: 16,
+  },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  modalTitle: { fontSize: 17, fontWeight: 'bold', color: COLORS.text },
+  modalLabel: { fontSize: 13, fontWeight: '600', color: COLORS.gray, marginBottom: 8, marginTop: 8 },
+  reasonList: { gap: 4 },
+  reasonRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingVertical: 10, paddingHorizontal: 10, borderRadius: 10,
+  },
+  reasonRowActive: { backgroundColor: COLORS.primary + '10' },
+  radioOuter: {
+    width: 20, height: 20, borderRadius: 10, borderWidth: 2,
+    borderColor: COLORS.border, alignItems: 'center', justifyContent: 'center',
+  },
+  radioOuterActive: { borderColor: COLORS.primary },
+  radioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.primary },
+  reasonText: { fontSize: 14, color: COLORS.text },
+  reasonTextActive: { fontWeight: '600', color: COLORS.primary },
+  modalInput: {
+    backgroundColor: COLORS.background, borderRadius: 10,
+    padding: 12, fontSize: 14, color: COLORS.text,
+    borderWidth: 1, borderColor: COLORS.border,
+  },
+  modalSubmitBtn: {
+    marginTop: 20, backgroundColor: COLORS.primary,
+    borderRadius: 12, paddingVertical: 15, alignItems: 'center',
+  },
+  modalSubmitBtnText: { fontSize: 15, fontWeight: '700', color: COLORS.card },
 });

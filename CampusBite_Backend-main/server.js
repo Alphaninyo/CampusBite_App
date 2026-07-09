@@ -55,6 +55,12 @@ async function startServer() {
       `ALTER TABLE vendors ADD COLUMN IF NOT EXISTS prep_time VARCHAR(30)`,
       // Order cancellation
       `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel='Cancelled' AND enumtypid=(SELECT oid FROM pg_type WHERE typname='enum_orders_status')) THEN ALTER TYPE "enum_orders_status" ADD VALUE 'Cancelled'; END IF; END $$`,
+      // Consumer "Report a problem" flow
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS has_issue BOOLEAN NOT NULL DEFAULT false`,
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS issue_reason VARCHAR(50)`,
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS issue_note TEXT`,
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS issue_reported_at TIMESTAMP`,
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS issue_resolved_at TIMESTAMP`,
     ];
     for (const sql of migrations) {
       await sequelize.query(sql).catch((e) => console.warn('[MIGRATION]', sql.slice(0, 60), e.message));

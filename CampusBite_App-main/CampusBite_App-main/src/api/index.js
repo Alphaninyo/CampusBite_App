@@ -91,6 +91,7 @@ export const api = {
     getFoodCourierOrders:      ()       => client.get('/orders/food-courier/mine'),
     collectCash:         (id)     => client.patch(`/orders/${id}/collect-cash`),
     updateRiderLocation: (id, data) => client.patch(`/orders/${id}/location`, data),
+    reportIssue:         (id, data) => client.patch(`/orders/${id}/report-issue`, data),
   },
 
   // ─── Payments ───────────────────────────────────────────────────────────────
@@ -136,6 +137,7 @@ export const api = {
     getWeeklyOrders:  ()       => client.get('/admin/stats/weekly-orders'),
     getTopVendors:    ()       => client.get('/admin/stats/top-vendors'),
     getOrders:       (params) => client.get('/admin/orders', { params }),
+    resolveOrderIssue: (id)   => client.patch(`/admin/orders/${id}/resolve-issue`),
     getUsers:        (params) => client.get('/admin/users', { params }),
     getVendors:      (params) => client.get('/admin/vendors', { params }),
     requestInfo:     (userId, note, requestedDocs) => client.patch(`/admin/users/${userId}/request-info`, { note, requestedDocs }),

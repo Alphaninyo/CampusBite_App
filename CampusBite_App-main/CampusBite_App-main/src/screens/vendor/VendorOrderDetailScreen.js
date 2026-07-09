@@ -1,6 +1,7 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity, Alert, RefreshControl } from 'react-native';
+import React, { useState, useCallback, useRef } from 'react';
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity, Alert, RefreshControl, Platform, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../api';
 import { COLORS } from '../../constants';
 
@@ -14,8 +15,14 @@ const STATUS_CONFIG = {
   Preparing: { color: COLORS.primary, icon: 'restaurant-outline', label: 'Preparing' },
   Ready:     { color: COLORS.success, icon: 'checkmark-circle-outline', label: 'Ready' },
   Collected: { color: '#00796B', icon: 'bicycle-outline', label: 'Collected' },
+  'In Transit': { color: '#00796B', icon: 'car-outline', label: 'In Transit' },
   Delivered: { color: COLORS.success, icon: 'checkmark-done-outline', label: 'Delivered' },
 };
+
+// Simple progress checklist — lets the vendor track the order all the way to
+// the consumer without needing a live map. Mirrors the same steps/labels the
+// consumer and courier screens use.
+const PROGRESS_STEPS = ['Received', 'Preparing', 'Ready', 'Collected', 'In Transit', 'Delivered'];
 
 export default function VendorOrderDetailScreen({ route, navigation }) {
   const { orderId } = route.params;
@@ -23,6 +30,7 @@ export default function VendorOrderDetailScreen({ route, navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const pollRef = useRef(null);
 
   const fetchOrder = useCallback(async () => {
     try {
@@ -36,45 +44,75 @@ export default function VendorOrderDetailScreen({ route, navigation }) {
     }
   }, [orderId]);
 
-  useEffect(() => { fetchOrder(); }, [fetchOrder]);
+  // Poll while this screen is focused so the vendor can just leave it open and
+  // watch the order move through Collected → In Transit → Delivered, instead
+  // of needing a live map or manually pulling to refresh.
+  useFocusEffect(
+    useCallback(() => {
+      fetchOrder();
+      pollRef.current = setInterval(fetchOrder, 5000);
+      return () => {
+        if (pollRef.current) {
+          clearInterval(pollRef.current);
+          pollRef.current = null;
+        }
+      };
+    }, [fetchOrder])
+  );
+
+  const callRider = () => {
+    if (order?.rider?.phone) Linking.openURL(`tel:${order.rider.phone}`);
+  };
 
   const advanceStatus = async () => {
     const next = NEXT_STATUS[order.status];
     if (!next) return;
+
+    const doUpdate = async () => {
+      setUpdating(true);
+      try {
+        await api.orders.updateStatus(orderId, next);
+        fetchOrder();
+      } catch (err) {
+        Alert.alert('Error', err.message);
+      } finally {
+        setUpdating(false);
+      }
+    };
+
+    // React Native's Alert.alert with multiple buttons doesn't render on web
+    // (same issue previously fixed for the photo upload dialog), so use the
+    // browser's native confirm() there instead of silently doing nothing.
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Mark order as "${next}"?`)) await doUpdate();
+      return;
+    }
     Alert.alert('Update Status', `Mark order as "${next}"?`, [
       { text: 'Cancel' },
-      {
-        text: 'Confirm', onPress: async () => {
-          setUpdating(true);
-          try {
-            await api.orders.updateStatus(orderId, next);
-            fetchOrder();
-          } catch (err) {
-            Alert.alert('Error', err.message);
-          } finally {
-            setUpdating(false);
-          }
-        },
-      },
+      { text: 'Confirm', onPress: doUpdate },
     ]);
   };
 
   const cancelOrder = async () => {
+    const doCancel = async () => {
+      setUpdating(true);
+      try {
+        await api.orders.cancel(orderId);
+        fetchOrder();
+      } catch (err) {
+        Alert.alert('Error', err?.response?.data?.message || err.message);
+      } finally {
+        setUpdating(false);
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Are you sure you want to cancel this order?')) await doCancel();
+      return;
+    }
     Alert.alert('Cancel Order', 'Are you sure you want to cancel this order?', [
       { text: 'No', style: 'cancel' },
-      {
-        text: 'Yes, Cancel', style: 'destructive', onPress: async () => {
-          setUpdating(true);
-          try {
-            await api.orders.updateStatus(orderId, 'Cancelled');
-            fetchOrder();
-          } catch (err) {
-            Alert.alert('Error', err.message);
-          } finally {
-            setUpdating(false);
-          }
-        },
-      },
+      { text: 'Yes, Cancel', style: 'destructive', onPress: doCancel },
     ]);
   };
 
@@ -89,6 +127,7 @@ export default function VendorOrderDetailScreen({ route, navigation }) {
   const nextStatus = NEXT_STATUS[order.status];
   const statusCfg = STATUS_CONFIG[order.status] || STATUS_CONFIG.Received;
   const subtotal = order.items?.reduce((sum, i) => sum + (parseFloat(i.unit_price) * i.quantity), 0) || 0;
+  const stepIndex = PROGRESS_STEPS.indexOf(order.status);
 
   return (
     <ScrollView
@@ -101,6 +140,33 @@ export default function VendorOrderDetailScreen({ route, navigation }) {
         <Ionicons name={statusCfg.icon} size={20} color={COLORS.white} />
         <Text style={styles.statusBannerText}>{statusCfg.label}</Text>
       </View>
+
+      {/* Delivery Progress — simple checklist tracking, no map needed */}
+      {order.status !== 'Cancelled' && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Delivery Progress</Text>
+          {PROGRESS_STEPS.map((step, index) => {
+            // "Delivered" is the last step and also the terminal status — once
+            // the order reaches it, treat it as done rather than "current".
+            const isPast = index < stepIndex || (order.status === 'Delivered' && index === stepIndex);
+            const isCurrent = index === stepIndex && order.status !== 'Delivered';
+            const isLast = index === PROGRESS_STEPS.length - 1;
+            return (
+              <View key={step} style={styles.timelineRow}>
+                <View style={styles.timelineLeft}>
+                  <View style={[styles.stepDot, isPast && styles.stepDotDone, isCurrent && styles.stepDotCurrent]}>
+                    {isPast ? <Ionicons name="checkmark" size={12} color="#fff" /> : null}
+                  </View>
+                  {!isLast && <View style={[styles.stepConnector, isPast && styles.stepConnectorDone]} />}
+                </View>
+                <Text style={[styles.stepLabel, isPast && styles.stepLabelDone, isCurrent && styles.stepLabelCurrent]}>
+                  {step}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      )}
 
       {/* Order Info */}
       <View style={styles.card}>
@@ -174,6 +240,10 @@ export default function VendorOrderDetailScreen({ route, navigation }) {
               <Text style={styles.riderName}>{order.rider.name}</Text>
               <Text style={styles.riderPhone}>{order.rider.phone}</Text>
             </View>
+            <TouchableOpacity style={styles.callBtn} onPress={callRider}>
+              <Ionicons name="call" size={16} color={COLORS.white} />
+              <Text style={styles.callBtnText}>Call</Text>
+            </TouchableOpacity>
           </View>
         </View>
       )}
@@ -295,6 +365,27 @@ const styles = StyleSheet.create({
   },
   riderName: { fontSize: 14, fontWeight: '600', color: COLORS.text },
   riderPhone: { fontSize: 12, color: COLORS.gray, marginTop: 2 },
+  callBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: COLORS.success, borderRadius: 10,
+    paddingVertical: 8, paddingHorizontal: 12,
+  },
+  callBtnText: { color: COLORS.white, fontWeight: '700', fontSize: 13 },
+
+  // Delivery Progress timeline
+  timelineRow: { flexDirection: 'row', alignItems: 'center', minHeight: 34 },
+  timelineLeft: { alignItems: 'center', width: 26, alignSelf: 'stretch' },
+  stepDot: {
+    width: 20, height: 20, borderRadius: 10,
+    backgroundColor: COLORS.border, alignItems: 'center', justifyContent: 'center',
+  },
+  stepDotDone: { backgroundColor: '#388E3C' },
+  stepDotCurrent: { backgroundColor: COLORS.primary },
+  stepConnector: { width: 2, flex: 1, minHeight: 14, backgroundColor: COLORS.border, marginVertical: 2 },
+  stepConnectorDone: { backgroundColor: '#388E3C' },
+  stepLabel: { fontSize: 13, color: COLORS.gray, fontWeight: '500', marginLeft: 10 },
+  stepLabelDone: { color: '#388E3C', fontWeight: '600' },
+  stepLabelCurrent: { color: COLORS.primary, fontWeight: 'bold' },
 
   // Action Buttons
   actionButtonsContainer: {

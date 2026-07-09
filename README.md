@@ -239,16 +239,18 @@ CampusBite_App-main/
 3. Enter delivery address, apply promo code, choose payment (M-Pesa / Cash / Card)
 4. Track order in real-time through the Orders tab (status + rider location)
 5. Write a review after delivery
+6. Report a problem on any non-cancelled order (wrong/missing items, never delivered, poor quality, or other) — shows a status badge until an admin resolves it
 
 ### Vendor
 1. Register → upload ID/Passport + Passport Sized Photo during onboarding
 2. Wait for admin approval (shown in PendingApprovalScreen)
 3. Manage menu items (add, edit, delete, toggle availability)
-4. Receive new orders on the Orders tab (badge shows active count)
-5. Advance order status: Received → Preparing → Ready
-6. Manage promo codes via the Menu tab
-7. Update verification documents anytime via Profile → Settings
-8. View Business Analytics from Profile — weekly revenue/order growth vs. last week, a 7-day order chart, and top-selling items
+4. Receive new orders on the Orders tab (badge shows count per status: Incoming / In Progress / Completed) or the Dashboard's Incoming Orders card
+5. Tap into any order for full details — customer contact, delivery address, special instructions/allergy notes, a Delivery Progress checklist tracking it all the way to the consumer, and (once assigned) a one-tap Call button for the rider
+6. Advance order status: Received → Preparing → Ready
+7. Manage promo codes via the Menu tab
+8. Update verification documents anytime via Profile → Settings
+9. View Business Analytics from Profile — weekly revenue/order growth vs. last week, a 7-day order chart, and top-selling items
 
 ### Food Courier
 1. Register → upload identity documents during onboarding
@@ -508,9 +510,11 @@ Sequelize `sync({ alter: false })` runs on every server start and will create an
 |---|---|---|---|
 | POST | `/api/orders/initiate` | Consumer | Start checkout (M-Pesa / cash / card) |
 | GET | `/api/orders` | Consumer | My order history |
+| PATCH | `/api/orders/:id/report-issue` | Consumer | Flag a delivery problem (reason + optional note) |
 | GET | `/api/orders/:id` | Any | Single order detail |
 | GET | `/api/orders/vendor` | Vendor | Vendor's order queue |
-| PATCH | `/api/orders/:id/status` | Vendor/Courier | Advance order status |
+| PATCH | `/api/orders/:id/cancel` | Vendor | Decline a `Received` order |
+| PATCH | `/api/orders/:id/status` | Vendor/Courier | Advance order status (ignores the body's `status`; always moves to the next step in the pipeline) |
 | GET | `/api/orders/food-courier/available` | Courier | Unassigned ready orders |
 | PATCH | `/api/orders/:id/assign-food-courier` | Courier | Accept a delivery |
 | GET | `/api/orders/food-courier/mine` | Courier | My active deliveries |
@@ -525,6 +529,7 @@ Sequelize `sync({ alter: false })` runs on every server start and will create an
 | GET | `/api/admin/stats/weekly-orders` | Admin | Orders per day this week |
 | GET | `/api/admin/stats/top-vendors` | Admin | Top 10 vendors by orders |
 | GET | `/api/admin/orders` | Admin | All orders (paginated, filterable) |
+| PATCH | `/api/admin/orders/:id/resolve-issue` | Admin | Mark a consumer-reported issue as resolved |
 | GET | `/api/admin/users` | Admin | All users (paginated, filterable) |
 | GET | `/api/admin/vendors` | Admin | All vendors with owner info |
 | PATCH | `/api/admin/users/:id/suspend` | Admin | Toggle account suspension |
@@ -599,6 +604,11 @@ Sequelize `sync({ alter: false })` runs on every server start and will create an
 - Open the browser console — `net::ERR_BLOCKED_BY_ORB` on a `/uploads/...` request means the referenced file doesn't exist on disk (common on a fresh checkout, since `uploads/menu/` and `uploads/verification/` are gitignored — user-uploaded content never ships with the repo, but a shared/seeded database may still reference old filenames). Re-upload the image through the app to fix it for that vendor/item.
 - If the list itself is fine but only a couple of images are blank, check that the specific screen prefixes `vendor.image` / `item.image` with `API_BASE_URL` — it's a relative path (`/uploads/...`), not a full URL. All consumer/vendor screens should build the URL the same way (see `HomeScreen.js` or `VendorDetailScreen.js`).
 - Vendor cover/menu-item uploads can fail silently on web if converting the picked image to a Blob fails — the save still reports "Success" without the image attached (see Changelog `[1.2.1]`, Known Gap). If a fresh upload doesn't show up, just try again.
+
+### A confirmation button does nothing on web (no dialog, no network request)
+- React Native's `Alert.alert(title, message, [button, button])` — i.e. with **more than one button** — does not render on web. Tapping the triggering button silently no-ops: no dialog appears, no API call fires. This has bitten this codebase multiple times (photo upload dialog in `[1.1.0]`; vendor "Cancel Order"/"Mark as Preparing" and the food courier's "Confirm Cash Received" in `[1.4.0]`).
+- Fix pattern: branch on `Platform.OS === 'web'` and use the browser's native `window.confirm(message)` there instead, keeping `Alert.alert` for native iOS/Android (see `VendorOrderDetailScreen.js` or `RiderOrderDetailScreen.js` for the pattern). A single-button `Alert.alert` (just showing a message, no branching) is unaffected.
+- If you add a new confirm-before-action button, test it on web specifically — it'll look identical to a working button until clicked.
 
 ---
 

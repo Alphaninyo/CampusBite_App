@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
@@ -121,26 +121,33 @@ export default function RiderOrderDetailScreen({ route }) {
 
   const handleCollectCash = () => {
     const amount = parseFloat(order.total_amount || 0).toFixed(0);
+
+    const doCollect = async () => {
+      setCollectingCash(true);
+      try {
+        await api.orders.collectCash(orderId);
+        Alert.alert('Done', 'Cash payment confirmed.');
+        fetchOrder();
+      } catch (err) {
+        Alert.alert('Error', err?.response?.data?.message || err.message);
+      } finally {
+        setCollectingCash(false);
+      }
+    };
+
+    // React Native's Alert.alert with multiple buttons doesn't render on web,
+    // so use the browser's native confirm() there instead of silently doing
+    // nothing (same fix applied to the vendor's order detail screen).
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Confirm that the customer has paid KES ${amount} in cash?`)) doCollect();
+      return;
+    }
     Alert.alert(
       'Confirm Cash Received',
       `Confirm that the customer has paid KES ${amount} in cash?`,
       [
         { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Yes, Cash Received',
-          onPress: async () => {
-            setCollectingCash(true);
-            try {
-              await api.orders.collectCash(orderId);
-              Alert.alert('Done', 'Cash payment confirmed.');
-              fetchOrder();
-            } catch (err) {
-              Alert.alert('Error', err?.response?.data?.message || err.message);
-            } finally {
-              setCollectingCash(false);
-            }
-          },
-        },
+        { text: 'Yes, Cash Received', onPress: doCollect },
       ]
     );
   };
@@ -185,8 +192,11 @@ export default function RiderOrderDetailScreen({ route }) {
         <Text style={styles.timelineTitle}>Delivery Progress</Text>
         <View style={styles.timeline}>
           {STATUS_STEPS.map((step, index) => {
-            const isPast = index < currentStep;
-            const isCurrent = index === currentStep;
+            // "Delivered" is the last step and also the terminal status — once the
+            // order reaches it, treat it as done rather than "current", otherwise
+            // its dot never gets a checkmark even though the delivery is complete.
+            const isPast = index < currentStep || (order.status === 'Delivered' && index === currentStep);
+            const isCurrent = index === currentStep && order.status !== 'Delivered';
             const isFuture = index > currentStep;
             return (
               <View key={step} style={styles.timelineStep}>
