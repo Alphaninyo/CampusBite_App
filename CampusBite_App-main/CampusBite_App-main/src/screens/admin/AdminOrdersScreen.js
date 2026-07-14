@@ -4,6 +4,7 @@ import {
   ActivityIndicator, RefreshControl, ScrollView, TextInput,
   Alert, Modal,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
 import { COLORS, STATUS_COLORS } from '../../constants';
@@ -19,6 +20,7 @@ const ISSUE_REASON_LABELS = {
 };
 
 export default function AdminOrdersScreen() {
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('All');
   const [orders, setOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
@@ -122,7 +124,7 @@ export default function AdminOrdersScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>

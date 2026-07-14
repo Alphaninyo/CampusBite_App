@@ -1,9 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../../constants';
 
 export default function SupportScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const handleEmailSupport = () => {
     Linking.openURL('mailto:support@campusbite.com?subject=Food Courier Support');
   };
@@ -52,7 +54,7 @@ export default function SupportScreen({ navigation }) {
   ];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>

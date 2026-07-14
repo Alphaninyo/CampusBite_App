@@ -4,6 +4,7 @@ import {
   ActivityIndicator, Alert, RefreshControl, ScrollView,
   Modal, Image, Linking, Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
 import { COLORS, API_BASE_URL } from '../../constants';
@@ -83,6 +84,7 @@ function VerificationBadge({ status, type, hasDocument, onView, onViewPassport, 
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function AdminApprovalsScreen() {
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab]   = useState('All');
   const [vendors, setVendors]       = useState([]);
   const [couriers, setCouriers]     = useState([]);
@@ -829,7 +831,7 @@ export default function AdminApprovalsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* ── Document viewer modal ── */}
       <Modal
         visible={!!docViewer}

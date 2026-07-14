@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, StyleSheet, ActivityIndicator,
   RefreshControl, TouchableOpacity, Alert, Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
 import { COLORS } from '../../constants';
@@ -86,6 +87,7 @@ function ProgressBar({ label, value, total, color }) {
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 export default function AdminStatsScreen() {
+  const insets = useSafeAreaInsets();
   const [stats, setStats]           = useState(null);
   const [weeklyData, setWeeklyData] = useState([]);
   const [topVendors, setTopVendors] = useState([]);
@@ -178,7 +180,7 @@ export default function AdminStatsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>

@@ -4,6 +4,7 @@ import {
   ActivityIndicator, RefreshControl, ScrollView, TextInput,
   Alert, Modal, Image, Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
 import { COLORS, API_BASE_URL } from '../../constants';
@@ -13,6 +14,7 @@ const docUrl = (path) => (path ? `${API_BASE_URL}${path}` : null);
 const TABS = ['All', 'Active', 'Pending', 'Suspended'];
 
 export default function AdminVendorsScreen() {
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('All');
   const [vendors, setVendors] = useState([]);
   const [filteredVendors, setFilteredVendors] = useState([]);
@@ -138,7 +140,7 @@ export default function AdminVendorsScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>

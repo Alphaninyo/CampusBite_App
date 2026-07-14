@@ -4,6 +4,7 @@ import {
   ActivityIndicator, RefreshControl, ScrollView, TextInput,
   Alert, Modal, Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
 import { COLORS } from '../../constants';
@@ -11,6 +12,7 @@ import { COLORS } from '../../constants';
 const TABS = ['All', 'Consumers', 'Vendors', 'Couriers', 'Suspended'];
 
 export default function AdminUsersScreen() {
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('All');
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
@@ -135,7 +137,7 @@ export default function AdminUsersScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>

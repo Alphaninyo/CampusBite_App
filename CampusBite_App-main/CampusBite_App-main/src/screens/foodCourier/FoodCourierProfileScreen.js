@@ -4,8 +4,8 @@ import {
   Switch, Alert, Platform, ActivityIndicator, RefreshControl, Image,
   TextInput, Modal, KeyboardAvoidingView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
@@ -18,6 +18,7 @@ function getMockEarnings(total) {
 }
 
 export default function FoodCourierProfileScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const { user, logout, updateUser } = useAuthStore();
   const [isAvailable, setIsAvailable]     = useState(true);
   const [vehicleType, setVehicleType]     = useState('Electric Bicycle');
@@ -47,14 +48,9 @@ export default function FoodCourierProfileScreen({ navigation }) {
       const profile = data.profile;
       setIsAvailable(profile.is_available);
       setVehicleType(profile.vehicle_type);
-      
-      // Use AsyncStorage values if available, otherwise use API values
-      const localDeliveries = await AsyncStorage.getItem('courierDeliveries');
-      const localEarnings = await AsyncStorage.getItem('courierEarnings');
-      
-      setTotalDeliveries(localDeliveries ? parseInt(localDeliveries) : profile.total_deliveries);
-      setTotalEarnings(localEarnings ? parseFloat(localEarnings) : profile.total_earnings);
-      setRating(profile.rating);
+      setTotalDeliveries(profile.total_deliveries);
+      setTotalEarnings(profile.total_earnings);
+      setRating(parseFloat(profile.rating) || 0);
     } catch (err) {
       console.error(err.message);
     } finally {
@@ -137,22 +133,31 @@ export default function FoodCourierProfileScreen({ navigation }) {
     }
   };
 
+  const applyVehicleChange = async (v) => {
+    try {
+      await api.foodCourier.updateProfile({ vehicle_type: v });
+      setVehicleType(v);
+      Alert.alert('Success', 'Vehicle type updated successfully.');
+    } catch (err) {
+      Alert.alert('Error', err.message);
+    }
+  };
+
   const handleVehicleChange = () => {
+    // Alert.alert with multiple buttons doesn't render on web — see AGENTS.md.
+    if (Platform.OS === 'web') {
+      const choice = window.prompt(
+        `Select your vehicle:\n${VEHICLE_TYPES.map((v, i) => `${i + 1}. ${v}`).join('\n')}`
+      );
+      const index = parseInt(choice, 10) - 1;
+      if (VEHICLE_TYPES[index]) applyVehicleChange(VEHICLE_TYPES[index]);
+      return;
+    }
     Alert.alert(
       'Vehicle Type',
       'Select your vehicle',
-      VEHICLE_TYPES.map(v => ({
-        text: v,
-        onPress: async () => {
-          try {
-            await api.foodCourier.updateProfile({ vehicle_type: v });
-            setVehicleType(v);
-            Alert.alert('Success', 'Vehicle type updated successfully.');
-          } catch (err) {
-            Alert.alert('Error', err.message);
-          }
-        }
-      })).concat([{ text: 'Cancel', style: 'cancel' }])
+      VEHICLE_TYPES.map(v => ({ text: v, onPress: () => applyVehicleChange(v) }))
+        .concat([{ text: 'Cancel', style: 'cancel' }])
     );
   };
 
@@ -257,7 +262,7 @@ export default function FoodCourierProfileScreen({ navigation }) {
   const onTimeRate = totalDeliveries > 0 ? '100%' : '—';
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* ── Header ── */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>

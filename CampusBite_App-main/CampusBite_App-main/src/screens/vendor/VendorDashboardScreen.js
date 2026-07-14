@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Switch, Alert, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../api';
@@ -8,6 +9,7 @@ import { COLORS } from '../../constants';
 const ACTIVE_STATUSES = ['Received', 'Preparing', 'Ready'];
 
 export default function VendorDashboardScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [vendor, setVendor]         = useState(null);
   const [allOrders, setAllOrders]   = useState([]);
   const [popularItems, setPopularItems] = useState([]);
@@ -173,7 +175,7 @@ export default function VendorDashboardScreen({ navigation }) {
   if (loading) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Alert, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
 import { COLORS } from '../../constants';
@@ -7,6 +8,7 @@ import { COLORS } from '../../constants';
 const VEHICLE_TYPES = ['Electric Bicycle', 'Bicycle', 'Motorcycle', 'Walking'];
 
 export default function EditProfileScreen({ navigation, route }) {
+  const insets = useSafeAreaInsets();
   const { user } = route.params || {};
   const [name, setName] = useState(user?.name || '');
   const [phone, setPhone] = useState(user?.phone || '');
@@ -54,6 +56,15 @@ export default function EditProfileScreen({ navigation, route }) {
   };
 
   const handleVehicleSelect = () => {
+    // Alert.alert with multiple buttons doesn't render on web — see AGENTS.md.
+    if (Platform.OS === 'web') {
+      const choice = window.prompt(
+        `Select your vehicle:\n${VEHICLE_TYPES.map((v, i) => `${i + 1}. ${v}`).join('\n')}`
+      );
+      const index = parseInt(choice, 10) - 1;
+      if (VEHICLE_TYPES[index]) setVehicleType(VEHICLE_TYPES[index]);
+      return;
+    }
     Alert.alert(
       'Select Vehicle Type',
       'Choose your vehicle',
@@ -71,7 +82,7 @@ export default function EditProfileScreen({ navigation, route }) {
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>

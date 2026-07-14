@@ -10,8 +10,8 @@ router.patch('/admin/:id/approve', protect, restrictTo('admin'), foodCourierProf
 router.patch('/admin/:id/reject',  protect, restrictTo('admin'), foodCourierProfileController.rejectFoodCourier);
 
 // ── Food Courier Profile Endpoints ─────────────────────────────────────────────
-router.get('/',                    protect, restrictTo('food_courier'), foodCourierProfileController.getProfile);
-router.put('/',                    protect, restrictTo('food_courier'), foodCourierProfileController.updateProfile);
-router.patch('/toggle-availability', protect, restrictTo('food_courier'), foodCourierProfileController.toggleAvailability);
+router.get('/profile',                    protect, restrictTo('food_courier'), foodCourierProfileController.getProfile);
+router.put('/profile',                    protect, restrictTo('food_courier'), foodCourierProfileController.updateProfile);
+router.patch('/profile/toggle-availability', protect, restrictTo('food_courier'), foodCourierProfileController.toggleAvailability);
 
 module.exports = router;

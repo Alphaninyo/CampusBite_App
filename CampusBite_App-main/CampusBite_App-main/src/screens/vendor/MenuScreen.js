@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Switch, Alert, RefreshControl, TextInput, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Switch, Alert, RefreshControl, TextInput, Image, Modal } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../api';
@@ -8,11 +9,13 @@ import { COLORS, API_BASE_URL } from '../../constants';
 const CATEGORIES = ['All', 'Main Course', 'Drinks', 'Snacks'];
 
 export default function MenuScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [menu, setMenu]         = useState([]);
   const [loading, setLoading]   = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [deleteModal, setDeleteModal] = useState({ visible: false, item: null });
 
   const fetchMenu = useCallback(async () => {
     try {
@@ -40,19 +43,23 @@ export default function MenuScreen({ navigation }) {
   };
 
   const deleteItem = (item) => {
-    Alert.alert('Delete Item', `Remove "${item.name}" from menu?`, [
-      { text: 'Cancel' },
-      {
-        text: 'Delete', style: 'destructive', onPress: async () => {
-          try {
-            await api.menu.delete(item.id);
-            setMenu((prev) => prev.filter((m) => m.id !== item.id));
-          } catch (err) {
-            Alert.alert('Error', err.message);
-          }
-        },
-      },
-    ]);
+    console.log('[MENU] Delete item called:', item.id, item.name);
+    setDeleteModal({ visible: true, item });
+  };
+
+  const confirmDelete = async () => {
+    const { item } = deleteModal;
+    console.log('[MENU] Delete confirmed for item:', item.id);
+    try {
+      console.log('[MENU] Calling API delete for:', item.id);
+      await api.menu.delete(item.id);
+      console.log('[MENU] Delete successful, updating menu state');
+      setMenu((prev) => prev.filter((m) => m.id !== item.id));
+      setDeleteModal({ visible: false, item: null });
+    } catch (err) {
+      console.error('[MENU] Delete error:', err);
+      Alert.alert('Error', err.message);
+    }
   };
 
   // Filter items
@@ -65,7 +72,7 @@ export default function MenuScreen({ navigation }) {
   if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.primary} />;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
@@ -192,6 +199,35 @@ export default function MenuScreen({ navigation }) {
         <Ionicons name="add-outline" size={20} color={COLORS.white} />
         <Text style={styles.addBtnText}>Add New Item</Text>
       </TouchableOpacity>
+
+      {/* Delete Confirmation Modal */}
+      <Modal visible={deleteModal.visible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Ionicons name="trash-outline" size={24} color="#EF4444" />
+              <Text style={styles.modalTitle}>Delete Item</Text>
+            </View>
+            <Text style={styles.modalMessage}>
+              Are you sure you want to delete "{deleteModal.item?.name}"? This action cannot be undone.
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={styles.modalCancelBtn} 
+                onPress={() => setDeleteModal({ visible: false, item: null })}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.modalDeleteBtn} 
+                onPress={confirmDelete}
+              >
+                <Text style={styles.modalDeleteText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -353,4 +389,66 @@ const styles = StyleSheet.create({
   // Empty
   emptyState: { alignItems: 'center', paddingVertical: 50 },
   emptyText: { color: COLORS.gray, marginTop: 12, fontSize: 14 },
+
+  // Delete Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 320,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+  modalMessage: {
+    fontSize: 14,
+    color: COLORS.gray,
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalCancelBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.gray,
+  },
+  modalDeleteBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#EF4444',
+    alignItems: 'center',
+  },
+  modalDeleteText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.white,
+  },
 });

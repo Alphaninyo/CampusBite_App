@@ -30,22 +30,6 @@ client.interceptors.response.use(
       });
     }
     
-    // Mock food courier profile fetch when backend fails
-    if (err.config?.url?.includes('/food-courier/profile') && err.config?.method === 'get') {
-      console.log('Mocking food courier profile fetch (backend not available)');
-      return Promise.resolve({
-        data: {
-          profile: {
-            is_available: true,
-            vehicle_type: 'Electric Bicycle',
-            total_deliveries: 5,
-            total_earnings: 1250,
-            rating: 4.8
-          }
-        }
-      });
-    }
-    
     const message =
       err.response?.data?.message ||
       err.message ||

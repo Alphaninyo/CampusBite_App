@@ -2,14 +2,21 @@ import { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, Alert,
   ActivityIndicator, ScrollView, Platform, Image, Modal,
-  KeyboardAvoidingView,
+  KeyboardAvoidingView, Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
 import { COLORS, API_BASE_URL } from '../../constants';
+
+// A percentage maxHeight on the modal sheet doesn't give Yoga a definite size to
+// resolve the ScrollView's flex:1 against on Android — the ScrollView collapses
+// to zero height and the sheet renders as a blank card with just the header
+// visible. A pixel value from Dimensions fixes it on every platform.
+const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 
 export default function ProfileScreen({ navigation }) {
@@ -92,41 +99,66 @@ export default function ProfileScreen({ navigation }) {
     Alert.alert('Success', 'Address saved successfully');
   };
 
-  const handleGetCurrentLocation = () => {
-    if (typeof window !== 'undefined' && window.navigator && window.navigator.geolocation) {
-      setSaving(true);
-      window.navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
-          try {
-            // Reverse geocoding using OpenStreetMap Nominatim API (free)
-            const response = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
-            );
-            const data = await response.json();
-            const address = data.display_name || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
-            
-            setNewAddressLabel('Current Location');
-            setNewAddressDetails(address);
-            Alert.alert('Success', 'Current location detected');
-          } catch (error) {
-            setNewAddressLabel('Current Location');
-            setNewAddressDetails(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
-            Alert.alert('Success', 'Coordinates captured');
-          } finally {
-            setSaving(false);
-          }
-        },
-        (error) => {
-          setSaving(false);
-          Alert.alert('Error', 'Could not get your location. Please enable location services.');
-          console.error(error);
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  // Reverse geocoding using OpenStreetMap Nominatim API (free) — shared by both
+  // the web and native location paths below.
+  const resolveAndSetAddress = async (latitude, longitude) => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
       );
-    } else {
-      Alert.alert('Error', 'Geolocation is not supported on this platform');
+      const data = await response.json();
+      const address = data.display_name || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+
+      setNewAddressLabel('Current Location');
+      setNewAddressDetails(address);
+      Alert.alert('Success', 'Current location detected');
+    } catch (error) {
+      setNewAddressLabel('Current Location');
+      setNewAddressDetails(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+      Alert.alert('Success', 'Coordinates captured');
+    } finally {
+      setSaving(false);
     }
+  };
+
+  const handleGetCurrentLocation = () => {
+    // Web: the browser's own Geolocation API. Native: `window.navigator.geolocation`
+    // does not exist in React Native — it must go through expo-location instead.
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.navigator && window.navigator.geolocation) {
+        setSaving(true);
+        window.navigator.geolocation.getCurrentPosition(
+          (position) => resolveAndSetAddress(position.coords.latitude, position.coords.longitude),
+          (error) => {
+            setSaving(false);
+            Alert.alert('Error', 'Could not get your location. Please enable location services.');
+            console.error(error);
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+      } else {
+        Alert.alert('Error', 'Geolocation is not supported on this browser.');
+      }
+      return;
+    }
+
+    (async () => {
+      setSaving(true);
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          setSaving(false);
+          Alert.alert('Permission needed', 'Allow location access in your device settings to use this feature.');
+          return;
+        }
+        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        await resolveAndSetAddress(loc.coords.latitude, loc.coords.longitude);
+      } catch (error) {
+        setSaving(false);
+        Alert.alert('Error', 'Could not get your location. Please enable location services.');
+        console.error(error);
+      }
+    })();
   };
 
   const handleDeleteAddress = (id) => {
@@ -1225,7 +1257,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: 24, paddingBottom: 44,
-    maxHeight: '85%',
+    maxHeight: SCREEN_HEIGHT * 0.85,
+    flexShrink: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.08,

@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, TextInput, ScrollView, Image } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
 import { COLORS, API_BASE_URL } from '../../constants';
@@ -69,6 +70,7 @@ function TrendingItemCard({ item, onPress }) {
 }
 
 export default function HomeScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [vendors, setVendors]     = useState([]);
   const [trendingItems, setTrendingItems] = useState([]);
   const [loading, setLoading]     = useState(true);
@@ -170,7 +172,7 @@ export default function HomeScreen({ navigation }) {
   if (loading) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header with Avatar and Notifications */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>

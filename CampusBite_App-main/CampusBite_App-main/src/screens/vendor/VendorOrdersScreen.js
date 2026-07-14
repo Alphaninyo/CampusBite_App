@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Alert, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
 import { COLORS, STATUS_COLORS } from '../../constants';
@@ -16,6 +17,7 @@ const STATUS_ICONS = {
 };
 
 export default function VendorOrdersScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [allOrders, setAllOrders] = useState([]);
   const [activeTab, setActiveTab] = useState('Incoming');
   const [loading, setLoading] = useState(true);
@@ -113,7 +115,7 @@ export default function VendorOrdersScreen({ navigation }) {
   if (loading) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>

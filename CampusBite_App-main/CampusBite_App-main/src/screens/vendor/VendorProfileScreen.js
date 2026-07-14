@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Switch, Image, Platform, TextInput, Modal, KeyboardAvoidingView, Linking } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import useAuthStore from '../../stores/authStore';
@@ -146,6 +147,7 @@ function WeeklyOrdersChart({ days }) {
 }
 
 export default function VendorProfileScreen({ navigation = {} }) {
+  const insets = useSafeAreaInsets();
   const { user, logout, updateUser } = useAuthStore();
   console.log('VendorProfileScreen: user state =', user);
   const [vendor, setVendor] = useState(null);
@@ -524,56 +526,6 @@ export default function VendorProfileScreen({ navigation = {} }) {
     }
   };
 
-  const _uploadAvatar = async (uri) => {
-    setSaving(true);
-    try {
-      const { data } = await api.auth.updateProfile({ name: user?.name, phone: user?.phone, avatar: uri });
-      updateUser({ profile_photo: data.user.profile_photo, _photo_ts: Date.now() });
-      Alert.alert('Success', 'Profile photo updated.');
-    } catch (err) {
-      Alert.alert('Error', err?.response?.data?.message || err.message || 'Failed to upload photo.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleImageUpload = async () => {
-    if (Platform.OS === 'web') {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Allow photo library access.');
-        return;
-      }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 1,
-      });
-      if (!result.canceled && result.assets?.[0]?.uri)
-        await _uploadAvatar(result.assets[0].uri);
-      return;
-    }
-    Alert.alert('Profile Picture', 'Choose an option', [
-      {
-        text: 'Take Photo',
-        onPress: async () => {
-          const { status } = await ImagePicker.requestCameraPermissionsAsync();
-          if (status !== 'granted') { Alert.alert('Permission needed', 'Allow camera access.'); return; }
-          const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [1, 1], quality: 1 });
-          if (!result.canceled && result.assets?.[0]?.uri) await _uploadAvatar(result.assets[0].uri);
-        },
-      },
-      {
-        text: 'Choose from Gallery',
-        onPress: async () => {
-          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-          if (status !== 'granted') { Alert.alert('Permission needed', 'Allow photo library access.'); return; }
-          const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 1 });
-          if (!result.canceled && result.assets?.[0]?.uri) await _uploadAvatar(result.assets[0].uri);
-        },
-      },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
-  };
-
   const handleLogout = async () => {
     console.log('VendorProfileScreen: handleLogout called');
     
@@ -615,7 +567,7 @@ export default function VendorProfileScreen({ navigation = {} }) {
   const storeInitial = storeName.charAt(0).toUpperCase();
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
@@ -630,13 +582,9 @@ export default function VendorProfileScreen({ navigation = {} }) {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Profile Section */}
         <View style={styles.profileSection}>
-          <TouchableOpacity style={styles.avatarContainer} onPress={handleImageUpload}>
-            {saving ? (
-              <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                <ActivityIndicator color={COLORS.primary} />
-              </View>
-            ) : user?.profile_photo ? (
-              <Image source={{ uri: `${API_BASE_URL}${user.profile_photo}?t=${user._photo_ts || 0}` }} style={styles.avatar} resizeMode="cover" />
+          <TouchableOpacity style={styles.avatarContainer} onPress={openEditModal}>
+            {vendor?.image ? (
+              <Image source={{ uri: `${API_BASE_URL}${vendor.image}` }} style={styles.avatar} resizeMode="cover" />
             ) : (
               <View style={[styles.avatar, styles.avatarPlaceholder]}>
                 <Text style={styles.avatarInitial}>{storeInitial}</Text>

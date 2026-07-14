@@ -4,6 +4,7 @@ import {
   Switch, Alert, Modal, ActivityIndicator, Image,
   Platform, KeyboardAvoidingView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { api } from '../../api';
@@ -12,6 +13,7 @@ import useAuthStore from '../../stores/authStore';
 
 // updateMode: 'id' | 'photo' | null
 export default function AppSettingsScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const { user, logout } = useAuthStore();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [locationEnabled, setLocationEnabled] = useState(true);
@@ -153,7 +155,7 @@ export default function AppSettingsScreen({ navigation }) {
   ];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={COLORS.black} />

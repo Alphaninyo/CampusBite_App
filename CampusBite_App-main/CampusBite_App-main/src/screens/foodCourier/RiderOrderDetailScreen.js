@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { api } from '../../api';
 import { COLORS } from '../../constants';
@@ -94,28 +93,11 @@ export default function RiderOrderDetailScreen({ route }) {
 
       if (newStatus === 'Delivered') {
         stopLocationTracking();
-        await updateProfileStats();
       }
     } catch (err) {
       Alert.alert('Error', err.message);
     } finally {
       setUpdating(false);
-    }
-  };
-
-  const updateProfileStats = async () => {
-    try {
-      const deliveryFee = parseFloat(order.delivery_fee || 0);
-      const currentDeliveries = await AsyncStorage.getItem('courierDeliveries') || '0';
-      const currentEarnings = await AsyncStorage.getItem('courierEarnings') || '0';
-      
-      const newDeliveries = parseInt(currentDeliveries) + 1;
-      const newEarnings = parseFloat(currentEarnings) + deliveryFee;
-      
-      await AsyncStorage.setItem('courierDeliveries', newDeliveries.toString());
-      await AsyncStorage.setItem('courierEarnings', newEarnings.toString());
-    } catch (err) {
-      console.error('Error updating profile stats:', err);
     }
   };
 

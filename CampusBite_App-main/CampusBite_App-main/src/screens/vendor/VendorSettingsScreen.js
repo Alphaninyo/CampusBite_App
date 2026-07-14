@@ -4,6 +4,7 @@ import {
   Alert, ActivityIndicator, Image, Platform, Modal,
   KeyboardAvoidingView, Switch,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { api } from '../../api';
@@ -11,6 +12,7 @@ import { COLORS, API_BASE_URL } from '../../constants';
 
 // updateMode: 'id' | 'photo' | null
 export default function VendorSettingsScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [verification, setVerification] = useState(null);
   const [updateMode, setUpdateMode] = useState(null); // which doc to update
   const [file, setFile] = useState(null);
@@ -100,7 +102,7 @@ export default function VendorSettingsScreen({ navigation }) {
   const modalTitle = updateMode === 'id' ? `Update ${idDocLabel}` : 'Update Passport Sized Photo';
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />

@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Image } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
 import { COLORS, API_BASE_URL } from '../../constants';
 import useCartStore from '../../stores/cartStore';
 
 export default function VendorDetailScreen({ route, navigation }) {
+  const insets = useSafeAreaInsets();
   const { vendor } = route.params;
   const [menu, setMenu]       = useState([]);
   const [cart, setCart]       = useState({});
@@ -70,7 +72,7 @@ export default function VendorDetailScreen({ route, navigation }) {
   if (loading) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <FlatList
         data={menu.filter((i) => i.is_available)}
         keyExtractor={(i) => i.id}

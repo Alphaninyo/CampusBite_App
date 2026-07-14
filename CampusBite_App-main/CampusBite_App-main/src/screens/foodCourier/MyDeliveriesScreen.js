@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, ScrollView, Dimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
 import { COLORS, STATUS_COLORS } from '../../constants';
@@ -59,6 +60,7 @@ function WeeklyBarChart({ orders }) {
 }
 
 export default function EarningsScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [orders, setOrders]         = useState([]);
   const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -230,7 +232,7 @@ export default function EarningsScreen({ navigation }) {
   );
 
   return (
-    <View style={styles.screenContainer}>
+    <View style={[styles.screenContainer, { paddingTop: insets.top }]}>
       {/* Header — matches CampusBite design system */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
