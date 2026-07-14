@@ -257,6 +257,26 @@ ALTER TABLE vendors ADD COLUMN IF NOT EXISTS kra_pin     VARCHAR(20);
 
 ---
 
+## [1.6.1] - 2026-07-15
+
+### 🐛 Bug Fixes
+- **Notifications/Security/Help & Support modals were still blank on a real Android device after `[1.6.0]`'s fix** — The `[1.6.0]` fix computed the modal's `maxHeight` from a module-level `Dimensions.get('window').height` snapshot taken once at import time, which itself can read `0` on a physical device if it runs before the native bridge reports real dimensions — silently reproducing the exact same blank-content symptom it was meant to fix. Root-caused further: the actual, deeper issue is that `ScrollView style={{ flex: 1 }}` nested inside a Modal is inherently unreliable to measure on Android, regardless of how the parent's height is computed. Fixed properly this time by removing `flex: 1` from every affected `ScrollView` (Security in `ProfileScreen.js`, `VendorProfileScreen.js`, and `FoodCourierProfileScreen.js`; Notifications, Help & Support, and Saved Addresses in `ProfileScreen.js`) and giving each `ScrollView` its own directly-bounded `maxHeight` (via the reactive `useWindowDimensions()` hook, not a stale module-level snapshot) — so the scrollable area no longer depends on flex resolution at all.
+- **`expo-notifications` push-token registration triggered a disruptive LogBox error on every login (Android + Expo Go)** — Expo Go on Android has not supported real push-notification tokens since SDK 53 (a development/production build is required); the library itself logs a `console.error` warning about this when `getExpoPushTokenAsync()` is called under Expo Go, which surfaces as a full-screen red error overlay regardless of the surrounding `try/catch`. `authStore.js`'s login flow now checks `expo-constants`'s `executionEnvironment` and skips the push-token attempt entirely when running in Expo Go, so it no longer interrupts testing. Push notifications are unaffected on a real build.
+
+### 📦 Dependencies
+- Added `expo-constants` as an explicit dependency (previously only present transitively via the `expo` package) — used to detect the Expo Go execution environment above.
+
+### 🔄 Modified files (key)
+| File | What changed |
+|---|---|
+| `src/screens/shared/ProfileScreen.js` | Switched to `useWindowDimensions()`; removed `flex: 1` from all 4 modal ScrollViews |
+| `src/screens/vendor/VendorProfileScreen.js` | Same fix applied to the Security modal |
+| `src/screens/foodCourier/FoodCourierProfileScreen.js` | Same fix applied to the Security modal |
+| `src/stores/authStore.js` | Skip push-token registration when running in Expo Go |
+| `package.json` | Added `expo-constants` dependency |
+
+---
+
 ## [Unreleased] - Development
 
 ### 🚀 Upcoming Features

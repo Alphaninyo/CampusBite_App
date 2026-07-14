@@ -47,9 +47,16 @@ const useAuthStore = create((set, get) => ({
         set({ token: data.token, user: data.user });
         console.log('AuthStore: Login complete, user saved:', data.user);
 
-        // Register device push token in background — non-blocking
+        // Register device push token in background — non-blocking.
+        // Expo Go on Android no longer supports remote push tokens as of SDK 53
+        // (a development build is required); calling getExpoPushTokenAsync() there
+        // logs a console.error from inside expo-notifications regardless of this
+        // try/catch, so skip the attempt entirely when running in Expo Go.
         (async () => {
           try {
+            const Constants = require('expo-constants').default;
+            if (Constants.executionEnvironment === 'storeClient') return;
+
             const Notifications = require('expo-notifications');
             const { status } = await Notifications.getPermissionsAsync();
             if (status === 'granted') {

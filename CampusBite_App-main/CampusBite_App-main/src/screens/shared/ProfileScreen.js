@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, Alert,
   ActivityIndicator, ScrollView, Platform, Image, Modal,
-  KeyboardAvoidingView, Dimensions,
+  KeyboardAvoidingView, useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,14 +12,14 @@ import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
 import { COLORS, API_BASE_URL } from '../../constants';
 
-// A percentage maxHeight on the modal sheet doesn't give Yoga a definite size to
-// resolve the ScrollView's flex:1 against on Android — the ScrollView collapses
-// to zero height and the sheet renders as a blank card with just the header
-// visible. A pixel value from Dimensions fixes it on every platform.
-const SCREEN_HEIGHT = Dimensions.get('window').height;
-
 
 export default function ProfileScreen({ navigation }) {
+  // useWindowDimensions (not a module-level Dimensions.get() snapshot) — the
+  // latter can read 0 on a physical device if it's evaluated before the
+  // native bridge reports real dimensions, which silently collapses the
+  // modal sheets below back to blank. This hook re-renders once the real
+  // value is available.
+  const { height: screenHeight } = useWindowDimensions();
   const { user, logout, updateUser } = useAuthStore();
 
 
@@ -405,7 +405,7 @@ export default function ProfileScreen({ navigation }) {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={[styles.modalOverlay, isWeb && styles.modalOverlayWeb]}
         >
-          <View style={[styles.modalSheet, isWeb && styles.modalSheetWeb]}>
+          <View style={[styles.modalSheet, { maxHeight: screenHeight * 0.85 }, isWeb && styles.modalSheetWeb]}>
             {!isWeb && <View style={styles.modalHandle} />}
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Edit Profile</Text>
@@ -488,7 +488,7 @@ export default function ProfileScreen({ navigation }) {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={[styles.modalOverlay, isWeb && styles.modalOverlayWeb]}
         >
-          <View style={[styles.modalSheet, isWeb && styles.modalSheetWeb]}>
+          <View style={[styles.modalSheet, { maxHeight: screenHeight * 0.85 }, isWeb && styles.modalSheetWeb]}>
             {!isWeb && <View style={styles.modalHandle} />}
             <View style={styles.modalHeader}>
               <TouchableOpacity onPress={() => {
@@ -550,7 +550,7 @@ export default function ProfileScreen({ navigation }) {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={[styles.modalOverlay, isWeb && styles.modalOverlayWeb]}
         >
-          <View style={[styles.modalSheet, isWeb && styles.modalSheetWeb]}>
+          <View style={[styles.modalSheet, { maxHeight: screenHeight * 0.85 }, isWeb && styles.modalSheetWeb]}>
             {!isWeb && <View style={styles.modalHandle} />}
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Security</Text>
@@ -559,7 +559,7 @@ export default function ProfileScreen({ navigation }) {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={true}>
+            <ScrollView style={{ maxHeight: screenHeight * 0.6 }} showsVerticalScrollIndicator={true}>
               {/* 2FA Section */}
               <View style={styles.securitySection}>
                 <View style={styles.securitySectionHeader}>
@@ -730,7 +730,7 @@ export default function ProfileScreen({ navigation }) {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={[styles.modalOverlay, isWeb && styles.modalOverlayWeb]}
         >
-          <View style={[styles.modalSheet, isWeb && styles.modalSheetWeb]}>
+          <View style={[styles.modalSheet, { maxHeight: screenHeight * 0.85 }, isWeb && styles.modalSheetWeb]}>
             {!isWeb && <View style={styles.modalHandle} />}
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Saved Addresses</Text>
@@ -739,7 +739,7 @@ export default function ProfileScreen({ navigation }) {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={{ flex: 1, marginBottom: 16 }}>
+            <ScrollView style={{ maxHeight: screenHeight * 0.6, marginBottom: 16 }}>
               {savedAddresses.length === 0 ? (
                 <View style={styles.emptyState}>
                   <Ionicons name="location-outline" size={44} color={COLORS.muted} />
@@ -806,7 +806,7 @@ export default function ProfileScreen({ navigation }) {
       {/* ── Notifications Modal ─────────────────────────────────────────────── */}
       <Modal visible={showNotificationsModal} animationType={isWeb ? 'fade' : 'slide'} transparent>
         <View style={[styles.modalOverlay, isWeb && styles.modalOverlayWeb]}>
-          <View style={[styles.modalSheet, isWeb && styles.modalSheetWeb]}>
+          <View style={[styles.modalSheet, { maxHeight: screenHeight * 0.85 }, isWeb && styles.modalSheetWeb]}>
             {!isWeb && <View style={styles.modalHandle} />}
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Notifications</Text>
@@ -815,7 +815,7 @@ export default function ProfileScreen({ navigation }) {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={{ flex: 1 }}>
+            <ScrollView style={{ maxHeight: screenHeight * 0.6 }} showsVerticalScrollIndicator={true}>
               {notifications.length === 0 ? (
                 <View style={styles.emptyState}>
                   <Ionicons name="notifications-off-outline" size={44} color={COLORS.muted} />
@@ -854,7 +854,7 @@ export default function ProfileScreen({ navigation }) {
       {/* ── Help & Support Modal ────────────────────────────────────────────── */}
       <Modal visible={showSupportModal} animationType={isWeb ? 'fade' : 'slide'} transparent>
         <View style={[styles.modalOverlay, isWeb && styles.modalOverlayWeb]}>
-          <View style={[styles.modalSheet, isWeb && styles.modalSheetWeb]}>
+          <View style={[styles.modalSheet, { maxHeight: screenHeight * 0.85 }, isWeb && styles.modalSheetWeb]}>
             {!isWeb && <View style={styles.modalHandle} />}
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Help & Support</Text>
@@ -863,7 +863,7 @@ export default function ProfileScreen({ navigation }) {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={true}>
+            <ScrollView style={{ maxHeight: screenHeight * 0.6 }} showsVerticalScrollIndicator={true}>
               <View style={styles.supportSection}>
                 <Text style={styles.supportTitle}>Contact Us</Text>
                 <TouchableOpacity style={styles.supportItem}>
@@ -1257,7 +1257,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: 24, paddingBottom: 44,
-    maxHeight: SCREEN_HEIGHT * 0.85,
     flexShrink: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },

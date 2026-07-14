@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Switch, Alert, Platform, ActivityIndicator, RefreshControl, Image,
-  TextInput, Modal, KeyboardAvoidingView,
+  TextInput, Modal, KeyboardAvoidingView, useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +19,7 @@ function getMockEarnings(total) {
 
 export default function FoodCourierProfileScreen({ navigation }) {
   const insets = useSafeAreaInsets();
+  const { height: screenHeight } = useWindowDimensions();
   const { user, logout, updateUser } = useAuthStore();
   const [isAvailable, setIsAvailable]     = useState(true);
   const [vehicleType, setVehicleType]     = useState('Electric Bicycle');
@@ -469,7 +470,7 @@ export default function FoodCourierProfileScreen({ navigation }) {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalOverlay}
         >
-          <View style={styles.modalSheet}>
+          <View style={[styles.modalSheet, { maxHeight: screenHeight * 0.85 }]}>
             <View style={styles.modalHandle} />
             <View style={styles.modalHeader}>
               <TouchableOpacity onPress={() => setShowSecurityModal(false)}>
@@ -479,7 +480,7 @@ export default function FoodCourierProfileScreen({ navigation }) {
               <View style={{ width: 24 }} />
             </View>
 
-            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={true}>
+            <ScrollView style={{ maxHeight: screenHeight * 0.6 }} showsVerticalScrollIndicator={true}>
               {/* 2FA Section */}
               <View style={styles.securitySection}>
                 <View style={styles.securitySectionHeader}>

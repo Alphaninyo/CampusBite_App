@@ -449,13 +449,18 @@ npm install
 - On native, location must go through `expo-location` (`Location.requestForegroundPermissionsAsync()` + `Location.getCurrentPositionAsync()`) — the browser's `navigator.geolocation` API does not exist in React Native. If you add a new "use my location" button, branch on `Platform.OS` the same way `ProfileScreen.js` does.
 
 ### **A bottom-sheet modal shows its header but the content area is blank (Android)**
-- A percentage `maxHeight` (e.g. `'85%'`) on the modal sheet doesn't give Android's layout engine a concrete size to resolve an inner `ScrollView`'s `flex: 1` against, so the scrollable content silently collapses to zero height. Fix: compute the max height in pixels via `Dimensions.get('window').height * 0.85` and add `flexShrink: 1` to the sheet container.
+- **Root cause**: `ScrollView style={{ flex: 1 }}` nested inside a Modal is inherently unreliable to measure on Android — it can silently collapse to zero height regardless of how the parent sheet's height is computed. A percentage `maxHeight` (e.g. `'85%'`) on the sheet makes this worse since it gives the layout engine even less to resolve against, but **switching to a pixel `maxHeight` is not enough on its own** — a first attempt at this fix computed the pixel value from a module-level `Dimensions.get('window').height` snapshot taken once at import time, which can itself read `0` on a physical device before the native bridge reports real dimensions, silently reproducing the same blank symptom.
+- **Fix**: remove `flex: 1` from the `ScrollView` entirely and give the `ScrollView` itself a directly-bounded `maxHeight` (computed from the reactive `useWindowDimensions()` hook, not a one-time `Dimensions.get()` snapshot) so it never depends on flex resolution. See the Security/Notifications/Help & Support modals in `ProfileScreen.js`, `VendorProfileScreen.js`, and `FoodCourierProfileScreen.js` for the reference pattern.
+- If a modal "looks fine on web" but is reported blank on a physical Android device, that mismatch alone is a strong signal this is the bug — web's `ScrollView` is just a `div` with `overflow: auto` and doesn't hit this Android-specific measurement issue at all.
 
 ### **A screen's custom header renders under the status bar**
 - Screens with `headerShown: false` draw their own header and are responsible for their own top safe-area padding. Use `useSafeAreaInsets()` from `react-native-safe-area-context` and apply `paddingTop: insets.top` to the screen's root `View` — see `ExploreScreen.js` for the reference pattern, now applied across every screen with a custom header.
 
 ### **An endpoint 404s but the UI shows data anyway**
 - Check `src/api/client.js` for a response interceptor mocking that specific URL — a prior "fix" for the food courier profile 404 masked the real broken route with fake hardcoded data instead of fixing the route path. Grep `client.js` for `.includes(` before assuming a working-looking screen is actually reaching the backend.
+
+### **A red "Console Error" LogBox appears on login: `expo-notifications ... removed from Expo Go`**
+- Not a bug — Expo Go on Android has not supported real push-notification tokens since SDK 53; a development or production build is required for that to actually work. The library itself logs this via `console.error` when `getExpoPushTokenAsync()` is called under Expo Go, regardless of any surrounding `try/catch`. `authStore.js`'s login flow checks `expo-constants`'s `Constants.executionEnvironment === 'storeClient'` and skips the attempt entirely in Expo Go to avoid the interruption — push notifications still work normally on a real build.
 
 ---
 

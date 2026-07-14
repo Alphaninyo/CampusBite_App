@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Switch, Image, Platform, TextInput, Modal, KeyboardAvoidingView, Linking } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Switch, Image, Platform, TextInput, Modal, KeyboardAvoidingView, Linking, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -148,6 +148,7 @@ function WeeklyOrdersChart({ days }) {
 
 export default function VendorProfileScreen({ navigation = {} }) {
   const insets = useSafeAreaInsets();
+  const { height: screenHeight } = useWindowDimensions();
   const { user, logout, updateUser } = useAuthStore();
   console.log('VendorProfileScreen: user state =', user);
   const [vendor, setVendor] = useState(null);
@@ -776,7 +777,7 @@ export default function VendorProfileScreen({ navigation = {} }) {
       {/* Customer Reviews Modal */}
       <Modal visible={showReviewsModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalSheet, { maxHeight: '85%' }]}>
+          <View style={[styles.modalSheet, { maxHeight: screenHeight * 0.85 }]}>
             <View style={styles.modalHandle} />
             <View style={styles.modalHeader}>
               <TouchableOpacity onPress={() => setShowReviewsModal(false)}>
@@ -848,7 +849,7 @@ export default function VendorProfileScreen({ navigation = {} }) {
       {/* Contact Support Modal */}
       <Modal visible={showSupportModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalSheet, { maxHeight: '80%' }]}>
+          <View style={[styles.modalSheet, { maxHeight: screenHeight * 0.80 }]}>
             <View style={styles.modalHandle} />
             <View style={styles.modalHeader}>
               <TouchableOpacity onPress={() => { setShowSupportModal(false); setExpandedFaq(null); }}>
@@ -984,7 +985,7 @@ export default function VendorProfileScreen({ navigation = {} }) {
       {/* Payout History Modal */}
       <Modal visible={showPayoutModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalSheet, { maxHeight: '80%' }]}>
+          <View style={[styles.modalSheet, { maxHeight: screenHeight * 0.80 }]}>
             <View style={styles.modalHandle} />
             <View style={styles.modalHeader}>
               <TouchableOpacity onPress={() => setShowPayoutModal(false)}>
@@ -1033,7 +1034,7 @@ export default function VendorProfileScreen({ navigation = {} }) {
       {/* Business Analytics Modal */}
       <Modal visible={showAnalyticsModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalSheet, { maxHeight: '85%' }]}>
+          <View style={[styles.modalSheet, { maxHeight: screenHeight * 0.85 }]}>
             <View style={styles.modalHandle} />
             <View style={styles.modalHeader}>
               <TouchableOpacity onPress={() => setShowAnalyticsModal(false)}>
@@ -1385,7 +1386,7 @@ export default function VendorProfileScreen({ navigation = {} }) {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalOverlay}
         >
-          <View style={styles.modalSheet}>
+          <View style={[styles.modalSheet, { maxHeight: screenHeight * 0.85 }]}>
             <View style={styles.modalHandle} />
             <View style={styles.modalHeader}>
               <TouchableOpacity onPress={() => setShowSecurityModal(false)}>
@@ -1395,7 +1396,7 @@ export default function VendorProfileScreen({ navigation = {} }) {
               <View style={{ width: 24 }} />
             </View>
 
-            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={true}>
+            <ScrollView style={{ maxHeight: screenHeight * 0.6 }} showsVerticalScrollIndicator={true}>
               {/* 2FA Section */}
               <View style={styles.securitySection}>
                 <View style={styles.securitySectionHeader}>
