@@ -233,6 +233,30 @@ ALTER TABLE vendors ADD COLUMN IF NOT EXISTS kra_pin     VARCHAR(20);
 
 ---
 
+## [1.6.0] - 2026-07-14
+
+### 🐛 Bug Fixes
+- **"Use Current Location" never worked on a real device** — `ProfileScreen.js`'s Saved Addresses modal called `window.navigator.geolocation`, a browser-only API that does not exist in React Native, so every attempt on a phone silently failed with "Geolocation is not supported on this platform." Fixed by branching on `Platform.OS`: web keeps the browser API, native now uses `expo-location` (already installed and permission-configured in `app.json`) with a proper foreground permission request — the same pattern already used by `MapAddressPicker` and the rider's live-location tracking.
+- **Notifications/Security/Help & Support modals rendered completely blank on Android** — The bottom-sheet container only had a percentage `maxHeight: '85%'`, which doesn't give React Native's layout engine a concrete size to resolve the inner `ScrollView`'s `flex: 1` against on Android, so the scrollable content collapsed to zero height and only the header showed. Fixed with a computed pixel `maxHeight` (`Dimensions.get('window').height * 0.85`) plus `flexShrink: 1`.
+- **Screen headers rendered under the status bar on Android** — Only `ExploreScreen.js` accounted for the safe-area top inset; every other screen with a custom header drew it flush against the top of the screen, colliding with the status bar. Applied the same `useSafeAreaInsets()` + `paddingTop: insets.top` fix to all 21 remaining screens with a custom header, across admin, consumer, food courier, and vendor.
+- **Food courier profile was silently broken for every courier** — `foodCourierProfile.routes.js` registered the profile endpoints at `GET/PUT /api/food-courier` and `PATCH /api/food-courier/toggle-availability`, instead of the controller's own documented `/api/food-courier/profile` paths. Every request 404'd. This had been masked rather than fixed: a client-side response interceptor caught the failure and quietly returned fake hardcoded data (5 tasks, KES 1,250, 4.8 rating) instead of surfacing the error, so the profile screen always looked like it was working while never actually reaching the database. The write endpoints (change vehicle, toggle availability) weren't covered by the mock and failed with a visible error every time. Fixed the route paths to match the controller's design and removed the mock — it was actively hiding the bug, and leaving it in place would keep masking any future real failure with fake data.
+- **Courier earnings/deliveries silently diverged from the real numbers** — Found while fixing the above: `FoodCourierProfileScreen.js` preferred a device-local `AsyncStorage` counter (incremented once per delivery in `RiderOrderDetailScreen.js`) over the correct, live-computed backend totals. The local counter starts at 0 on any given device regardless of how many real deliveries already exist, so the displayed stats would drift from reality after the very first locally-tracked delivery — and since the key wasn't scoped per user, a different courier logging into the same device would see the previous courier's leftover numbers. Removed the local override entirely; the screen now always trusts the backend's live-computed `total_deliveries`/`total_earnings`.
+- **Crash: `rating.toFixed is not a function`** — Surfaced immediately once the fake mock above was removed and real data started flowing: the backend returns a Sequelize `DECIMAL` column as a string (e.g. `"0.00"`), not a number, so calling `.toFixed()` on it directly crashed the profile screen. Fixed by coercing with `parseFloat(...) || 0` when the profile loads.
+- **Vehicle-type picker didn't work on web** — Both `FoodCourierProfileScreen.js` and `EditProfileScreen.js` used a multi-button `Alert.alert` to let a courier pick their vehicle type — the same pattern documented in `AGENTS.md` as non-functional on web. Fixed with a `Platform.OS === 'web'` branch using `window.prompt` with a numbered list, keeping the native `Alert.alert` picker unchanged.
+
+### 🔄 Modified files (key)
+| File | What changed |
+|---|---|
+| `CampusBite_Backend-main/src/routes/foodCourierProfile.routes.js` | Fixed route paths to `/profile`, `/profile`, `/profile/toggle-availability` |
+| `src/api/client.js` | Removed the fake-data mock for food courier profile fetch |
+| `src/screens/shared/ProfileScreen.js` | Native geolocation fix, modal blank-content fix |
+| `src/screens/foodCourier/FoodCourierProfileScreen.js` | Safe-area inset, removed AsyncStorage override, rating type fix, web vehicle picker |
+| `src/screens/foodCourier/EditProfileScreen.js` | Safe-area inset, web vehicle picker |
+| `src/screens/foodCourier/RiderOrderDetailScreen.js` | Removed the AsyncStorage shadow-counter write |
+| 18 other screens (admin/consumer/foodCourier/vendor) | Safe-area inset fix for custom headers |
+
+---
+
 ## [Unreleased] - Development
 
 ### 🚀 Upcoming Features

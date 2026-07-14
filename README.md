@@ -565,6 +565,13 @@ Sequelize `sync({ alter: false })` runs on every server start and will create an
 | PATCH | `/api/vendors/admin/:id/approve` | Approve vendor |
 | PATCH | `/api/vendors/admin/:id/reject` | Reject vendor |
 
+### Food Courier Profile
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| GET | `/api/food-courier/profile` | Courier | Own profile — vehicle info, availability, live-computed earnings/deliveries/rating |
+| PUT | `/api/food-courier/profile` | Courier | Update vehicle type / plate |
+| PATCH | `/api/food-courier/profile/toggle-availability` | Courier | Toggle online/offline |
+
 ### Food Courier Approvals (Admin)
 | Method | Endpoint | Description |
 |---|---|---|
@@ -639,6 +646,25 @@ Sequelize `sync({ alter: false })` runs on every server start and will create an
 - Fix pattern: branch on `Platform.OS === 'web'` and use the browser's native `window.confirm(message)` there instead, keeping `Alert.alert` for native iOS/Android (see `VendorOrderDetailScreen.js` or `RiderOrderDetailScreen.js` for the pattern). A single-button `Alert.alert` (just showing a message, no branching) is unaffected.
 - This bug has resurfaced more than once from otherwise-correct-looking fixes (see Changelog `[1.5.0]` — the Vendor Dashboard's Decline button regressed this way while fixing an unrelated stub). Grep for `Alert.alert(` calls with a button array before assuming an existing one works cross-platform.
 - If you add a new confirm-before-action button, test it on web specifically — it'll look identical to a working button until clicked.
+- The same bug shows up as a multi-choice picker too (e.g. a vehicle-type selector) — the web fix there is `window.prompt()` with a numbered list rather than `window.confirm()`. See `FoodCourierProfileScreen.js`'s `handleVehicleChange`.
+
+### "Geolocation is not supported on this platform" on a real device
+- `window.navigator.geolocation` is a browser-only API — it does not exist in React Native, so any code path that calls it directly always fails on native with this exact message (see Changelog `[1.6.0]`). Use `expo-location` on native (`Location.requestForegroundPermissionsAsync()` + `Location.getCurrentPositionAsync()`), branching on `Platform.OS`, as in `ProfileScreen.js` or `MapAddressPicker`.
+
+### A bottom-sheet modal shows only its header, content area is blank (Android)
+- The sheet's container had a percentage `maxHeight` (e.g. `'85%'`) with no other height information — Android's layout engine can't resolve an inner `ScrollView`'s `flex: 1` against that, so it collapses to zero height. Fix: `maxHeight: Dimensions.get('window').height * 0.85` plus `flexShrink: 1` on the sheet.
+
+### A screen's header renders under the status bar
+- Any screen with `headerShown: false` draws its own header and must handle the top safe-area inset itself. Add `const insets = useSafeAreaInsets();` and apply `paddingTop: insets.top` to the screen's root View — see `ExploreScreen.js` for the original reference implementation, now applied to every screen with a custom header (Changelog `[1.6.0]`).
+
+### An API call 404s but the screen still shows data
+- Check `src/api/client.js`'s response interceptor for a mock matching that URL. One existed for the food courier profile fetch — instead of fixing a wrong route path, it silently faked a successful response with hardcoded stats, hiding the real 404 for months. Grep `client.js` for `.includes(` before trusting that a working-looking screen is actually reaching the backend.
+
+### Testing on a physical phone via Expo Go
+- Run `npx expo start --lan` (or `npm start`) and scan the QR code with Expo Go — Expo Go must support this project's SDK version (currently 54), so update the app if it's out of date.
+- Your phone and computer must be on the **same Wi-Fi network**.
+- `CampusBite_App-main/CampusBite_App-main/src/constants/index.js`'s `API_BASE_URL` must point at your computer's **LAN IP** (`ipconfig` / `ifconfig`), not `localhost` — `localhost` on the phone means the phone itself. This is environment-specific; don't commit your personal LAN IP as the shared default.
+- The backend already binds to `0.0.0.0`, so no backend code changes are needed for LAN access — only firewall rules if your OS blocks inbound connections to `node.exe`.
 
 ---
 

@@ -345,17 +345,21 @@ npm run web
 - Full functionality available
 - No additional setup needed
 
-### **📱 Mobile Version**
+### **📱 Mobile Version (Expo Go, physical device)**
 ```bash
 npm start
 ```
-1. Install Expo Go app
-2. Scan QR code from terminal
-3. App loads on your phone
+or explicitly `npx expo start --lan` if `npm start` doesn't show a QR code.
+
+1. Install the **Expo Go** app on your phone (this project targets **Expo SDK 54** — update Expo Go if it's out of date, since Expo Go usually only supports the latest SDK or two).
+2. Make sure your **phone is on the same Wi-Fi network** as the computer running the dev server.
+3. Scan the QR code shown in the terminal — or, if it isn't rendering (e.g. output piped to a file/log instead of an interactive terminal), open Expo Go → **"Enter URL manually"** and type `exp://<your-computer's-LAN-IP>:8082`.
+4. **`src/constants/index.js`'s `API_BASE_URL` must point at your computer's LAN IP** (e.g. `http://192.168.1.42:5000`), not `localhost` — `localhost` on the phone refers to the phone itself, not your computer. Find your LAN IP with `ipconfig` (Windows) / `ifconfig` (macOS/Linux). This value is environment-specific — don't commit your personal LAN IP as the shared default.
+5. The backend already binds to `0.0.0.0` so it accepts LAN connections; if it's unreachable, check that your firewall allows inbound connections to `node.exe` (or ports 5000/8082) from the local network.
 
 ### **📱 Testing**
 - **Web**: Best for development and testing
-- **Mobile**: Test with Expo Go app
+- **Mobile (Expo Go)**: Real-device testing — see above for LAN setup
 - **Emulators**: Android Studio/Xcode required
 
 ---
@@ -439,7 +443,19 @@ npm install
 - Clear Expo Go cache
 
 ### **Confirmation dialogs not responding on web**
-- React Native's `Alert.alert(title, message, [buttonA, buttonB])` does not render on web — tapping the action does nothing, with no error and no dialog. If a confirm/cancel-style button silently fails on web, check whether it uses a multi-button `Alert.alert`; the fix is to branch on `Platform.OS === 'web'` and use the browser's native `window.confirm()` there instead. See `AGENTS.md` for the full pattern.
+- React Native's `Alert.alert(title, message, [buttonA, buttonB])` does not render on web — tapping the action does nothing, with no error and no dialog. If a confirm/cancel-style button silently fails on web, check whether it uses a multi-button `Alert.alert`; the fix is to branch on `Platform.OS === 'web'` and use the browser's native `window.confirm()` there instead (`window.prompt()` for a multi-choice picker, as in the food courier's vehicle-type selector). See `AGENTS.md` for the full pattern.
+
+### **"Use Current Location" says geolocation isn't supported**
+- On native, location must go through `expo-location` (`Location.requestForegroundPermissionsAsync()` + `Location.getCurrentPositionAsync()`) — the browser's `navigator.geolocation` API does not exist in React Native. If you add a new "use my location" button, branch on `Platform.OS` the same way `ProfileScreen.js` does.
+
+### **A bottom-sheet modal shows its header but the content area is blank (Android)**
+- A percentage `maxHeight` (e.g. `'85%'`) on the modal sheet doesn't give Android's layout engine a concrete size to resolve an inner `ScrollView`'s `flex: 1` against, so the scrollable content silently collapses to zero height. Fix: compute the max height in pixels via `Dimensions.get('window').height * 0.85` and add `flexShrink: 1` to the sheet container.
+
+### **A screen's custom header renders under the status bar**
+- Screens with `headerShown: false` draw their own header and are responsible for their own top safe-area padding. Use `useSafeAreaInsets()` from `react-native-safe-area-context` and apply `paddingTop: insets.top` to the screen's root `View` — see `ExploreScreen.js` for the reference pattern, now applied across every screen with a custom header.
+
+### **An endpoint 404s but the UI shows data anyway**
+- Check `src/api/client.js` for a response interceptor mocking that specific URL — a prior "fix" for the food courier profile 404 masked the real broken route with fake hardcoded data instead of fixing the route path. Grep `client.js` for `.includes(` before assuming a working-looking screen is actually reaching the backend.
 
 ---
 
