@@ -413,6 +413,49 @@ Mark all of the user's notifications as read.
 
 ---
 
+## Favorites
+
+Consumer-only. Lets a consumer save specific menu items for quick reordering from their Profile screen. Vendors have no equivalent — favorites are entirely on the consumer side.
+
+### POST /favorites/toggle
+Favorite a menu item if not already favorited, or un-favorite it if it is.
+
+**Auth:** required (`consumer`)
+**Body:** `{ "menu_item_id": "uuid" }`
+
+**Response `200`/`201`:**
+```json
+{ "success": true, "is_favorited": true }
+```
+
+### GET /favorites
+Get the consumer's favorited menu items, newest first, with vendor info attached (for the "quick reorder" navigation).
+
+**Auth:** required (`consumer`)
+
+**Response `200`:**
+```json
+{
+  "success": true,
+  "count": 1,
+  "items": [
+    {
+      "id": "uuid", "name": "Chips", "price": "100.00", "image": "/uploads/menu/...",
+      "vendor": { "id": "uuid", "business_name": "Campus Vendor Shop", "is_open": true }
+    }
+  ]
+}
+```
+
+### GET /favorites/ids
+Lightweight variant returning just the favorited `menu_item_id`s — used by `VendorDetailScreen.js` to mark hearts filled/outline without fetching full item data.
+
+**Auth:** required (`consumer`)
+
+**Response `200`:** `{ "success": true, "menu_item_ids": ["uuid", "uuid"] }`
+
+---
+
 ## Payments
 
 These routes are payment-method-agnostic — they work the same for M-Pesa and card checkout sessions, keyed by `checkout_request_id` (M-Pesa) or `payment_id` (card).

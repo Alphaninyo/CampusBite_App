@@ -12,6 +12,7 @@ export default function VendorDetailScreen({ route, navigation }) {
   const [menu, setMenu]       = useState([]);
   const [cart, setCart]       = useState({});
   const [loading, setLoading] = useState(true);
+  const [favoriteIds, setFavoriteIds] = useState(new Set());
   const menuLoaded = useRef(false);
 
   // Restore persisted cart for this vendor on mount
@@ -31,7 +32,28 @@ export default function VendorDetailScreen({ route, navigation }) {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
+
+    api.favorites.getIds()
+      .then(({ data }) => setFavoriteIds(new Set(data.menu_item_ids || [])))
+      .catch(() => {});
   }, []);
+
+  const toggleFavorite = (itemId) => {
+    const wasFavorited = favoriteIds.has(itemId);
+    setFavoriteIds((prev) => {
+      const next = new Set(prev);
+      if (wasFavorited) next.delete(itemId); else next.add(itemId);
+      return next;
+    });
+    api.favorites.toggle(itemId).catch(() => {
+      // Revert on failure
+      setFavoriteIds((prev) => {
+        const next = new Set(prev);
+        if (wasFavorited) next.add(itemId); else next.delete(itemId);
+        return next;
+      });
+    });
+  };
 
   // Persist cart to store whenever it changes (after menu is loaded)
   useEffect(() => {
@@ -140,12 +162,25 @@ export default function VendorDetailScreen({ route, navigation }) {
         }
         renderItem={({ item }) => (
           <View style={styles.item}>
-            {item.image
-              ? <Image source={{ uri: `${API_BASE_URL}${item.image}` }} style={styles.itemImage} resizeMode="cover" />
-              : <View style={[styles.itemImage, styles.itemImagePlaceholder]}>
-                  <Ionicons name="fast-food-outline" size={24} color={COLORS.primary} />
-                </View>
-            }
+            <View>
+              {item.image
+                ? <Image source={{ uri: `${API_BASE_URL}${item.image}` }} style={styles.itemImage} resizeMode="cover" />
+                : <View style={[styles.itemImage, styles.itemImagePlaceholder]}>
+                    <Ionicons name="fast-food-outline" size={24} color={COLORS.primary} />
+                  </View>
+              }
+              <TouchableOpacity
+                style={styles.favoriteBtn}
+                onPress={() => toggleFavorite(item.id)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons
+                  name={favoriteIds.has(item.id) ? 'heart' : 'heart-outline'}
+                  size={16}
+                  color={favoriteIds.has(item.id) ? COLORS.danger : COLORS.white}
+                />
+              </TouchableOpacity>
+            </View>
             <View style={styles.itemInfo}>
               <Text style={styles.itemName}>{item.name}</Text>
               {item.description && <Text style={styles.itemDesc}>{item.description}</Text>}
@@ -235,6 +270,12 @@ const styles = StyleSheet.create({
   },
   itemImagePlaceholder: {
     backgroundColor: COLORS.primary + '12',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  favoriteBtn: {
+    position: 'absolute', top: -4, right: -4,
+    width: 26, height: 26, borderRadius: 13,
+    backgroundColor: 'rgba(0,0,0,0.45)',
     alignItems: 'center', justifyContent: 'center',
   },
   itemInfo: { flex: 1 },

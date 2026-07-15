@@ -491,14 +491,18 @@ A: Go to Orders tab to view all platform orders,
 - Distance filters
 ```
 
-### **Favorites and Bookmarks**
+### **Favourite Items**
 ```javascript
-// Favorite Features
-- Save favorite vendors
-- Bookmark favorite items
-- Quick reorder options
-- Personalized recommendations
-- Favorite order combinations
+// How to Favourite an Item
+1. Open any vendor's page and browse their menu
+2. Tap the heart icon on any item's photo
+3. The heart fills in red — the item is now saved
+
+// Finding Your Favourites
+1. Go to Profile
+2. Scroll to "Favourite Items" (shows your most recent ones)
+3. Tap "See all" to view your full list
+4. Tap any item to jump straight to that vendor's menu for quick reordering
 ```
 
 ---

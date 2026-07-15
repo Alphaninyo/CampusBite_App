@@ -277,6 +277,35 @@ ALTER TABLE vendors ADD COLUMN IF NOT EXISTS kra_pin     VARCHAR(20);
 
 ---
 
+## [1.7.0] - 2026-07-16
+
+### 🎉 New Features
+- **Favourite Items (consumer)** — The Profile screen's "Favourite Items" section was a static placeholder with no functionality behind it at all ("Tap the heart on any item..." never actually did anything anywhere in the app, the "Favourites" stat was a hardcoded `—`, and "See all" had no `onPress`). Built out for real, consumer-only:
+  - A heart icon on every item in `VendorDetailScreen.js`'s menu — tap to favorite/unfavorite a dish, with an optimistic UI update.
+  - The Profile screen's "Favourite Items" section now shows the consumer's actual favorited items (image, price, vendor), and the "Favourites" stat shows the real count.
+  - "See all" opens a modal (matching the existing Notifications/Security bottom-sheet pattern) listing every favorited item.
+  - Tapping a favorited item — inline or in the modal — navigates straight to that vendor's menu for quick reordering.
+  - New backend: `Favorite` model (unique per consumer + menu item), `POST /api/favorites/toggle`, `GET /api/favorites`, `GET /api/favorites/ids`.
+  - This is scoped entirely to the consumer side — vendors have no favorites concept; `VendorProfileScreen.js` was not touched.
+
+### 📁 New files
+| File | Purpose |
+|---|---|
+| `CampusBite_Backend-main/src/models/Favorite.js` | Favorite model (consumer_id + menu_item_id, unique together) |
+| `CampusBite_Backend-main/src/controllers/favorite.controller.js` | Toggle, list, and lightweight IDs-only endpoints |
+| `CampusBite_Backend-main/src/routes/favorite.routes.js` | Mounted at `/api/favorites` |
+
+### 🔄 Modified files (key)
+| File | What changed |
+|---|---|
+| `CampusBite_Backend-main/src/models/index.js` | Favorite ↔ User / MenuItem associations |
+| `CampusBite_Backend-main/src/app.js` | Mounted `/api/favorites` |
+| `src/api/index.js` | Added `favorites.toggle()` / `getIds()` / `getAll()` |
+| `src/screens/consumer/VendorDetailScreen.js` | Heart icon + toggle on every menu item |
+| `src/screens/shared/ProfileScreen.js` | Real Favourite Items data, real stat count, "See all" modal |
+
+---
+
 ## [Unreleased] - Development
 
 ### 🚀 Upcoming Features

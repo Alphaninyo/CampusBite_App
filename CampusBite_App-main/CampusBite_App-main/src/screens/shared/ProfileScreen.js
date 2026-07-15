@@ -37,6 +37,7 @@ export default function ProfileScreen({ navigation }) {
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const [showSupportModal, setShowSupportModal]   = useState(false);
   const [showSecurityModal, setShowSecurityModal] = useState(false);
+  const [showFavoritesModal, setShowFavoritesModal] = useState(false);
 
   const [totalOrders, setTotalOrders] = useState(0);
   const [totalSpent, setTotalSpent]   = useState(0);
@@ -45,6 +46,7 @@ export default function ProfileScreen({ navigation }) {
 
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [favoriteItems, setFavoriteItems] = useState([]);
   const [newAddressLabel, setNewAddressLabel] = useState('');
   const [newAddressDetails, setNewAddressDetails] = useState('');
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
@@ -59,8 +61,16 @@ export default function ProfileScreen({ navigation }) {
       setPhone(user.phone || '');
       fetchStats();
       fetchNotifications();
+      fetchFavorites();
     }
   }, [user]);
+
+  const fetchFavorites = async () => {
+    try {
+      const { data } = await api.favorites.getAll();
+      setFavoriteItems(data.items || []);
+    } catch (_) {}
+  };
 
   const fetchStats = async () => {
     try {
@@ -851,6 +861,56 @@ export default function ProfileScreen({ navigation }) {
         </View>
       </Modal>
 
+      {/* ── Favourite Items Modal ("See all") ────────────────────────────────── */}
+      <Modal visible={showFavoritesModal} animationType={isWeb ? 'fade' : 'slide'} transparent>
+        <View style={[styles.modalOverlay, isWeb && styles.modalOverlayWeb]}>
+          <View style={[styles.modalSheet, { maxHeight: screenHeight * 0.85 }, isWeb && styles.modalSheetWeb]}>
+            {!isWeb && <View style={styles.modalHandle} />}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Favourite Items</Text>
+              <TouchableOpacity onPress={() => setShowFavoritesModal(false)}>
+                <Ionicons name="close" size={24} color={COLORS.subtext} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ maxHeight: screenHeight * 0.6 }} showsVerticalScrollIndicator={true}>
+              {favoriteItems.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Ionicons name="heart-outline" size={44} color={COLORS.muted} />
+                  <Text style={styles.emptyText}>
+                    Tap the heart on any item to save it here for quick reordering.
+                  </Text>
+                </View>
+              ) : (
+                favoriteItems.map((item, i) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[styles.orderRow, i === 0 && { borderTopWidth: 0 }]}
+                    onPress={() => {
+                      setShowFavoritesModal(false);
+                      navigation.navigate('HomeTab', { screen: 'VendorDetail', params: { vendor: item.vendor } });
+                    }}
+                  >
+                    {item.image ? (
+                      <Image source={{ uri: `${API_BASE_URL}${item.image}` }} style={styles.favItemImage} />
+                    ) : (
+                      <View style={[styles.favItemImage, styles.favItemImagePlaceholder]}>
+                        <Ionicons name="fast-food-outline" size={18} color={COLORS.primary} />
+                      </View>
+                    )}
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.orderVendor} numberOfLines={1}>{item.name}</Text>
+                      <Text style={styles.orderMeta}>KES {parseFloat(item.price).toFixed(2)} · {item.vendor?.business_name}</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color={COLORS.muted} />
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
       {/* ── Help & Support Modal ────────────────────────────────────────────── */}
       <Modal visible={showSupportModal} animationType={isWeb ? 'fade' : 'slide'} transparent>
         <View style={[styles.modalOverlay, isWeb && styles.modalOverlayWeb]}>
@@ -1006,7 +1066,7 @@ export default function ProfileScreen({ navigation }) {
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>—</Text>
+              <Text style={styles.statValue}>{favoriteItems.length}</Text>
               <Text style={styles.statLabel}>Favourites</Text>
             </View>
           </View>
@@ -1072,16 +1132,41 @@ export default function ProfileScreen({ navigation }) {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>FAVOURITE ITEMS</Text>
-              <TouchableOpacity>
-                <Text style={styles.seeAll}>See all</Text>
-              </TouchableOpacity>
+              {favoriteItems.length > 0 && (
+                <TouchableOpacity onPress={() => setShowFavoritesModal(true)}>
+                  <Text style={styles.seeAll}>See all</Text>
+                </TouchableOpacity>
+              )}
             </View>
-            <View style={styles.emptyState}>
-              <Ionicons name="heart-outline" size={44} color={COLORS.muted} />
-              <Text style={styles.emptyText}>
-                Tap the heart on any item to save it here for quick reordering.
-              </Text>
-            </View>
+            {favoriteItems.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Ionicons name="heart-outline" size={44} color={COLORS.muted} />
+                <Text style={styles.emptyText}>
+                  Tap the heart on any item to save it here for quick reordering.
+                </Text>
+              </View>
+            ) : (
+              favoriteItems.slice(0, 3).map((item, i) => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={[styles.orderRow, i === 0 && { borderTopWidth: 0 }]}
+                  onPress={() => navigation.navigate('HomeTab', { screen: 'VendorDetail', params: { vendor: item.vendor } })}
+                >
+                  {item.image ? (
+                    <Image source={{ uri: `${API_BASE_URL}${item.image}` }} style={styles.favItemImage} />
+                  ) : (
+                    <View style={[styles.favItemImage, styles.favItemImagePlaceholder]}>
+                      <Ionicons name="fast-food-outline" size={18} color={COLORS.primary} />
+                    </View>
+                  )}
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.orderVendor} numberOfLines={1}>{item.name}</Text>
+                    <Text style={styles.orderMeta}>KES {parseFloat(item.price).toFixed(2)} · {item.vendor?.business_name}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={COLORS.muted} />
+                </TouchableOpacity>
+              ))
+            )}
           </View>
         )}
 
@@ -1218,6 +1303,11 @@ const styles = StyleSheet.create({
   },
   orderVendor: { fontSize: 14, fontWeight: '600', color: COLORS.text, marginBottom: 2 },
   orderMeta:   { fontSize: 12, color: COLORS.subtext },
+  favItemImage: { width: 38, height: 38, borderRadius: 10, marginRight: 12 },
+  favItemImagePlaceholder: {
+    backgroundColor: COLORS.primary + '18',
+    alignItems: 'center', justifyContent: 'center',
+  },
 
   // ── Menu rows ─────────────────────────────────────────────────────────────
   menuRow: {

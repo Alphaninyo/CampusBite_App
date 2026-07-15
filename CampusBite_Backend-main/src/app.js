@@ -51,6 +51,7 @@ app.use('/api/food-courier',     require('./routes/foodCourierProfile.routes'));
 app.use('/api/admin',            require('./routes/admin.routes'));
 app.use('/api/verification',     require('./routes/verification.routes'));
 app.use('/api/promo-codes',      require('./routes/promoCode.routes'));
+app.use('/api/favorites',        require('./routes/favorite.routes'));
 
 // ─── 404 Handler ─────────────────────────────────────────────────────────────
 

@@ -28,6 +28,7 @@ For detailed instructions, see [QUICK_START.md](./QUICK_START.md)
 - **🔔 Push Notifications** - Order updates delivered via Expo push notifications; vendor bell icon shows live unread count badge
 - **🔐 Security** - Two-Factor Authentication (2FA) and password management
 - **📍 Saved Addresses** - Manage delivery locations with current location support
+- **❤️ Favourite Items** - Consumers can heart menu items on a vendor's page for quick reordering from their Profile
 - **❓ Help & Support** - Role-based support and accordion FAQ system
 - **📸 Vendor Cover Images** - Vendors can upload a banner photo shown on their store page
 - **⏰ Business Hours** - Vendors set opening/closing times (24-hour format, HH:MM); visible to consumers
@@ -166,6 +167,7 @@ CampusBite integrates with Stripe for debit/credit card checkout, using the same
 - **⚙️ Settings** - App preferences
 - **🔐 Security** - Two-Factor Authentication (2FA) setup and password management
 - **📍 Saved Addresses** - Manage delivery locations with "Use Current Location" feature
+- **❤️ Favourite Items** - Heart a dish on any vendor's menu to save it here for quick reordering; "See all" opens the full list
 - **🔔 Notifications** - View and manage order updates and promotional messages
 - **❓ Help & Support** - Role-based FAQ and contact information
 - **📝 Profile Edit** - Update name, phone, and profile picture
@@ -176,6 +178,7 @@ CampusBite integrates with Stripe for debit/credit card checkout, using the same
 
 ### **🛒 Consumer**
 - Browse and order food from vendors
+- Heart favourite menu items on a vendor's page for quick reordering later
 - Track order status in real-time
 - Manage saved addresses with location services
 - Access role-based help & support

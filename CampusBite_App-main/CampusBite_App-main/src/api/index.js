@@ -117,6 +117,13 @@ export const api = {
     getOrderReview: (orderId)  => client.get(`/reviews/order/${orderId}`),
   },
 
+  // ─── Favorites ──────────────────────────────────────────────────────────────
+  favorites: {
+    toggle: (menuItemId) => client.post('/favorites/toggle', { menu_item_id: menuItemId }),
+    getIds: ()           => client.get('/favorites/ids'),
+    getAll: ()           => client.get('/favorites'),
+  },
+
   // ─── Notifications ─────────────────────────────────────────────────────────────
   notifications: {
     getAll:         ()         => client.get('/notifications'),

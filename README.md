@@ -227,6 +227,7 @@ CampusBite_App-main/
 - **Stripe card payments** — Real test-mode card checkout via a secure Stripe-hosted page, with dev-mode simulation when no Stripe keys are configured
 - **Promo codes** — Vendor-created discount codes with percentage or flat-amount discounts
 - **Consumer reviews** — Star ratings and written feedback after delivery
+- **Favourite items** — Consumers can heart a menu item on any vendor's page; shows on their Profile for quick reordering
 - **In-app notification system** — Persistent DB-backed notifications with unread indicators
 - **FCM push notifications** — Optional Firebase integration for background device alerts
 - **Admin dashboard** — Stats, vendor management, order tracking, user management, and approval flows
@@ -242,6 +243,7 @@ CampusBite_App-main/
 4. Track order in real-time through the Orders tab (status + rider location)
 5. Write a review after delivery
 6. Report a problem on any non-cancelled order (wrong/missing items, never delivered, poor quality, or other) — shows a status badge until an admin resolves it
+7. Heart any menu item while browsing a vendor's page to save it to Favourite Items on their Profile for quick reordering
 
 ### Vendor
 1. Register → upload ID/Passport + Passport Sized Photo during onboarding
@@ -586,6 +588,13 @@ Sequelize `sync({ alter: false })` runs on every server start and will create an
 | GET | `/api/notifications/unread-count` | Any | Count of unread notifications |
 | PATCH | `/api/notifications/:id/mark-read` | Any | Mark one as read |
 | PATCH | `/api/notifications/mark-all-read` | Any | Mark all as read |
+
+### Favorites
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| POST | `/api/favorites/toggle` | Consumer | Toggle a menu item favorited/unfavorited (body: `{ menu_item_id }`) |
+| GET | `/api/favorites` | Consumer | Full favorited menu items with vendor info, newest first |
+| GET | `/api/favorites/ids` | Consumer | Just the favorited `menu_item_id`s — lightweight, for marking hearts filled/outline |
 
 ---
 
