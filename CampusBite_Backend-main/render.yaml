@@ -1,0 +1,62 @@
+databases:
+  - name: campusbite-db
+    databaseName: campusbite_db
+    user: campusbite_user
+    plan: free
+
+services:
+  - type: web
+    name: campusbite-backend-api
+    runtime: node
+    rootDir: CampusBite_Backend-main
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_HOST
+        fromDatabase:
+          name: campusbite-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: campusbite-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: campusbite-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: campusbite-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: campusbite-db
+          property: password
+      - key: DB_SSL
+        value: "true"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      # Secrets below are intentionally left unset here (sync: false) —
+      # fill them in via the Render dashboard after the blueprint deploys.
+      # Never commit real key values into this file.
+      - key: MPESA_CONSUMER_KEY
+        sync: false
+      - key: MPESA_CONSUMER_SECRET
+        sync: false
+      - key: MPESA_SHORTCODE
+        value: "174379"
+      - key: MPESA_PASSKEY
+        sync: false
+      - key: MPESA_CALLBACK_URL
+        sync: false
+      - key: MPESA_ENV
+        value: sandbox
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false

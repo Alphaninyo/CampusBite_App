@@ -15,6 +15,13 @@ const sequelize = new Sequelize(
     port: process.env.DB_PORT || 5432,
     dialect: 'postgres',
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
+    // Managed Postgres hosts (Render, etc.) require SSL for external
+    // connections. Set DB_SSL=true in that environment only — local/internal
+    // connections don't need it and self-signed certs are common, hence
+    // rejectUnauthorized: false.
+    dialectOptions: process.env.DB_SSL === 'true'
+      ? { ssl: { require: true, rejectUnauthorized: false } }
+      : {},
     pool: {
       max: 10,        // Maximum number of connections in pool
       min: 0,         // Minimum number of connections in pool
