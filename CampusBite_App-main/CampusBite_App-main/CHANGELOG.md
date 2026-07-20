@@ -306,6 +306,43 @@ ALTER TABLE vendors ADD COLUMN IF NOT EXISTS kra_pin     VARCHAR(20);
 
 ---
 
+## [1.7.1] - 2026-07-15
+
+### 🎉 New Features
+- **Vendor menu item delete and disable** — Vendors can now delete menu items from the Menu tab via a confirmation dialog, and toggle an item's availability on/off so it shows as "OUT OF STOCK" to consumers.
+- **Food courier active delivery visibility** — The Tasks (`AvailableOrdersScreen`) now shows a "My Active Delivery" section at the top for any order assigned to the logged-in courier and not yet delivered, so riders can quickly access their current delivery.
+
+### 🔧 Improvements
+- **Menu delete confirmation** — Replaced the native `Alert.alert` multi-button confirmation with a custom cross-platform `Modal` so the confirmation works reliably on web.
+
+### 📚 Documentation
+- Updated `README.md` to reflect vendor menu management and food courier active delivery features.
+- Updated `docs/USER_GUIDE.md` with new sections for Vendor Menu Management and Food Courier Deliveries.
+
+---
+
+## [1.8.0] - 2026-07-20
+
+### 🎉 New Features
+- **Refund handling when a vendor declines a paid order** — Previously, declining an order just marked it `Cancelled` and sent a notification promising "a refund will be processed if applicable" — nothing actually processed it. Now, when a vendor declines an already-paid order: cash orders are marked `not_applicable` (nothing was ever collected); card orders are refunded for real via Stripe's Refunds API; M-Pesa orders are flagged `manual_required`, since automated reversal needs Safaricom Daraja Reversal API credentials (Initiator name + Security Credential) this project doesn't have configured — a new admin-only `PATCH /api/admin/orders/:id/mark-refund-complete` endpoint lets an admin mark it done once they've sent the refund manually. New `orders.refund_status` (`not_applicable` / `refunded` / `manual_required` / `failed`) and `orders.refunded_at` columns; new `Payment` status value `refunded`.
+- **Contact numbers for vendor, rider, and consumer, visible to each other** — The backend never fetched the vendor's own phone number in any order query (only `business_name`/`location`) — nobody could call a vendor from the app. Consumer and rider phones were already being fetched but had no tappable call button anywhere. Added `vendor.owner.phone` to every relevant order query, and added `tel:` Call buttons across all three roles: consumer's `OrderDetailScreen.js` (call vendor + call rider), vendor's `VendorOrderDetailScreen.js` (call customer — call rider already existed), and food courier's `RiderOrderDetailScreen.js` (call vendor + call customer). Every number shown is exactly the phone number that user registered their account with.
+
+### 🔄 Modified files (key)
+| File | What changed |
+|---|---|
+| `CampusBite_Backend-main/src/controllers/order.controller.js` | `refundDeclinedOrder()`, vendor `owner.phone` added to order includes |
+| `CampusBite_Backend-main/src/controllers/admin.controller.js` | `markRefundComplete` |
+| `CampusBite_Backend-main/src/routes/admin.routes.js` | New `mark-refund-complete` route |
+| `CampusBite_Backend-main/src/services/stripe.service.js` | `refundPaymentIntent()` |
+| `CampusBite_Backend-main/src/models/Order.js` | `refund_status`, `refunded_at` |
+| `CampusBite_Backend-main/src/models/Payment.js` | Added `refunded` status |
+| `CampusBite_Backend-main/server.js` | New idempotent migrations for the above |
+| `src/screens/consumer/OrderDetailScreen.js` | Vendor contact card, rider Call button |
+| `src/screens/vendor/VendorOrderDetailScreen.js` | Call button next to customer phone |
+| `src/screens/foodCourier/RiderOrderDetailScreen.js` | Call buttons for vendor and customer |
+
+---
+
 ## [Unreleased] - Development
 
 ### 🚀 Upcoming Features

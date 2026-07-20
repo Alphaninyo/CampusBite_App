@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl, Modal, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl, Modal, TextInput, Alert, KeyboardAvoidingView, Platform, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../api';
@@ -58,6 +58,14 @@ export default function OrderDetailScreen({ route, navigation }) {
       setRefreshing(false);
     }
   }, [orderId, checkReview]);
+
+  const callVendor = () => {
+    if (order?.vendor?.owner?.phone) Linking.openURL(`tel:${order.vendor.owner.phone}`);
+  };
+
+  const callRider = () => {
+    if (order?.rider?.phone) Linking.openURL(`tel:${order.rider.phone}`);
+  };
 
   // Poll for order updates every 5 seconds when screen is focused
   useFocusEffect(
@@ -193,6 +201,59 @@ export default function OrderDetailScreen({ route, navigation }) {
         </View>
       </View>
 
+      {/* Refund status (only shown for cancelled, paid orders) */}
+      {order.status === 'Cancelled' && order.refund_status !== 'not_applicable' && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Refund</Text>
+          {order.refund_status === 'refunded' ? (
+            <View style={styles.refundRow}>
+              <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
+              <Text style={[styles.refundText, { color: COLORS.success }]}>
+                Refunded{order.refunded_at ? ` on ${new Date(order.refunded_at).toLocaleDateString()}` : ''}
+              </Text>
+            </View>
+          ) : order.refund_status === 'manual_required' ? (
+            <View style={styles.refundRow}>
+              <Ionicons name="time-outline" size={18} color={COLORS.warningText} />
+              <Text style={[styles.refundText, { color: COLORS.warningText }]}>
+                Your M-Pesa refund is being processed manually by our team — please allow some time.
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.refundRow}>
+              <Ionicons name="alert-circle-outline" size={18} color={COLORS.danger} />
+              <Text style={[styles.refundText, { color: COLORS.danger }]}>
+                There was an issue processing your refund. Please contact support.
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
+
+      {/* Vendor */}
+      {order.vendor && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Vendor</Text>
+          <View style={styles.riderRow}>
+            <View style={styles.riderAvatar}>
+              <Ionicons name="storefront-outline" size={20} color={COLORS.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.riderName}>{order.vendor.business_name}</Text>
+              {order.vendor.owner?.phone && (
+                <Text style={styles.riderPhone}>{order.vendor.owner.phone}</Text>
+              )}
+            </View>
+            {order.vendor.owner?.phone && (
+              <TouchableOpacity style={styles.callBtn} onPress={callVendor}>
+                <Ionicons name="call" size={16} color={COLORS.white} />
+                <Text style={styles.callBtnText}>Call</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      )}
+
       {/* Delivery Address */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Delivery Address</Text>
@@ -214,6 +275,12 @@ export default function OrderDetailScreen({ route, navigation }) {
               <Text style={styles.riderName}>{order.rider.name}</Text>
               <Text style={styles.riderPhone}>{order.rider.phone}</Text>
             </View>
+            {order.rider.phone && (
+              <TouchableOpacity style={styles.callBtn} onPress={callRider}>
+                <Ionicons name="call" size={16} color={COLORS.white} />
+                <Text style={styles.callBtnText}>Call</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       )}
@@ -427,6 +494,8 @@ const styles = StyleSheet.create({
   // Address
   addressRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   addressText: { color: COLORS.gray, fontSize: 13, flex: 1 },
+  refundRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  refundText: { fontSize: 13, flex: 1, lineHeight: 18 },
 
   // Rider
   riderRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -440,6 +509,12 @@ const styles = StyleSheet.create({
   },
   riderName: { fontSize: 14, fontWeight: '600', color: COLORS.text },
   riderPhone: { fontSize: 12, color: COLORS.gray, marginTop: 2 },
+  callBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: COLORS.success, borderRadius: 10,
+    paddingVertical: 8, paddingHorizontal: 12,
+  },
+  callBtnText: { color: COLORS.white, fontWeight: '700', fontSize: 13 },
 
   // Map
   mapHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },

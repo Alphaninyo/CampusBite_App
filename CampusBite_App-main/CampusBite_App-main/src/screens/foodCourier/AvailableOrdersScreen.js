@@ -31,6 +31,7 @@ function getMockBadge(index) {
 export default function AvailableOrdersScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const [orders, setOrders]     = useState([]);
+  const [myOrders, setMyOrders] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [accepting, setAccepting] = useState(null);
@@ -39,8 +40,12 @@ export default function AvailableOrdersScreen({ navigation }) {
 
   const fetchOrders = useCallback(async () => {
     try {
-      const { data } = await api.orders.getAvailableForFoodCourier();
-      setOrders(data.orders);
+      const [avRes, myRes] = await Promise.all([
+        api.orders.getAvailableForFoodCourier(),
+        api.orders.getFoodCourierOrders(),
+      ]);
+      setOrders(avRes.data.orders || []);
+      setMyOrders(myRes.data.orders || []);
     } catch (err) {
       console.error(err.message);
     } finally {
@@ -73,6 +78,8 @@ export default function AvailableOrdersScreen({ navigation }) {
       setAccepting(null);
     }
   };
+
+  const activeDeliveries = myOrders.filter(o => o.status !== 'Delivered' && o.status !== 'Cancelled');
 
   const filteredOrders = orders.filter((order, index) => {
     if (activeFilter === 'All Tasks') return true;
@@ -124,6 +131,39 @@ export default function AvailableOrdersScreen({ navigation }) {
           </TouchableOpacity>
         ))}
       </View>
+
+      {/* Active Deliveries Section */}
+      {activeDeliveries.length > 0 && (
+        <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
+          <Text style={styles.sectionTitle}>My Active Delivery</Text>
+          {activeDeliveries.map((item, index) => (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.activeCard}
+              onPress={() => navigation.navigate('FoodCourierOrderDetail', { orderId: item.id })}
+              activeOpacity={0.8}
+            >
+              <View style={styles.activeHeader}>
+                <View>
+                  <Text style={styles.activeRestaurant}>{item.vendor?.business_name}</Text>
+                  <View style={styles.distanceRow}>
+                    <Ionicons name="location-outline" size={14} color={COLORS.gray} />
+                    <Text style={styles.distanceText}>{item.delivery_address}</Text>
+                  </View>
+                </View>
+                <View style={[styles.statusBadge, { backgroundColor: COLORS.success }]}>
+                  <Text style={styles.statusBadgeText}>{item.status}</Text>
+                </View>
+              </View>
+              <View style={styles.activeFooter}>
+                <Ionicons name="cash-outline" size={18} color={COLORS.primary} />
+                <Text style={styles.activeEarnings}>KES {getEarnings(item).toFixed(0)}</Text>
+                <Text style={styles.activeCta}>Tap to manage</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
 
 
       <FlatList
@@ -433,4 +473,37 @@ const styles = StyleSheet.create({
   emptyContainer: { alignItems: 'center', paddingVertical: 60 },
   empty: { color: COLORS.gray, marginTop: 12, fontSize: 15 },
   emptySub: { color: COLORS.gray, marginTop: 6, fontSize: 13 },
+
+  // Active delivery
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.black, marginBottom: 10, marginTop: 8 },
+  activeCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: COLORS.borderWarm,
+  },
+  activeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  activeRestaurant: { fontSize: 16, fontWeight: 'bold', color: COLORS.black, marginBottom: 4 },
+  statusBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10,
+  },
+  statusBadgeText: { color: COLORS.white, fontSize: 10, fontWeight: 'bold' },
+  activeFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.borderWarm,
+    paddingTop: 12,
+  },
+  activeEarnings: { fontSize: 15, fontWeight: 'bold', color: COLORS.primary, flex: 1 },
+  activeCta: { fontSize: 13, color: COLORS.gray, fontWeight: '600' },
 });

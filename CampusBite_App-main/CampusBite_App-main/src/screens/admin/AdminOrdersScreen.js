@@ -34,6 +34,7 @@ export default function AdminOrdersScreen() {
   const [completedCount, setCompletedCount] = useState(0);
   const [cancelledCount, setCancelledCount] = useState(0);
   const [resolvingIssue, setResolvingIssue] = useState(false);
+  const [markingRefund, setMarkingRefund] = useState(false);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -116,6 +117,21 @@ export default function AdminOrdersScreen() {
       Alert.alert('Error', err?.response?.data?.message || err.message || 'Could not resolve the issue.');
     } finally {
       setResolvingIssue(false);
+    }
+  };
+
+  const handleMarkRefundComplete = async () => {
+    if (!selectedOrder) return;
+    setMarkingRefund(true);
+    try {
+      const { data } = await api.admin.markRefundComplete(selectedOrder.id);
+      const { refund_status, refunded_at } = data.order;
+      setSelectedOrder(prev => ({ ...prev, refund_status, refunded_at }));
+      setOrders(prev => prev.map(o => o.id === selectedOrder.id ? { ...o, refund_status, refunded_at } : o));
+    } catch (err) {
+      Alert.alert('Error', err?.response?.data?.message || err.message || 'Could not mark the refund as complete.');
+    } finally {
+      setMarkingRefund(false);
     }
   };
 
@@ -203,6 +219,12 @@ export default function AdminOrdersScreen() {
                       <View style={styles.issueFlag}>
                         <Ionicons name="flag" size={11} color={COLORS.danger} />
                         <Text style={styles.issueFlagText}>Issue</Text>
+                      </View>
+                    )}
+                    {order.refund_status === 'manual_required' && (
+                      <View style={styles.refundFlag}>
+                        <Ionicons name="cash-outline" size={11} color={COLORS.warningText} />
+                        <Text style={styles.refundFlagText}>Refund needed</Text>
                       </View>
                     )}
                     <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) + '20' }]}>
@@ -340,6 +362,42 @@ export default function AdminOrdersScreen() {
                       {resolvingIssue
                         ? <ActivityIndicator color={COLORS.white} size="small" />
                         : <Text style={styles.resolveBtnText}>Mark as Resolved</Text>}
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+
+              {selectedOrder?.status === 'Cancelled' && selectedOrder?.refund_status !== 'not_applicable' && (
+                <View style={[styles.detailSection, styles.issueSection]}>
+                  <View style={styles.issueSectionHeader}>
+                    <Ionicons name="cash-outline" size={16} color={COLORS.warningText} />
+                    <Text style={styles.detailSectionTitle}>Refund</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Payment Method</Text>
+                    <Text style={styles.detailValue}>{selectedOrder.payment_method === 'mpesa' ? 'M-Pesa' : selectedOrder.payment_method === 'card' ? 'Card' : selectedOrder.payment_method}</Text>
+                  </View>
+
+                  {selectedOrder.refund_status === 'refunded' ? (
+                    <View style={styles.resolvedBadge}>
+                      <Ionicons name="checkmark-circle" size={16} color="#388E3C" />
+                      <Text style={styles.resolvedBadgeText}>
+                        Refunded{selectedOrder.refunded_at ? ` on ${new Date(selectedOrder.refunded_at).toLocaleDateString()}` : ''}
+                      </Text>
+                    </View>
+                  ) : selectedOrder.refund_status === 'failed' ? (
+                    <View style={styles.detailRow}>
+                      <Text style={[styles.detailValue, { color: COLORS.danger }]}>Refund attempt failed — check server logs.</Text>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={[styles.resolveBtn, markingRefund && { opacity: 0.6 }]}
+                      onPress={handleMarkRefundComplete}
+                      disabled={markingRefund}
+                    >
+                      {markingRefund
+                        ? <ActivityIndicator color={COLORS.white} size="small" />
+                        : <Text style={styles.resolveBtnText}>Mark M-Pesa Refund as Sent</Text>}
                     </TouchableOpacity>
                   )}
                 </View>
@@ -582,6 +640,18 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   issueFlagText: { fontSize: 10, fontWeight: '700', color: COLORS.danger },
+
+  // Refund flag (order card)
+  refundFlag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: COLORS.warning + '18',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  refundFlagText: { fontSize: 10, fontWeight: '700', color: COLORS.warningText },
 
   // Issue section (order detail modal)
   issueSection: {

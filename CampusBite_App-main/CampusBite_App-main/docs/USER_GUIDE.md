@@ -507,6 +507,68 @@ A: Go to Orders tab to view all platform orders,
 
 ---
 
+## 🏪 **Vendor Menu Management**
+
+### **Managing Menu Items**
+```javascript
+// Viewing the Menu
+1. Go to the Menu tab
+2. Browse all menu items in a scrollable list
+3. Use the search bar to find items by name
+4. Use category chips to filter by category
+
+// Adding a Menu Item
+1. Tap "Add New Item" at the bottom of the Menu screen
+2. Fill in name, description, price, category, and optionally upload an image
+3. Tap "Save" to add the item to the menu
+
+// Editing a Menu Item
+1. Find the item in the menu list
+2. Tap the item to open the edit screen
+3. Update the desired fields
+4. Tap "Save" to apply changes
+
+// Toggling Availability (Disable/Enable)
+1. Find the item in the menu list
+2. Toggle the switch next to the item
+3. When OFF, the item shows "OUT OF STOCK" and cannot be ordered
+4. When ON, the item is available for consumers to order
+
+// Deleting a Menu Item
+1. Find the item in the menu list
+2. Tap the trash icon
+3. Confirm the deletion in the dialog
+4. The item is permanently removed from the menu
+```
+
+---
+
+## 🚴 **Food Courier Deliveries**
+
+### **Tasks Tab**
+```javascript
+// Available Tasks
+- Browse all ready-for-pickup orders
+- Filter by All Tasks, Closest, Highest Pay, or Hot
+- Tap "Accept Delivery" to claim an order
+
+// My Active Delivery
+- After accepting an order, it appears at the top under "My Active Delivery"
+- Tap the active delivery card to open the order detail
+- Advance the order status: Collected → In Transit → Delivered
+```
+
+### **Earnings Tab**
+```javascript
+// Delivery History
+- View all completed and in-progress deliveries
+- See total earnings and average earnings per trip
+- Filter by Today, This Week, This Month, or All Time
+- Tap any delivery to view its details
+```
+
+---
+
 ## 💳 **Payment and Checkout**
 
 ### **Payment Methods**

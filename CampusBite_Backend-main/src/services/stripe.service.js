@@ -35,4 +35,13 @@ async function retrievePaymentIntent(id) {
   return client().paymentIntents.retrieve(id);
 }
 
-module.exports = { isConfigured, createPaymentIntent, retrievePaymentIntent, toSubunits };
+/**
+ * Refunds a succeeded PaymentIntent in full.
+ * @param {string} paymentIntentId - The PaymentIntent to refund (payment.checkout_request_id for card orders).
+ * @returns {Promise<object>} The Stripe Refund object.
+ */
+async function refundPaymentIntent(paymentIntentId) {
+  return client().refunds.create({ payment_intent: paymentIntentId });
+}
+
+module.exports = { isConfigured, createPaymentIntent, retrievePaymentIntent, refundPaymentIntent, toSubunits };

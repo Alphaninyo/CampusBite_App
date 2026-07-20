@@ -45,7 +45,7 @@ const Payment = sequelize.define(
       comment: 'The exact amount sent to the STK Push prompt (food + delivery fee).',
     },
     status: {
-      type: DataTypes.ENUM('pending', 'confirmed', 'failed'),
+      type: DataTypes.ENUM('pending', 'confirmed', 'failed', 'refunded'),
       allowNull: false,
       defaultValue: 'pending',
     },

@@ -64,6 +64,10 @@ export default function VendorOrderDetailScreen({ route, navigation }) {
     if (order?.rider?.phone) Linking.openURL(`tel:${order.rider.phone}`);
   };
 
+  const callConsumer = () => {
+    if (order?.consumer?.phone) Linking.openURL(`tel:${order.consumer.phone}`);
+  };
+
   const advanceStatus = async () => {
     const next = NEXT_STATUS[order.status];
     if (!next) return;
@@ -185,6 +189,11 @@ export default function VendorOrderDetailScreen({ route, navigation }) {
           <Ionicons name="call-outline" size={16} color={COLORS.primary} />
           <Text style={styles.infoLabel}>Phone</Text>
           <Text style={styles.infoValue}>{order.consumer?.phone || 'N/A'}</Text>
+          {order.consumer?.phone && (
+            <TouchableOpacity style={styles.miniCallBtn} onPress={callConsumer}>
+              <Ionicons name="call" size={13} color={COLORS.white} />
+            </TouchableOpacity>
+          )}
         </View>
         <View style={styles.infoRow}>
           <Ionicons name="location-outline" size={16} color={COLORS.primary} />
@@ -371,6 +380,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8, paddingHorizontal: 12,
   },
   callBtnText: { color: COLORS.white, fontWeight: '700', fontSize: 13 },
+  miniCallBtn: {
+    width: 26, height: 26, borderRadius: 13,
+    backgroundColor: COLORS.success, alignItems: 'center', justifyContent: 'center',
+  },
 
   // Delivery Progress timeline
   timelineRow: { flexDirection: 'row', alignItems: 'center', minHeight: 34 },

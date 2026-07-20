@@ -535,7 +535,8 @@ exports.getMyOrders = async (req, res) => {
     const orders = await Order.findAll({
       where: { consumer_id: req.user.id },
       include: [
-        { model: Vendor,    as: 'vendor',  attributes: ['business_name', 'location'] },
+        { model: Vendor,    as: 'vendor',  attributes: ['business_name', 'location'],
+          include: [{ model: User, as: 'owner', attributes: ['phone'] }] },
         { model: OrderItem, as: 'items',
           include: [{ model: MenuItem, as: 'menuItem', attributes: ['name'] }] },
         { model: Payment,   as: 'payment', attributes: ['mpesa_ref', 'status', 'confirmed_at'] },
@@ -557,7 +558,8 @@ exports.getOrderById = async (req, res) => {
     const order = await Order.findByPk(req.params.id, {
       include: [
         { model: User,    as: 'consumer', attributes: ['name', 'phone'] },
-        { model: Vendor,  as: 'vendor',   attributes: ['business_name', 'location'] },
+        { model: Vendor,  as: 'vendor',   attributes: ['business_name', 'location'],
+          include: [{ model: User, as: 'owner', attributes: ['phone'] }] },
         { model: User,    as: 'rider',    attributes: ['name', 'phone'] },
         { model: OrderItem, as: 'items',
           include: [{ model: MenuItem, as: 'menuItem', attributes: ['name', 'price'] }] },
@@ -700,6 +702,48 @@ exports.updateOrderStatus = async (req, res) => {
 
 // ─── Vendor: Cancel / Decline Order ──────────────────────────────────────────
 
+/**
+ * Refunds the payment tied to a declined order, if one was collected.
+ *   - cash:  nothing was ever collected → not_applicable
+ *   - card:  real Stripe refund via the Refunds API
+ *   - mpesa: Safaricom's Reversal API needs Initiator/SecurityCredential
+ *            credentials this app doesn't have configured, so it's flagged
+ *            for an admin to process manually rather than silently doing
+ *            nothing or falsely claiming success.
+ *
+ * Runs after the order is already committed as Cancelled — refund failures
+ * must never block the decline itself.
+ */
+async function refundDeclinedOrder(order) {
+  if (order.payment_method === 'cash') {
+    await order.update({ refund_status: 'not_applicable' });
+    return { refund_status: 'not_applicable' };
+  }
+
+  const payment = await Payment.findOne({ where: { order_id: order.id } });
+  if (!payment) {
+    await order.update({ refund_status: 'failed' });
+    return { refund_status: 'failed' };
+  }
+
+  if (order.payment_method === 'card') {
+    try {
+      await stripeService.refundPaymentIntent(payment.checkout_request_id);
+      await payment.update({ status: 'refunded' });
+      await order.update({ refund_status: 'refunded', refunded_at: new Date() });
+      return { refund_status: 'refunded' };
+    } catch (error) {
+      console.error('[ORDER] Stripe refund failed:', error.message);
+      await order.update({ refund_status: 'failed' });
+      return { refund_status: 'failed' };
+    }
+  }
+
+  // mpesa
+  await order.update({ refund_status: 'manual_required' });
+  return { refund_status: 'manual_required' };
+}
+
 exports.cancelOrder = async (req, res) => {
   const t = await sequelize.transaction();
   try {
@@ -726,11 +770,20 @@ exports.cancelOrder = async (req, res) => {
     await order.update({ status: 'Cancelled' }, { transaction: t });
     await t.commit();
 
+    const { refund_status } = await refundDeclinedOrder(order);
+
+    const CONSUMER_REFUND_MESSAGES = {
+      not_applicable: 'Your order was declined by the vendor.',
+      refunded:        'Your order was declined by the vendor and your card payment has been refunded.',
+      manual_required: 'Your order was declined by the vendor. Our team will process your M-Pesa refund manually — please allow some time.',
+      failed:          'Your order was declined by the vendor. There was an issue processing your refund — our support team has been notified.',
+    };
+
     User.findByPk(order.consumer_id, { attributes: ['fcm_token'] })
-      .then((u) => notify.send(u?.fcm_token, 'Order Cancelled', 'Your order was declined by the vendor. A refund will be processed if applicable.', { order_id: order.id }))
+      .then((u) => notify.send(u?.fcm_token, 'Order Cancelled', CONSUMER_REFUND_MESSAGES[refund_status], { order_id: order.id }))
       .catch(console.error);
 
-    res.status(200).json({ success: true, message: 'Order declined.', order_id: order.id, new_status: 'Cancelled' });
+    res.status(200).json({ success: true, message: 'Order declined.', order_id: order.id, new_status: 'Cancelled', refund_status });
   } catch (error) {
     await t.rollback();
     console.error('[ORDER] cancelOrder error:', error);
@@ -784,7 +837,8 @@ exports.getAvailableOrders = async (req, res) => {
     const orders = await Order.findAll({
       where: { status: 'Ready', rider_id: null },
       include: [
-        { model: Vendor, as: 'vendor',   attributes: ['business_name', 'location'] },
+        { model: Vendor, as: 'vendor',   attributes: ['business_name', 'location'],
+          include: [{ model: User, as: 'owner', attributes: ['phone'] }] },
         { model: User,   as: 'consumer', attributes: ['name', 'phone'] },
         { model: OrderItem, as: 'items',
           include: [{ model: MenuItem, as: 'menuItem', attributes: ['name'] }] },
@@ -840,7 +894,8 @@ exports.getRiderOrders = async (req, res) => {
     const orders = await Order.findAll({
       where,
       include: [
-        { model: Vendor, as: 'vendor',   attributes: ['business_name', 'location'] },
+        { model: Vendor, as: 'vendor',   attributes: ['business_name', 'location'],
+          include: [{ model: User, as: 'owner', attributes: ['phone'] }] },
         { model: User,   as: 'consumer', attributes: ['name', 'phone'] },
       ],
       order: [['created_at', 'DESC']],

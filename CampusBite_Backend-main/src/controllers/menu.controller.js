@@ -193,12 +193,27 @@ exports.toggleItemAvailability = async (req, res) => {
  */
 exports.deleteMenuItem = async (req, res) => {
   try {
+    console.log('[MENU] deleteMenuItem - User ID:', req.user.id);
+    console.log('[MENU] deleteMenuItem - Item ID:', req.params.id);
+    
     const vendor = await getVendorProfile(req.user.id);
-    if (!vendor) return res.status(404).json({ success: false, message: 'Vendor profile not found.' });
+    if (!vendor) {
+      console.log('[MENU] deleteMenuItem - Vendor profile not found');
+      return res.status(404).json({ success: false, message: 'Vendor profile not found.' });
+    }
+    console.log('[MENU] deleteMenuItem - Vendor ID:', vendor.id);
 
     const item = await MenuItem.findByPk(req.params.id);
-    if (!item)                        return res.status(404).json({ success: false, message: 'Menu item not found.' });
-    if (item.vendor_id !== vendor.id) return res.status(403).json({ success: false, message: 'Forbidden.' });
+    if (!item) {
+      console.log('[MENU] deleteMenuItem - Menu item not found');
+      return res.status(404).json({ success: false, message: 'Menu item not found.' });
+    }
+    console.log('[MENU] deleteMenuItem - Item found:', item.name, 'Vendor ID:', item.vendor_id);
+    
+    if (item.vendor_id !== vendor.id) {
+      console.log('[MENU] deleteMenuItem - Forbidden - item belongs to different vendor');
+      return res.status(403).json({ success: false, message: 'Forbidden.' });
+    }
 
     // Delete the image file from disk
     if (item.image) {
@@ -208,6 +223,7 @@ exports.deleteMenuItem = async (req, res) => {
 
     const itemName = item.name;
     await item.destroy();
+    console.log('[MENU] deleteMenuItem - Item deleted successfully:', itemName);
 
     res.status(200).json({ success: true, message: `"${itemName}" has been deleted.` });
   } catch (error) {

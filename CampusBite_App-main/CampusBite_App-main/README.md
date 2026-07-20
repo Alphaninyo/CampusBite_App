@@ -31,6 +31,8 @@ For detailed instructions, see [QUICK_START.md](./QUICK_START.md)
 - **❤️ Favourite Items** - Consumers can heart menu items on a vendor's page for quick reordering from their Profile
 - **❓ Help & Support** - Role-based support and accordion FAQ system
 - **📸 Vendor Cover Images** - Vendors can upload a banner photo shown on their store page
+- **🗑️ Menu Item Delete & Disable** - Vendors can delete menu items with confirmation and toggle availability to mark items out of stock
+- **📦 Active Delivery View** - Food couriers see their current assigned delivery at the top of the Tasks tab
 - **⏰ Business Hours** - Vendors set opening/closing times (24-hour format, HH:MM); visible to consumers
 - **⏱️ Estimated Prep Time** - Vendors set a prep time range; visible to consumers on vendor detail
 - **💰 Finance & Payouts** - Vendors save M-Pesa number, view earnings from delivered orders, save KRA PIN for tax
@@ -185,7 +187,7 @@ CampusBite integrates with Stripe for debit/credit card checkout, using the same
 - Configure 2FA for account security
 
 ### **🏪 Vendor**
-- Manage menu items and pricing
+- Manage menu items — add, edit, delete with confirmation, and toggle availability to disable/enable items
 - View and process incoming orders — accept or decline (cancel) orders at the `Received` stage
 - Set store availability status with optimistic UI toggle
 - Upload store cover photo (banner image shown to consumers)
@@ -202,6 +204,7 @@ CampusBite integrates with Stripe for debit/credit card checkout, using the same
 
 ### **🚴 Food Courier**
 - View available delivery tasks
+- See your current assigned delivery under "My Active Delivery" at the top of the Tasks tab
 - Track earnings and deliveries
 - Manage availability status
 - View customer feedback

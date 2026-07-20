@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, Platform } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, Platform, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { api } from '../../api';
@@ -81,6 +81,14 @@ export default function RiderOrderDetailScreen({ route }) {
     }
     return () => stopLocationTracking();
   }, [order?.status, orderId, startLocationTracking, stopLocationTracking]);
+
+  const callVendor = () => {
+    if (order?.vendor?.owner?.phone) Linking.openURL(`tel:${order.vendor.owner.phone}`);
+  };
+
+  const callConsumer = () => {
+    if (order?.consumer?.phone) Linking.openURL(`tel:${order.consumer.phone}`);
+  };
 
   const advanceStatus = async () => {
     const next = NEXT_STATUS[order.status];
@@ -206,6 +214,15 @@ export default function RiderOrderDetailScreen({ route }) {
           <Ionicons name="location-outline" size={14} color={COLORS.gray} />
           <Text style={styles.infoText}>{order.vendor?.location || 'Vendor location'}</Text>
         </View>
+        {order.vendor?.owner?.phone && (
+          <View style={styles.infoRow}>
+            <Ionicons name="call-outline" size={14} color={COLORS.gray} />
+            <Text style={styles.infoText}>{order.vendor.owner.phone}</Text>
+            <TouchableOpacity style={styles.miniCallBtn} onPress={callVendor}>
+              <Ionicons name="call" size={13} color={COLORS.white} />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       {/* ── Delivery Info ── */}
@@ -222,6 +239,11 @@ export default function RiderOrderDetailScreen({ route }) {
         <View style={styles.infoRow}>
           <Ionicons name="call-outline" size={14} color={COLORS.gray} />
           <Text style={styles.infoText}>{order.consumer?.phone}</Text>
+          {order.consumer?.phone && (
+            <TouchableOpacity style={styles.miniCallBtn} onPress={callConsumer}>
+              <Ionicons name="call" size={13} color={COLORS.white} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -395,6 +417,10 @@ const styles = StyleSheet.create({
   cardName: { fontSize: 16, fontWeight: '600', color: COLORS.black, marginBottom: 8 },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
   infoText: { fontSize: 13, color: COLORS.gray, flex: 1 },
+  miniCallBtn: {
+    width: 26, height: 26, borderRadius: 13,
+    backgroundColor: COLORS.success, alignItems: 'center', justifyContent: 'center',
+  },
 
   // Items
   itemRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },

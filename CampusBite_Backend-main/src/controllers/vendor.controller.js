@@ -1,6 +1,7 @@
 const path   = require('path');
 const fs     = require('fs');
 const multer = require('multer');
+const sharp  = require('sharp');
 const { Op, literal }   = require('sequelize');
 const { Vendor, User, MenuItem, sequelize } = require('../models');
 
@@ -22,11 +23,52 @@ const vendorFileFilter = (_req, file, cb) =>
     ? cb(null, true)
     : cb(new Error('Only JPEG, PNG, or WEBP images are accepted.'), false);
 
+// Validate image dimensions to ensure quality vendor images
+const validateImageDimensions = async (filePath) => {
+  try {
+    const metadata = await sharp(filePath).metadata();
+    const minWidth = 400;
+    const minHeight = 300;
+    
+    if (metadata.width < minWidth || metadata.height < minHeight) {
+      fs.unlinkSync(filePath);
+      throw new Error(`Image must be at least ${minWidth}x${minHeight}px. Uploaded image was ${metadata.width}x${metadata.height}px.`);
+    }
+    
+    // Reject very small files (likely screenshots or corrupted images)
+    const stats = fs.statSync(filePath);
+    if (stats.size < 50 * 1024) { // Less than 50KB
+      fs.unlinkSync(filePath);
+      throw new Error('Image file is too small. Please upload a high-quality vendor image.');
+    }
+    
+    return true;
+  } catch (error) {
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    throw error;
+  }
+};
+
 exports.uploadCoverMiddleware = multer({
   storage: vendorStorage,
   fileFilter: vendorFileFilter,
   limits: { fileSize: 5 * 1024 * 1024 },
 }).single('image');
+
+// Wrapper middleware to validate image dimensions after upload
+exports.validateVendorImage = async (req, res, next) => {
+  if (!req.file) return next();
+  
+  try {
+    await validateImageDimensions(req.file.path);
+    next();
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
 
 // ─── Vendor Profile ───────────────────────────────────────────────────────────
 
@@ -127,6 +169,9 @@ exports.getMyProfile = async (req, res) => {
  */
 exports.updateMyProfile = async (req, res) => {
   try {
+    console.log('[VENDOR] updateMyProfile - req.file:', req.file ? 'EXISTS' : 'NULL');
+    console.log('[VENDOR] updateMyProfile - req.body:', req.body);
+    
     const vendor = await Vendor.findOne({ where: { user_id: req.user.id } });
     if (!vendor) {
       return res.status(404).json({ success: false, message: 'Vendor profile not found.' });
@@ -143,11 +188,14 @@ exports.updateMyProfile = async (req, res) => {
 
     let imagePath = vendor.image;
     if (req.file) {
+      console.log('[VENDOR] File received:', req.file.filename, req.file.size, 'bytes');
       if (vendor.image) {
         const oldPath = path.join(__dirname, '../..', vendor.image);
         if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
       }
       imagePath = `/uploads/vendors/${req.file.filename}`;
+    } else {
+      console.log('[VENDOR] No file received in request');
     }
 
     await vendor.update({
@@ -163,6 +211,7 @@ exports.updateMyProfile = async (req, res) => {
       image:          imagePath,
     });
 
+    console.log('[VENDOR] Profile updated successfully, image path:', imagePath);
     res.status(200).json({ success: true, message: 'Profile updated.', vendor });
   } catch (error) {
     console.error('[VENDOR] updateMyProfile error:', error);

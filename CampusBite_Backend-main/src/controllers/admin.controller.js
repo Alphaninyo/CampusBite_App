@@ -240,6 +240,31 @@ exports.resolveOrderIssue = async (req, res) => {
   }
 };
 
+/**
+ * PATCH /api/admin/orders/:id/mark-refund-complete
+ * Admin only — marks a "manual_required" M-Pesa refund as done once the
+ * admin has actually sent the money back via the Safaricom portal/app.
+ * There is no automated M-Pesa reversal in this app (needs Daraja
+ * Reversal API credentials this project doesn't have configured).
+ */
+exports.markRefundComplete = async (req, res) => {
+  try {
+    const order = await Order.findByPk(req.params.id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found.' });
+    }
+    if (order.refund_status !== 'manual_required') {
+      return res.status(400).json({ success: false, message: 'This order has no pending manual refund.' });
+    }
+
+    await order.update({ refund_status: 'refunded', refunded_at: new Date() });
+    res.status(200).json({ success: true, message: 'Refund marked as completed.', order });
+  } catch (error) {
+    console.error('[ADMIN] markRefundComplete error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 // ─── All Users ────────────────────────────────────────────────────────────────
 
 /**

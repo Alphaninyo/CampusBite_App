@@ -124,6 +124,16 @@ const Order = sequelize.define(
       allowNull: true,
       comment: 'NULL = still open. Set by an admin resolving the report.',
     },
+    refund_status: {
+      type: DataTypes.ENUM('not_applicable', 'refunded', 'manual_required', 'failed'),
+      allowNull: false,
+      defaultValue: 'not_applicable',
+      comment: 'Set when a vendor declines a paid order. "manual_required" is used for M-Pesa, since automated reversal needs Daraja Reversal API credentials this app does not have.',
+    },
+    refunded_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     tableName: 'orders',

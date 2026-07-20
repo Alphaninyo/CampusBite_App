@@ -12,6 +12,7 @@ router.get('/stats/weekly-orders',  adminController.getWeeklyOrders);
 router.get('/stats/top-vendors',    adminController.getTopVendors);
 router.get('/orders',               adminController.getAllOrders);
 router.patch('/orders/:id/resolve-issue', adminController.resolveOrderIssue);
+router.patch('/orders/:id/mark-refund-complete', adminController.markRefundComplete);
 router.get('/users',                adminController.getAllUsers);
 router.get('/vendors',              adminController.getAllVendors);
 router.get('/users/pending-docs',                adminController.getPendingDocUsers);
