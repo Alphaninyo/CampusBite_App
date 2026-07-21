@@ -223,7 +223,7 @@ exports.initiateCheckout = async (req, res) => {
           });
         } catch (mpesaError) {
           console.error('[ORDER] STK Push failed:', mpesaError.message);
-          return res.status(503).json({ success: false, message: 'M-Pesa service is currently unavailable. Please try again shortly.' });
+          return res.status(503).json({ success: false, message: `M-Pesa request failed: ${mpesaError.message}` });
         }
         checkoutRequestId = stkResponse.CheckoutRequestID;
       } else {
