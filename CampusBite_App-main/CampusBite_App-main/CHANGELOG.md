@@ -375,6 +375,18 @@ ALTER TABLE vendors ADD COLUMN IF NOT EXISTS kra_pin     VARCHAR(20);
 
 ---
 
+## [1.9.1] - 2026-07-21
+
+### 🐛 Bug Fixes
+- **Real users were getting locked out with "Too many requests. Please slow down and try again shortly." after only a handful of login attempts** — Express never called `app.set('trust proxy', ...)`, so behind Render's reverse proxy it couldn't read the real client IP from `X-Forwarded-For`. Both the global rate limiter and the auth-specific login limiter key off IP, and every request was silently resolving to the *same* IP — meaning all traffic to the API, from every user, was sharing one 100-requests-per-15-minutes budget instead of each person getting their own. Heavy traffic from any single source (including routine API testing against production) could exhaust that shared budget and block everyone else's genuine logins at the same time. Fixed with a single `app.set('trust proxy', 1)` — rate limits are now correctly scoped per client IP.
+
+### 🔄 Modified files (key)
+| File | What changed |
+|---|---|
+| `CampusBite_Backend-main/src/app.js` | Added `app.set('trust proxy', 1)` |
+
+---
+
 ## [Unreleased] - Development
 
 ### 🚀 Upcoming Features

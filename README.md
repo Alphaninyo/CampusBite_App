@@ -632,6 +632,10 @@ Sequelize `sync({ alter: false })` runs on every server start and will create an
 
 ## 🐛 Troubleshooting
 
+### "Too many requests. Please slow down and try again shortly." on login
+- As of `[1.9.1]`, this is fixed — it was caused by Express not trusting Render's reverse proxy (`app.set('trust proxy', 1)` was missing in `app.js`), which made every client's request resolve to the same IP and share one rate-limit budget platform-wide. If you see this again, confirm that line is still present and that the deploy actually went live (Render → Events tab).
+- If it's genuinely one user hitting the limit (not this bug), the login-specific limiter is 100 attempts / 15 minutes per IP (`auth.routes.js`); the global one is the same window/count for all other routes (`app.js`). Both reset automatically after the window elapses.
+
 ### PostgreSQL not running
 - Open Windows Services and start the PostgreSQL service
 - Verify port 5432 is not blocked
