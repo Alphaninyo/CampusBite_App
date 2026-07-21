@@ -47,3 +47,11 @@ services:
         sync: false
       - key: STRIPE_PUBLISHABLE_KEY
         sync: false
+      # Cloudinary — image storage. Render's own disk is ephemeral (wiped on
+      # every restart/redeploy), so uploaded images can't live on local disk.
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false

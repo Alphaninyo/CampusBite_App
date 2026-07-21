@@ -1,22 +1,11 @@
-const path    = require('path');
-const fs      = require('fs');
 const multer  = require('multer');
 const bcrypt  = require('bcryptjs');
 const { User } = require('../models');
-
-const UPLOAD_DIR = path.join(__dirname, '../../uploads/verification');
-if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+const { uploadBufferToCloudinary } = require('../services/upload.service');
 
 // ── Multer config ─────────────────────────────────────────────────────────────
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
-  filename:    (req, file, cb) => {
-    const userId = req.user?.id || req._verifiedUserId || 'anon';
-    const ext = path.extname(file.originalname) || '.jpg';
-    cb(null, `${userId}_${file.fieldname}_${Date.now()}${ext}`);
-  },
-});
+// Kept in memory and uploaded straight to Cloudinary — Render's filesystem is
+// ephemeral and wipes local uploads on every restart/redeploy.
 
 const fileFilter = (_req, file, cb) => {
   const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
@@ -26,14 +15,14 @@ const fileFilter = (_req, file, cb) => {
 
 // Single-file upload (authenticated flow)
 exports.upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   fileFilter,
   limits: { fileSize: 8 * 1024 * 1024 },
 }).single('document');
 
 // Multi-file upload for submit-info: both passport_photo and document
 exports.uploadMulti = multer({
-  storage,
+  storage: multer.memoryStorage(),
   fileFilter,
   limits: { fileSize: 8 * 1024 * 1024 },
 }).fields([
@@ -66,7 +55,6 @@ exports.uploadDocument = (req, res) => {
 
     const { document_type } = req.body;
     if (documentFile && !['national_id', 'passport'].includes(document_type)) {
-      _cleanFiles(req.files);
       return res.status(400).json({ success: false, message: 'document_type must be national_id or passport.' });
     }
 
@@ -75,20 +63,12 @@ exports.uploadDocument = (req, res) => {
       const updates = { verification_status: 'pending', admin_note: null };
 
       if (documentFile) {
-        if (user.verification_document) {
-          const old = path.join(__dirname, '../..', user.verification_document);
-          if (fs.existsSync(old)) fs.unlinkSync(old);
-        }
-        updates.verification_document = `/uploads/verification/${documentFile.filename}`;
+        updates.verification_document = await uploadBufferToCloudinary(documentFile.buffer, documentFile.mimetype, 'campusbite/verification');
         updates.verification_type     = document_type;
       }
 
       if (passportPhotoFile) {
-        if (user.passport_photo) {
-          const old = path.join(__dirname, '../..', user.passport_photo);
-          if (fs.existsSync(old)) fs.unlinkSync(old);
-        }
-        updates.passport_photo = `/uploads/verification/${passportPhotoFile.filename}`;
+        updates.passport_photo = await uploadBufferToCloudinary(passportPhotoFile.buffer, passportPhotoFile.mimetype, 'campusbite/verification');
       }
 
       await user.update(updates);
@@ -124,12 +104,10 @@ exports.submitInfo = (req, res) => {
     const { email, password, document_type } = req.body;
 
     if (!email || !password) {
-      _cleanFiles(req.files);
       return res.status(400).json({ success: false, message: 'Email and password are required.' });
     }
 
     if (!['national_id', 'passport'].includes(document_type)) {
-      _cleanFiles(req.files);
       return res.status(400).json({ success: false, message: 'document_type must be national_id or passport.' });
     }
 
@@ -143,18 +121,15 @@ exports.submitInfo = (req, res) => {
     try {
       const user = await User.findOne({ where: { email: email.toLowerCase() } });
       if (!user) {
-        _cleanFiles(req.files);
         return res.status(401).json({ success: false, message: 'Invalid email or password.' });
       }
 
       const isMatch = await bcrypt.compare(password, user.password_hash);
       if (!isMatch) {
-        _cleanFiles(req.files);
         return res.status(401).json({ success: false, message: 'Invalid email or password.' });
       }
 
       if (!['vendor', 'food_courier'].includes(user.role)) {
-        _cleanFiles(req.files);
         return res.status(400).json({ success: false, message: 'Only vendor and food courier accounts can submit verification info.' });
       }
 
@@ -166,19 +141,11 @@ exports.submitInfo = (req, res) => {
 
       if (documentFile) {
         updates.verification_type = document_type;
-        if (user.verification_document) {
-          const old = path.join(__dirname, '../..', user.verification_document);
-          if (fs.existsSync(old)) fs.unlinkSync(old);
-        }
-        updates.verification_document = `/uploads/verification/${documentFile.filename}`;
+        updates.verification_document = await uploadBufferToCloudinary(documentFile.buffer, documentFile.mimetype, 'campusbite/verification');
       }
 
       if (passportPhotoFile) {
-        if (user.passport_photo) {
-          const old = path.join(__dirname, '../..', user.passport_photo);
-          if (fs.existsSync(old)) fs.unlinkSync(old);
-        }
-        updates.passport_photo = `/uploads/verification/${passportPhotoFile.filename}`;
+        updates.passport_photo = await uploadBufferToCloudinary(passportPhotoFile.buffer, passportPhotoFile.mimetype, 'campusbite/verification');
       }
 
       await user.update(updates);
@@ -210,12 +177,3 @@ exports.getStatus = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function _cleanFiles(files) {
-  if (!files) return;
-  Object.values(files).flat().forEach((f) => {
-    if (f?.path && fs.existsSync(f.path)) fs.unlinkSync(f.path);
-  });
-}

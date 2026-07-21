@@ -3,7 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
-import { COLORS, API_BASE_URL } from '../../constants';
+import { COLORS, resolveImageUrl } from '../../constants';
 import useCartStore from '../../stores/cartStore';
 
 export default function VendorDetailScreen({ route, navigation }) {
@@ -104,7 +104,7 @@ export default function VendorDetailScreen({ route, navigation }) {
             {/* Cover image */}
             {vendor.image ? (
               <Image
-                source={{ uri: `${API_BASE_URL}${vendor.image}` }}
+                source={{ uri: resolveImageUrl(vendor.image) }}
                 style={styles.coverImage}
                 resizeMode="cover"
               />
@@ -164,7 +164,7 @@ export default function VendorDetailScreen({ route, navigation }) {
           <View style={styles.item}>
             <View>
               {item.image
-                ? <Image source={{ uri: `${API_BASE_URL}${item.image}` }} style={styles.itemImage} resizeMode="cover" />
+                ? <Image source={{ uri: resolveImageUrl(item.image) }} style={styles.itemImage} resizeMode="cover" />
                 : <View style={[styles.itemImage, styles.itemImagePlaceholder]}>
                     <Ionicons name="fast-food-outline" size={24} color={COLORS.primary} />
                   </View>

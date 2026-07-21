@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
-import { COLORS, API_BASE_URL } from '../../constants';
+import { COLORS, resolveImageUrl } from '../../constants';
 
 // 24-hour time options: 00:00 to 23:30 in 30-min steps
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
@@ -585,7 +585,7 @@ export default function VendorProfileScreen({ navigation = {} }) {
         <View style={styles.profileSection}>
           <TouchableOpacity style={styles.avatarContainer} onPress={openEditModal}>
             {vendor?.image ? (
-              <Image source={{ uri: `${API_BASE_URL}${vendor.image}` }} style={styles.avatar} resizeMode="cover" />
+              <Image source={{ uri: resolveImageUrl(vendor.image) }} style={styles.avatar} resizeMode="cover" />
             ) : (
               <View style={[styles.avatar, styles.avatarPlaceholder]}>
                 <Text style={styles.avatarInitial}>{storeInitial}</Text>
@@ -1328,7 +1328,7 @@ export default function VendorProfileScreen({ navigation = {} }) {
                 {editCoverImage ? (
                   <Image source={{ uri: editCoverImage }} style={styles.coverPreview} resizeMode="cover" />
                 ) : vendor?.image ? (
-                  <Image source={{ uri: `${API_BASE_URL}${vendor.image}` }} style={styles.coverPreview} resizeMode="cover" />
+                  <Image source={{ uri: resolveImageUrl(vendor.image) }} style={styles.coverPreview} resizeMode="cover" />
                 ) : (
                   <View style={styles.coverPlaceholder}>
                     <Ionicons name="image-outline" size={32} color={COLORS.subtext} />

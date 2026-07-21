@@ -3,7 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
-import { COLORS, API_BASE_URL } from '../../constants';
+import { COLORS, resolveImageUrl } from '../../constants';
 import useCartStore from '../../stores/cartStore';
 
 function VendorImagePlaceholder({ name }) {
@@ -18,9 +18,7 @@ function VendorImagePlaceholder({ name }) {
 
 function FeaturedVendorCard({ vendor, onPress }) {
   const vendorType = vendor.vendor_type === 'home_based' ? 'Home-based' : 'Restaurant';
-  const imageUri = vendor.image
-    ? (vendor.image.startsWith('http') ? vendor.image : `${API_BASE_URL}${vendor.image}`)
-    : null;
+  const imageUri = resolveImageUrl(vendor.image);
   return (
     <TouchableOpacity style={styles.featuredCard} onPress={onPress}>
       <View style={styles.imageContainer}>
@@ -49,9 +47,7 @@ function MenuImagePlaceholder({ name }) {
 }
 
 function TrendingItemCard({ item, onPress }) {
-  const imageUri = item.image
-    ? (item.image.startsWith('http') ? item.image : `${API_BASE_URL}${item.image}`)
-    : null;
+  const imageUri = resolveImageUrl(item.image);
   return (
     <TouchableOpacity style={styles.trendingCard} onPress={onPress}>
       {imageUri
@@ -143,7 +139,7 @@ export default function HomeScreen({ navigation }) {
               vendor_id: vendor.id,
               name: item.name,
               price: parseFloat(item.price).toFixed(2),
-              image: item.image ? `${API_BASE_URL}${item.image}` : null,
+              image: resolveImageUrl(item.image),
               _vendor_type: vendor.vendor_type,
             }));
         } catch {

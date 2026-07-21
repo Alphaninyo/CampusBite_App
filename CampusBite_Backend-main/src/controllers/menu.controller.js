@@ -1,20 +1,10 @@
-const path    = require('path');
-const fs      = require('fs');
 const multer  = require('multer');
 const { MenuItem, Vendor } = require('../models');
+const { uploadBufferToCloudinary } = require('../services/upload.service');
 
 // ─── Multer Setup ─────────────────────────────────────────────────────────────
-
-const UPLOAD_DIR = path.join(__dirname, '../../uploads/menu');
-if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
-  filename:    (req, file, cb) => {
-    const ext = path.extname(file.originalname) || '.jpg';
-    cb(null, `${req.user.id}_${Date.now()}${ext}`);
-  },
-});
+// Kept in memory and uploaded straight to Cloudinary — Render's filesystem is
+// ephemeral and wipes local uploads on every restart/redeploy.
 
 const fileFilter = (_req, file, cb) => {
   const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
@@ -24,7 +14,7 @@ const fileFilter = (_req, file, cb) => {
 };
 
 exports.uploadMiddleware = multer({
-  storage,
+  storage: multer.memoryStorage(),
   fileFilter,
   limits: { fileSize: 5 * 1024 * 1024 },
 }).single('image');
@@ -44,24 +34,23 @@ exports.addMenuItem = async (req, res) => {
   try {
     const vendor = await getVendorProfile(req.user.id);
     if (!vendor) {
-      if (req.file) fs.unlinkSync(req.file.path);
       return res.status(404).json({ success: false, message: 'Vendor profile not found.' });
     }
 
     const { name, description, price, is_available, category } = req.body;
 
     if (!name || price === undefined || price === null) {
-      if (req.file) fs.unlinkSync(req.file.path);
       return res.status(400).json({ success: false, message: 'Please provide item name and price.' });
     }
 
     const parsedPrice = parseFloat(price);
     if (isNaN(parsedPrice) || parsedPrice < 0) {
-      if (req.file) fs.unlinkSync(req.file.path);
       return res.status(400).json({ success: false, message: 'Price must be a non-negative number.' });
     }
 
-    const imagePath = req.file ? `/uploads/menu/${req.file.filename}` : null;
+    const imagePath = req.file
+      ? await uploadBufferToCloudinary(req.file.buffer, req.file.mimetype, 'campusbite/menu')
+      : null;
 
     const item = await MenuItem.create({
       vendor_id:    vendor.id,
@@ -75,7 +64,6 @@ exports.addMenuItem = async (req, res) => {
 
     res.status(201).json({ success: true, message: 'Menu item added.', item });
   } catch (error) {
-    if (req.file) fs.unlinkSync(req.file.path);
     if (error.name === 'SequelizeValidationError') {
       return res.status(400).json({ success: false, message: error.errors.map((e) => e.message).join(' | ') });
     }
@@ -110,18 +98,15 @@ exports.updateMenuItem = async (req, res) => {
   try {
     const vendor = await getVendorProfile(req.user.id);
     if (!vendor) {
-      if (req.file) fs.unlinkSync(req.file.path);
       return res.status(404).json({ success: false, message: 'Vendor profile not found.' });
     }
 
     const item = await MenuItem.findByPk(req.params.id);
     if (!item) {
-      if (req.file) fs.unlinkSync(req.file.path);
       return res.status(404).json({ success: false, message: 'Menu item not found.' });
     }
 
     if (item.vendor_id !== vendor.id) {
-      if (req.file) fs.unlinkSync(req.file.path);
       return res.status(403).json({ success: false, message: 'Forbidden. You do not own this menu item.' });
     }
 
@@ -130,19 +115,13 @@ exports.updateMenuItem = async (req, res) => {
     if (price !== undefined) {
       const parsed = parseFloat(price);
       if (isNaN(parsed) || parsed < 0) {
-        if (req.file) fs.unlinkSync(req.file.path);
         return res.status(400).json({ success: false, message: 'Price must be a non-negative number.' });
       }
     }
 
-    // Replace old image file if a new one was uploaded
     let imagePath = item.image;
     if (req.file) {
-      if (item.image) {
-        const oldPath = path.join(__dirname, '../..', item.image);
-        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-      }
-      imagePath = `/uploads/menu/${req.file.filename}`;
+      imagePath = await uploadBufferToCloudinary(req.file.buffer, req.file.mimetype, 'campusbite/menu');
     }
 
     await item.update({
@@ -158,7 +137,6 @@ exports.updateMenuItem = async (req, res) => {
 
     res.status(200).json({ success: true, message: 'Menu item updated.', item });
   } catch (error) {
-    if (req.file) fs.unlinkSync(req.file.path);
     console.error('[MENU] updateMenuItem error:', error);
     res.status(500).json({ success: false, message: 'Server error.' });
   }
@@ -213,12 +191,6 @@ exports.deleteMenuItem = async (req, res) => {
     if (item.vendor_id !== vendor.id) {
       console.log('[MENU] deleteMenuItem - Forbidden - item belongs to different vendor');
       return res.status(403).json({ success: false, message: 'Forbidden.' });
-    }
-
-    // Delete the image file from disk
-    if (item.image) {
-      const imgPath = path.join(__dirname, '../..', item.image);
-      if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
     }
 
     const itemName = item.name;

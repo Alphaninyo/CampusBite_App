@@ -1,6 +1,13 @@
 export const API_BASE_URL = 'https://campusbite-backend-api.onrender.com';
 export const API_URL = `${API_BASE_URL}/api`;
 
+// Images now come back as full Cloudinary URLs, but older records (or any
+// legacy relative path) still use a `/uploads/...` form — handle both.
+export const resolveImageUrl = (path) => {
+  if (!path) return null;
+  return path.startsWith('http') ? path : `${API_BASE_URL}${path}`;
+};
+
 export const COLORS = {
   // ── Brand ──────────────────────────────────────────────────
   primary:        '#E85D04',   // Flame Orange

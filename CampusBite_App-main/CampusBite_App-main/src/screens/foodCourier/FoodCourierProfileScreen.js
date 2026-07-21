@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
-import { COLORS, API_BASE_URL } from '../../constants';
+import { COLORS, resolveImageUrl } from '../../constants';
 
 const VEHICLE_TYPES = ['Electric Bicycle', 'Bicycle', 'Motorcycle', 'Walking'];
 
@@ -295,7 +295,7 @@ export default function FoodCourierProfileScreen({ navigation }) {
                 <ActivityIndicator color={COLORS.primary} />
               </View>
             ) : user?.profile_photo ? (
-              <Image source={{ uri: `${API_BASE_URL}${user.profile_photo}?t=${user._photo_ts || 0}` }} style={styles.avatarImg} resizeMode="cover" />
+              <Image source={{ uri: `${resolveImageUrl(user.profile_photo)}?t=${user._photo_ts || 0}` }} style={styles.avatarImg} resizeMode="cover" />
             ) : (
               <Image
                 source={{ uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'FC')}&background=E85D04&color=fff&size=200&bold=true` }}

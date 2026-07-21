@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { COLORS, API_BASE_URL } from '../../constants';
+import { COLORS, resolveImageUrl } from '../../constants';
 import useCartStore from '../../stores/cartStore';
 import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
@@ -253,7 +253,7 @@ export default function CartScreen({ navigation }) {
           <View key={item.id} style={styles.cartItem}>
             {item.image ? (
               <Image
-                source={{ uri: `${API_BASE_URL}${item.image}` }}
+                source={{ uri: resolveImageUrl(item.image) }}
                 style={styles.itemImage}
               />
             ) : (
@@ -453,7 +453,7 @@ export default function CartScreen({ navigation }) {
                 <View key={s.id} style={styles.suggestionCard}>
                   <Image
                     source={s.image
-                      ? { uri: `${API_BASE_URL}${s.image}` }
+                      ? { uri: resolveImageUrl(s.image) }
                       : { uri: 'https://via.placeholder.com/70x70/FFF0EB/E85D04?text=Food' }}
                     style={styles.suggestionImg}
                   />

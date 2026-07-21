@@ -4,19 +4,12 @@ const multer = require('multer');
 const sharp  = require('sharp');
 const { Op, literal }   = require('sequelize');
 const { Vendor, User, MenuItem, sequelize } = require('../models');
+const { uploadBufferToCloudinary } = require('../services/upload.service');
 
 // ─── Multer Setup for Vendor Cover Images ─────────────────────────────────────
-
-const VENDOR_UPLOAD_DIR = path.join(__dirname, '../../uploads/vendors');
-if (!fs.existsSync(VENDOR_UPLOAD_DIR)) fs.mkdirSync(VENDOR_UPLOAD_DIR, { recursive: true });
-
-const vendorStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, VENDOR_UPLOAD_DIR),
-  filename:    (req, file, cb) => {
-    const ext = path.extname(file.originalname) || '.jpg';
-    cb(null, `vendor-${req.user.id}-${Date.now()}${ext}`);
-  },
-});
+// Files are kept in memory (never written to local disk) and uploaded straight
+// to Cloudinary — Render's filesystem is ephemeral and is wiped on every
+// restart/redeploy, which was silently deleting previously uploaded images.
 
 const vendorFileFilter = (_req, file, cb) =>
   /image\/(jpeg|jpg|png|webp)/.test(file.mimetype)
@@ -24,33 +17,23 @@ const vendorFileFilter = (_req, file, cb) =>
     : cb(new Error('Only JPEG, PNG, or WEBP images are accepted.'), false);
 
 // Validate image dimensions to ensure quality vendor images
-const validateImageDimensions = async (filePath) => {
-  try {
-    const metadata = await sharp(filePath).metadata();
-    const minWidth = 400;
-    const minHeight = 300;
-    
-    if (metadata.width < minWidth || metadata.height < minHeight) {
-      fs.unlinkSync(filePath);
-      throw new Error(`Image must be at least ${minWidth}x${minHeight}px. Uploaded image was ${metadata.width}x${metadata.height}px.`);
-    }
-    
-    // Reject very small files (likely screenshots or corrupted images)
-    const stats = fs.statSync(filePath);
-    if (stats.size < 50 * 1024) { // Less than 50KB
-      fs.unlinkSync(filePath);
-      throw new Error('Image file is too small. Please upload a high-quality vendor image.');
-    }
-    
-    return true;
-  } catch (error) {
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    throw error;
+const validateImageDimensions = async (buffer) => {
+  const metadata = await sharp(buffer).metadata();
+  const minWidth = 400;
+  const minHeight = 300;
+
+  if (metadata.width < minWidth || metadata.height < minHeight) {
+    throw new Error(`Image must be at least ${minWidth}x${minHeight}px. Uploaded image was ${metadata.width}x${metadata.height}px.`);
+  }
+
+  // Reject very small files (likely screenshots or corrupted images)
+  if (buffer.length < 50 * 1024) { // Less than 50KB
+    throw new Error('Image file is too small. Please upload a high-quality vendor image.');
   }
 };
 
 exports.uploadCoverMiddleware = multer({
-  storage: vendorStorage,
+  storage: multer.memoryStorage(),
   fileFilter: vendorFileFilter,
   limits: { fileSize: 5 * 1024 * 1024 },
 }).single('image');
@@ -58,9 +41,9 @@ exports.uploadCoverMiddleware = multer({
 // Wrapper middleware to validate image dimensions after upload
 exports.validateVendorImage = async (req, res, next) => {
   if (!req.file) return next();
-  
+
   try {
-    await validateImageDimensions(req.file.path);
+    await validateImageDimensions(req.file.buffer);
     next();
   } catch (error) {
     return res.status(400).json({
@@ -188,12 +171,8 @@ exports.updateMyProfile = async (req, res) => {
 
     let imagePath = vendor.image;
     if (req.file) {
-      console.log('[VENDOR] File received:', req.file.filename, req.file.size, 'bytes');
-      if (vendor.image) {
-        const oldPath = path.join(__dirname, '../..', vendor.image);
-        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-      }
-      imagePath = `/uploads/vendors/${req.file.filename}`;
+      console.log('[VENDOR] File received:', req.file.originalname, req.file.size, 'bytes');
+      imagePath = await uploadBufferToCloudinary(req.file.buffer, req.file.mimetype, 'campusbite/vendors');
     } else {
       console.log('[VENDOR] No file received in request');
     }

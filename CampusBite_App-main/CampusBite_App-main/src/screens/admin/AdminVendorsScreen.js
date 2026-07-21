@@ -7,9 +7,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
-import { COLORS, API_BASE_URL } from '../../constants';
+import { COLORS, resolveImageUrl } from '../../constants';
 
-const docUrl = (path) => (path ? `${API_BASE_URL}${path}` : null);
+const docUrl = resolveImageUrl;
 
 const TABS = ['All', 'Active', 'Pending', 'Suspended'];
 
@@ -180,7 +180,7 @@ export default function AdminVendorsScreen() {
         </View>
 
         {/* Tabs */}
-        <View style={styles.tabRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabRow}>
           {TABS.map((tab) => {
             const count = tab === 'All' ? vendors.length :
                           tab === 'Active' ? activeCount :
@@ -197,7 +197,7 @@ export default function AdminVendorsScreen() {
               </TouchableOpacity>
             );
           })}
-        </View>
+        </ScrollView>
 
         {/* Vendors List */}
         <View style={styles.section}>

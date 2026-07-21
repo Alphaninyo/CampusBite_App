@@ -1,28 +1,18 @@
 const crypto  = require('crypto');
 const bcrypt  = require('bcryptjs');
 const jwt     = require('jsonwebtoken');
-const path    = require('path');
-const fs      = require('fs');
 const multer  = require('multer');
 const { Op }  = require('sequelize');
 const { User, Vendor, FoodCourierProfile, sequelize } = require('../models');
 const emailService = require('../services/email.service');
+const { uploadBufferToCloudinary } = require('../services/upload.service');
 
 // ─── Avatar upload ────────────────────────────────────────────────────────────
-
-const AVATAR_DIR = path.join(__dirname, '../../uploads/avatars');
-if (!fs.existsSync(AVATAR_DIR)) fs.mkdirSync(AVATAR_DIR, { recursive: true });
-
-const _avatarStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, AVATAR_DIR),
-  filename:    (req, file, cb) => {
-    const ext = path.extname(file.originalname) || '.jpg';
-    cb(null, `${req.user.id}_avatar${ext}`);
-  },
-});
+// Kept in memory and uploaded straight to Cloudinary — Render's filesystem is
+// ephemeral and wipes local uploads on every restart/redeploy.
 
 exports.uploadAvatar = multer({
-  storage:    _avatarStorage,
+  storage:    multer.memoryStorage(),
   fileFilter: (_req, file, cb) => {
     if (['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.mimetype))
       cb(null, true);
@@ -439,7 +429,7 @@ exports.updateProfile = async (req, res) => {
     if (name  !== undefined && name.trim())  updates.name  = name.trim();
     if (phone !== undefined && phone.trim()) updates.phone = phone.trim();
     if (req.file) {
-      updates.profile_photo = `/uploads/avatars/${req.file.filename}`;
+      updates.profile_photo = await uploadBufferToCloudinary(req.file.buffer, req.file.mimetype, 'campusbite/avatars');
     }
 
     if (Object.keys(updates).length === 0) {

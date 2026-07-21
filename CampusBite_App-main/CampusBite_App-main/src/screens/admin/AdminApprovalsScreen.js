@@ -7,7 +7,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
-import { COLORS, API_BASE_URL } from '../../constants';
+import { COLORS, resolveImageUrl } from '../../constants';
 
 const TABS = ['All', 'Vendors', 'Couriers', 'Documents', 'Rejected'];
 
@@ -111,7 +111,7 @@ export default function AdminApprovalsScreen() {
   const [rejectNote, setRejectNote]         = useState('');
   const [rejectNoteError, setRejectNoteError] = useState('');
 
-  const docUrl = (path) => path ? `${API_BASE_URL}${path}` : null;
+  const docUrl = resolveImageUrl;
 
   const fetchAll = useCallback(async () => {
     try {
@@ -934,7 +934,7 @@ export default function AdminApprovalsScreen() {
         )}
 
         {/* ── Tabs ── */}
-        <View style={styles.tabRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabRow}>
           {TABS.map((tab) => {
             const count = tab === 'All'       ? totalPending
               : tab === 'Vendors'   ? vendors.length
@@ -953,7 +953,7 @@ export default function AdminApprovalsScreen() {
               </TouchableOpacity>
             );
           })}
-        </View>
+        </ScrollView>
 
         {/* ── Document reviews tab ── */}
         {activeTab === 'Documents' && (

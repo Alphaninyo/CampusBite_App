@@ -10,7 +10,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
-import { COLORS, API_BASE_URL } from '../../constants';
+import { COLORS, resolveImageUrl } from '../../constants';
 
 
 export default function ProfileScreen({ navigation }) {
@@ -432,7 +432,7 @@ export default function ProfileScreen({ navigation }) {
                   </View>
                 ) : user?.profile_photo ? (
                   <Image
-                    source={{ uri: `${API_BASE_URL}${user.profile_photo}?t=${user._photo_ts || 0}` }}
+                    source={{ uri: `${resolveImageUrl(user.profile_photo)}?t=${user._photo_ts || 0}` }}
                     style={styles.modalAvatarImg}
                     resizeMode="cover"
                   />
@@ -892,7 +892,7 @@ export default function ProfileScreen({ navigation }) {
                     }}
                   >
                     {item.image ? (
-                      <Image source={{ uri: `${API_BASE_URL}${item.image}` }} style={styles.favItemImage} />
+                      <Image source={{ uri: resolveImageUrl(item.image) }} style={styles.favItemImage} />
                     ) : (
                       <View style={[styles.favItemImage, styles.favItemImagePlaceholder]}>
                         <Ionicons name="fast-food-outline" size={18} color={COLORS.primary} />
@@ -1012,7 +1012,7 @@ export default function ProfileScreen({ navigation }) {
           <TouchableOpacity style={styles.avatarWrap} onPress={handleImageUpload}>
             {user?.profile_photo ? (
               <Image
-                source={{ uri: `${API_BASE_URL}${user.profile_photo}?t=${user._photo_ts || 0}` }}
+                source={{ uri: `${resolveImageUrl(user.profile_photo)}?t=${user._photo_ts || 0}` }}
                 style={styles.avatarImg}
                 resizeMode="cover"
               />
@@ -1153,7 +1153,7 @@ export default function ProfileScreen({ navigation }) {
                   onPress={() => navigation.navigate('HomeTab', { screen: 'VendorDetail', params: { vendor: item.vendor } })}
                 >
                   {item.image ? (
-                    <Image source={{ uri: `${API_BASE_URL}${item.image}` }} style={styles.favItemImage} />
+                    <Image source={{ uri: resolveImageUrl(item.image) }} style={styles.favItemImage} />
                   ) : (
                     <View style={[styles.favItemImage, styles.favItemImagePlaceholder]}>
                       <Ionicons name="fast-food-outline" size={18} color={COLORS.primary} />

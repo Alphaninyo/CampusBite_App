@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../api';
-import { COLORS, API_BASE_URL } from '../../constants';
+import { COLORS, resolveImageUrl } from '../../constants';
 
 const CATEGORIES = ['All', 'Main Course', 'Drinks', 'Snacks'];
 
@@ -137,7 +137,7 @@ export default function MenuScreen({ navigation }) {
           filteredMenu.map(item => (
             <View key={item.id} style={styles.menuCard}>
               <Image
-                source={item.image ? { uri: `${API_BASE_URL}${item.image}` } : { uri: 'https://via.placeholder.com/70x70/FFF0EB/E85D04?text=Food' }}
+                source={item.image ? { uri: resolveImageUrl(item.image) } : { uri: 'https://via.placeholder.com/70x70/FFF0EB/E85D04?text=Food' }}
                 style={styles.menuImage}
               />
               {!item.is_available && (

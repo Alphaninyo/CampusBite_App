@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { api } from '../../api';
-import { COLORS, API_BASE_URL } from '../../constants';
+import { COLORS, resolveImageUrl } from '../../constants';
 import useAuthStore from '../../stores/authStore';
 
 // updateMode: 'id' | 'photo' | null
@@ -113,8 +113,8 @@ export default function AppSettingsScreen({ navigation }) {
     s === 'info_requested' ? 'Admin requested info' : 'Not submitted';
 
   const idDocLabel = verification?.verification_type === 'passport' ? 'Passport (ID Document)' : 'National ID';
-  const idDocUrl   = verification?.verification_document ? `${API_BASE_URL}${verification.verification_document}` : null;
-  const photoUrl   = verification?.passport_photo        ? `${API_BASE_URL}${verification.passport_photo}`        : null;
+  const idDocUrl   = resolveImageUrl(verification?.verification_document);
+  const photoUrl   = resolveImageUrl(verification?.passport_photo);
   const modalTitle = updateMode === 'id' ? `Update ${idDocLabel}` : 'Update Passport Sized Photo';
 
   const settingsSections = [

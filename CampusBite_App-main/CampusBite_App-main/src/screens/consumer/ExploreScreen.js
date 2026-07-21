@@ -3,7 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
-import { COLORS, API_BASE_URL } from '../../constants';
+import { COLORS, resolveImageUrl } from '../../constants';
 
 const CATEGORIES = [
   { id: 'All',        name: 'All',        icon: 'grid-outline' },
@@ -13,9 +13,7 @@ const CATEGORIES = [
 
 function VendorRow({ vendor, onPress }) {
   const vendorType = vendor.vendor_type === 'home_based' ? 'Home-based' : 'Restaurant';
-  const imageUri = vendor.image
-    ? (vendor.image.startsWith('http') ? vendor.image : `${API_BASE_URL}${vendor.image}`)
-    : 'https://via.placeholder.com/80x80/E85D04/FFFFFF?text=Food';
+  const imageUri = resolveImageUrl(vendor.image) || 'https://via.placeholder.com/80x80/E85D04/FFFFFF?text=Food';
   return (
     <TouchableOpacity style={styles.vendorRow} onPress={onPress} activeOpacity={0.85}>
       <Image
