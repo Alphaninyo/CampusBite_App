@@ -343,6 +343,38 @@ ALTER TABLE vendors ADD COLUMN IF NOT EXISTS kra_pin     VARCHAR(20);
 
 ---
 
+## [1.9.0] - 2026-07-21
+
+### 🎉 New Features
+- **Production deployment** — The backend now runs live on Render (`https://campusbite-backend-api.onrender.com`) backed by a Neon Postgres database (migrated off Render's own free Postgres, which auto-deletes after 30 days; Neon's free tier has no such expiration). The app itself is distributed as a real installable Android APK via EAS Build, rather than requiring Expo Go.
+- **Real Google Maps integration** — `app.json`'s `android.config.googleMaps.apiKey` was a placeholder (`YOUR_GOOGLE_MAPS_API_KEY_HERE`), so every map view in the app rendered blank. Replaced with a real key from Google Cloud.
+- **New app icon and branding** — Replaced Expo's default template icon (the grey concentric-circle placeholder every screenshot of the app showed until now) with a designed CampusBite mark, plus a matching splash screen. The app's display name on the home screen now reads "CampusBite" instead of the internal slug `campusbite-app`.
+
+### 🐛 Bug Fixes
+- **Uploaded images (vendor covers, menu items, avatars, verification docs) were disappearing** — They were being saved to the backend's local disk via Multer, but Render's filesystem is ephemeral: every restart or redeploy (including the free tier's automatic spin-down after 15 minutes of inactivity) wiped the `uploads/` directory clean. Uploads now go straight to Cloudinary instead, which returns a permanent URL that survives restarts. The frontend's image-URL construction (previously a raw `${API_BASE_URL}${path}` template repeated in ~14 screens) is now a single `resolveImageUrl()` helper in `constants/index.js` that handles both the new full Cloudinary URLs and any legacy relative path.
+- **M-Pesa STK Push failures showed a useless generic message** — `"M-Pesa service is currently unavailable. Please try again shortly."` gave no way to tell a real Safaricom rejection (bad phone number, insufficient funds, etc.) apart from a misconfigured environment variable. The error now includes Safaricom's actual rejection reason.
+- **Admin filter tabs were unreachable past the screen edge** — The tab/filter pill rows on the Vendors, Orders, Users, and Approvals admin screens (e.g. "Suspended", "Documents") overflowed off-screen inside a plain `View` with no way to scroll to them. Wrapped each in a horizontal `ScrollView`.
+- **`expo-doctor` flagged a duplicate `expo-font` install and a stale `expo` patch version** — both fixed (`npx expo install --fix`); resolves a "may crash outside of Expo Go" warning tied to `@expo/vector-icons`.
+
+### 🔄 Modified files (key)
+| File | What changed |
+|---|---|
+| `CampusBite_Backend-main/src/config/cloudinary.js` | New — Cloudinary SDK config from env vars |
+| `CampusBite_Backend-main/src/services/upload.service.js` | New — `uploadBufferToCloudinary()` shared helper |
+| `CampusBite_Backend-main/src/controllers/vendor.controller.js` | Multer switched to memory storage → Cloudinary |
+| `CampusBite_Backend-main/src/controllers/menu.controller.js` | Same |
+| `CampusBite_Backend-main/src/controllers/verification.controller.js` | Same (images + PDFs) |
+| `CampusBite_Backend-main/src/controllers/auth.controller.js` | Avatar upload switched to Cloudinary |
+| `CampusBite_Backend-main/src/controllers/order.controller.js` | M-Pesa catch block now includes `mpesaError.message` |
+| `CampusBite_Backend-main/render.yaml` | Added `CLOUDINARY_*` env vars |
+| `src/constants/index.js` | New `resolveImageUrl()` helper |
+| 12 screen files across `admin/`, `consumer/`, `vendor/`, `foodCourier/`, `shared/` | Switched to `resolveImageUrl()` |
+| `src/screens/admin/AdminVendorsScreen.js`, `AdminOrdersScreen.js`, `AdminUsersScreen.js`, `AdminApprovalsScreen.js` | Tab rows wrapped in horizontal `ScrollView` |
+| `app.json` | Real Maps API key; `name` → `CampusBite`; splash/adaptive-icon background color |
+| `assets/icon.png`, `adaptive-icon.png`, `favicon.png`, `splash-icon.png` | New logo artwork |
+
+---
+
 ## [Unreleased] - Development
 
 ### 🚀 Upcoming Features

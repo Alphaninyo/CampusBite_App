@@ -338,10 +338,10 @@ The frontend reads `API_BASE_URL` from `src/constants/index.js`. Default is `htt
 4. **Contribute to the project**
 
 ### **📱 Deployment**
-1. **Build for production** using build scripts
-2. **Test on real devices**
-3. **Prepare for app stores**
-4. **Deploy web version**
+The live version already runs this way — see `QUICK_START.md`'s Production Deployment section or the main `README.md` for the full picture:
+1. **Mobile app**: `npx eas-cli build --platform android --profile preview` → installable APK, no Play Store needed
+2. **Backend**: push to `main` → Render auto-deploys (Neon Postgres + Cloudinary for images)
+3. **Test on a real device** before sharing a new build link
 
 ---
 

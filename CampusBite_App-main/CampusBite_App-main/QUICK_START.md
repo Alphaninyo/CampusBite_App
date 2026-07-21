@@ -156,19 +156,17 @@ npx expo install --fix  # Fix Expo dependencies
 
 ## 🚀 **Production Deployment**
 
-### **📱 App Store Deployment**
-```bash
-# Build for production
-npm run build:android  # Google Play Store
-npm run build:ios      # Apple App Store
-```
+> ⚠️ The `npm run build:android` / `build:ios` scripts use Expo's old **Classic Build** system, which Expo shut down years ago — they won't work. Use **EAS Build** instead:
 
-### **🌐 Web Deployment**
+### **📱 Installable Android APK (current method)**
 ```bash
-# Build web version
-npm run build:web
-# Deploy the 'web-build' folder to your hosting
+npx eas-cli login          # once per machine
+npx eas-cli build --platform android --profile preview --non-interactive
 ```
+This uploads the project to Expo's build servers and returns a direct-install `.apk` link — no Play Store submission needed, and it works without Expo Go. `eas.json`'s `preview` profile is configured for this (`android.buildType: "apk"`). Any change to `app.json`, `assets/`, or app source needs a fresh build + reinstall on the phone; there is no over-the-air update mechanism configured.
+
+### **🌐 Backend**
+The backend isn't run locally in production — it's deployed on Render, connected to Neon Postgres. Push to `main` and Render's Blueprint (`CampusBite_Backend-main/render.yaml`) redeploys automatically. See the main `README.md`'s **Production Deployment** section for the full picture (env vars, Cloudinary image storage, cold-start behavior).
 
 ---
 

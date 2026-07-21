@@ -17,6 +17,7 @@ A full-stack food ordering platform built for campus environments. Students orde
 - [Live Order & Approval Badges](#-live-order--approval-badges)
 - [Notification System](#-notification-system)
 - [Payment Integration](#-payment-integration)
+- [Production Deployment](#-production-deployment)
 - [Environment Setup](#-environment-setup)
 - [Database Migrations](#-database-migrations)
 - [API Reference](#-api-reference)
@@ -198,6 +199,8 @@ CampusBite_App-main/
 | Zustand | Lightweight cart state management |
 | Axios | HTTP client with JWT interceptor |
 | expo-image-picker | Camera & gallery document uploads |
+| react-native-maps | Google Maps rider/delivery tracking views |
+| EAS Build | Produces a real installable Android APK (no Expo Go required) |
 
 ### Backend
 | Package | Purpose |
@@ -211,6 +214,7 @@ CampusBite_App-main/
 | Firebase Admin SDK | FCM push notifications |
 | M-Pesa Daraja API | Mobile payment STK Push |
 | Stripe | Card payment processing (test mode) |
+| Cloudinary | Image storage for uploads (vendor covers, menu items, avatars, verification docs) — required because Render's own disk is ephemeral |
 
 ---
 
@@ -433,6 +437,29 @@ Real Stripe test-mode integration — orders are only created once payment is co
 
 ---
 
+## 🌐 Production Deployment
+
+Everything above describes running the project locally. There's also a live deployment:
+
+| Piece | Where | Notes |
+|---|---|---|
+| Backend API | Render (`campusbite-backend-api`), free web service | Spins down after 15 min of inactivity — the first request after idle time takes ~20-30s to wake up. Auto-deploys on every push to `main` via `CampusBite_Backend-main/render.yaml` |
+| Database | Neon Postgres (free tier) | Migrated off Render's own free Postgres, which auto-deletes after 30 days; Neon's free tier has no expiration |
+| Image storage | Cloudinary (free tier) | Required because Render's disk is ephemeral — see [Vendor/menu images not displaying](#-troubleshooting) |
+| Mobile app | Installable Android APK via **EAS Build**, not the Play Store | `npx eas-cli build --platform android --profile preview` from `CampusBite_App-main/CampusBite_App-main/`; produces a direct-install `.apk` link, sidesteps needing Expo Go entirely |
+
+### Building a new APK
+```bash
+cd CampusBite_App-main/CampusBite_App-main
+npx eas-cli build --platform android --profile preview --non-interactive
+```
+Requires `eas login` once per machine. `eas.json` defines the `preview` profile (`android.buildType: "apk"`, direct install) versus `production` (App Bundle, for an eventual Play Store submission). Any change to `app.json`, `assets/`, or app source requires a new build + reinstall — there's no over-the-air update configured (`expo-updates` isn't set up).
+
+### Deploying backend changes
+Push to `main` on `Alphaninyo/CampusBite_App` — Render's Blueprint (`CampusBite_Backend-main/render.yaml`) picks it up automatically. Secrets (`DB_*`, `MPESA_*`, `STRIPE_*`, `CLOUDINARY_*`, `JWT_SECRET`) are set manually in Render's dashboard under the service's **Environment** tab — they're intentionally `sync: false` in `render.yaml` and never committed.
+
+---
+
 ## 🔧 Environment Setup
 
 Create a `.env` file in `CampusBite_Backend-main/`:
@@ -473,6 +500,11 @@ FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour_Key_Here\n-----END PRIVA
 # Leave as placeholder values to run in dev/simulation mode
 STRIPE_SECRET_KEY=your_stripe_secret_key
 STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
+
+# Cloudinary — required for image uploads to persist (see Production Deployment)
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
 ```
 
 > **Note:** With `NODE_ENV=development`, the global API rate limiter (100 requests / 15 min per IP) is skipped entirely, so local testing won't hit `429 Too many requests`. It's enforced normally whenever `NODE_ENV` is anything else.
@@ -637,8 +669,9 @@ Sequelize `sync({ alter: false })` runs on every server start and will create an
 - Badges refresh every 30 seconds or immediately on tab press
 
 ### Vendor/menu images not displaying
-- Open the browser console — `net::ERR_BLOCKED_BY_ORB` on a `/uploads/...` request means the referenced file doesn't exist on disk (common on a fresh checkout, since `uploads/menu/` and `uploads/verification/` are gitignored — user-uploaded content never ships with the repo, but a shared/seeded database may still reference old filenames). Re-upload the image through the app to fix it for that vendor/item.
-- If the list itself is fine but only a couple of images are blank, check that the specific screen prefixes `vendor.image` / `item.image` with `API_BASE_URL` — it's a relative path (`/uploads/...`), not a full URL. All consumer/vendor screens should build the URL the same way (see `HomeScreen.js` or `VendorDetailScreen.js`).
+- **As of `[1.9.0]`, uploaded images (vendor covers, menu items, avatars, verification docs) are stored on Cloudinary, not local disk** — see `upload.service.js`. If images from *before* that migration are missing, that's expected: they were served from the backend's local `uploads/` folder, which is wiped on every restart on Render's free tier (no persistent disk). Re-upload through the app once to get a permanent Cloudinary URL.
+- If uploads are failing entirely (not just old ones missing), check that `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` are actually set in the backend's environment — a missing key surfaces as `Error: Must supply api_key` in the server logs.
+- Any image path returned by the API — full Cloudinary URL or a legacy relative `/uploads/...` path — should be built through the shared `resolveImageUrl()` helper in `src/constants/index.js`, not a raw `${API_BASE_URL}${path}` template. It picks the right form automatically.
 - Vendor cover/menu-item uploads can fail silently on web if converting the picked image to a Blob fails — the save still reports "Success" without the image attached (see Changelog `[1.2.1]`, Known Gap). If a fresh upload doesn't show up, just try again.
 
 ### Backend crashes on start with `Cannot find module 'sharp'`
