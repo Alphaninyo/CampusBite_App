@@ -7,6 +7,12 @@ const path       = require('path');
 
 const app = express();
 
+// Render sits in front of this app as a reverse proxy. Without this, Express
+// can't tell one client's IP from another's via X-Forwarded-For, so the rate
+// limiters below end up bucketing every user of the app together instead of
+// limiting per-person.
+app.set('trust proxy', 1);
+
 // ─── Security & Utility Middleware ────────────────────────────────────────────
 
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
