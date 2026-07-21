@@ -176,7 +176,7 @@ export default function AdminUsersScreen() {
         </View>
 
         {/* Tabs */}
-        <View style={styles.tabRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabRow}>
           {TABS.map((tab) => {
             const count = tab === 'All'       ? consumersCount + vendorsCount + couriersCount :
                           tab === 'Consumers' ? consumersCount :
@@ -195,7 +195,7 @@ export default function AdminUsersScreen() {
               </TouchableOpacity>
             );
           })}
-        </View>
+        </ScrollView>
 
         {/* Action message banner */}
         {actionMsg && (

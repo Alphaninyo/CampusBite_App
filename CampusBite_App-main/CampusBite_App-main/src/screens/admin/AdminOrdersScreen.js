@@ -180,7 +180,7 @@ export default function AdminOrdersScreen() {
         </View>
 
         {/* Tabs */}
-        <View style={styles.tabRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabRow}>
           {TABS.map((tab) => {
             const count = tab === 'All' ? orders.length :
                           tab === 'Pending' ? pendingCount :
@@ -198,7 +198,7 @@ export default function AdminOrdersScreen() {
               </TouchableOpacity>
             );
           })}
-        </View>
+        </ScrollView>
 
         {/* Orders List */}
         <View style={styles.section}>
