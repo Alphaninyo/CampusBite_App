@@ -1,6 +1,7 @@
 const { sequelize, User, Vendor, Order, Payment, Review, MenuItem } = require('../models');
 const { Op } = require('sequelize');
 const bcrypt  = require('bcryptjs');
+const notify  = require('../services/notification.service');
 
 // ─── Stats Overview ───────────────────────────────────────────────────────────
 
@@ -233,6 +234,14 @@ exports.resolveOrderIssue = async (req, res) => {
     }
 
     await order.update({ issue_resolved_at: new Date() });
+
+    notify.notifyUser(order.consumer_id, {
+      type: 'system',
+      title: 'Issue resolved',
+      body:  `The issue you reported on order #${order.id.slice(0, 8)} has been resolved.`,
+      data:  { order_id: order.id },
+    }).catch(console.error);
+
     res.status(200).json({ success: true, message: 'Issue marked as resolved.', order });
   } catch (error) {
     console.error('[ADMIN] resolveOrderIssue error:', error);
@@ -258,6 +267,14 @@ exports.markRefundComplete = async (req, res) => {
     }
 
     await order.update({ refund_status: 'refunded', refunded_at: new Date() });
+
+    notify.notifyUser(order.consumer_id, {
+      type: 'payment',
+      title: 'Refund completed',
+      body:  `Your refund for order #${order.id.slice(0, 8)} has been processed.`,
+      data:  { order_id: order.id },
+    }).catch(console.error);
+
     res.status(200).json({ success: true, message: 'Refund marked as completed.', order });
   } catch (error) {
     console.error('[ADMIN] markRefundComplete error:', error);
@@ -377,6 +394,13 @@ exports.requestInfo = async (req, res) => {
       requested_docs:      JSON.stringify(docs),
     });
 
+    notify.notifyUser(user.id, {
+      type: 'system',
+      title: 'More information needed',
+      body:  note.trim(),
+      data:  { requested_docs: docs },
+    }).catch(console.error);
+
     res.status(200).json({
       success: true,
       message: `Information request sent to ${user.name}.`,
@@ -451,6 +475,13 @@ exports.approveUserDocs = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Only vendor and courier documents can be approved.' });
     }
     await user.update({ verification_status: 'approved', admin_note: null });
+
+    notify.notifyUser(user.id, {
+      type: 'system',
+      title: 'Documents approved',
+      body:  'Your verification documents have been approved.',
+    }).catch(console.error);
+
     res.status(200).json({ success: true, message: `${user.name}'s documents have been approved.` });
   } catch (error) {
     console.error('[ADMIN] approveUserDocs error:', error);
@@ -471,10 +502,18 @@ exports.rejectUserDocs = async (req, res) => {
     if (!['vendor', 'food_courier'].includes(user.role)) {
       return res.status(400).json({ success: false, message: 'Only vendor and courier documents can be rejected.' });
     }
+    const rejectNote = note?.trim() || 'Your submitted documents were not accepted. Please resubmit clear, valid documents.';
     await user.update({
       verification_status: 'info_requested',
-      admin_note: note?.trim() || 'Your submitted documents were not accepted. Please resubmit clear, valid documents.',
+      admin_note: rejectNote,
     });
+
+    notify.notifyUser(user.id, {
+      type: 'system',
+      title: 'Documents not accepted',
+      body:  rejectNote,
+    }).catch(console.error);
+
     res.status(200).json({ success: true, message: `${user.name}'s documents have been rejected.` });
   } catch (error) {
     console.error('[ADMIN] rejectUserDocs error:', error);

@@ -86,7 +86,7 @@ function ProgressBar({ label, value, total, color }) {
 }
 
 // ── Screen ────────────────────────────────────────────────────────────────────
-export default function AdminStatsScreen() {
+export default function AdminStatsScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const [stats, setStats]           = useState(null);
   const [weeklyData, setWeeklyData] = useState([]);
@@ -192,7 +192,7 @@ export default function AdminStatsScreen() {
           <TouchableOpacity style={styles.headerBtn} onPress={handleDownload} activeOpacity={0.7}>
             <Ionicons name="download-outline" size={22} color={COLORS.text} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerBtn} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.headerBtn} activeOpacity={0.7} onPress={() => navigation.navigate('AdminNotifications')}>
             <Ionicons name="notifications-outline" size={22} color={COLORS.text} />
             {unreadCount > 0 && <View style={styles.notifDot} />}
           </TouchableOpacity>

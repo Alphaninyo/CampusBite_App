@@ -19,7 +19,7 @@ const ISSUE_REASON_LABELS = {
   other:         'Something else',
 };
 
-export default function AdminOrdersScreen() {
+export default function AdminOrdersScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('All');
   const [orders, setOrders] = useState([]);
@@ -35,17 +35,22 @@ export default function AdminOrdersScreen() {
   const [cancelledCount, setCancelledCount] = useState(0);
   const [resolvingIssue, setResolvingIssue] = useState(false);
   const [markingRefund, setMarkingRefund] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const fetchOrders = useCallback(async () => {
     try {
       const { data } = await api.admin.getOrders({ limit: 100 });
       setOrders(data.orders || []);
-      
+
       const allOrders = data.orders || [];
       setPendingCount(allOrders.filter(o => o.status === 'Received' || o.status === 'Pending').length);
       setInProgressCount(allOrders.filter(o => o.status === 'Preparing' || o.status === 'Ready' || o.status === 'In Transit').length);
       setCompletedCount(allOrders.filter(o => o.status === 'Delivered').length);
       setCancelledCount(allOrders.filter(o => o.status === 'Cancelled').length);
+
+      api.notifications.getUnreadCount()
+        .then(({ data }) => setUnreadCount(data.unread_count || 0))
+        .catch(() => {});
     } catch (err) {
       console.error(err.message);
     } finally {
@@ -150,9 +155,9 @@ export default function AdminOrdersScreen() {
             <Text style={styles.headerSubtitle}>{pendingCount} pending - {inProgressCount} in progress</Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.notificationBtn}>
+        <TouchableOpacity style={styles.notificationBtn} onPress={() => navigation.navigate('AdminNotifications')}>
           <Ionicons name="notifications-outline" size={22} color={COLORS.text} />
-          {pendingCount > 0 && <View style={styles.notificationBadge} />}
+          {unreadCount > 0 && <View style={styles.notificationBadge} />}
         </TouchableOpacity>
       </View>
 

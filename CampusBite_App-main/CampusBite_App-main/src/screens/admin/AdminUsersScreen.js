@@ -11,7 +11,7 @@ import { COLORS } from '../../constants';
 
 const TABS = ['All', 'Consumers', 'Vendors', 'Couriers', 'Suspended'];
 
-export default function AdminUsersScreen() {
+export default function AdminUsersScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('All');
   const [users, setUsers] = useState([]);
@@ -26,18 +26,23 @@ export default function AdminUsersScreen() {
   const [consumersCount, setConsumersCount] = useState(0);
   const [couriersCount, setCouriersCount]   = useState(0);
   const [vendorsCount, setVendorsCount]     = useState(0);
+  const [unreadCount, setUnreadCount]       = useState(0);
 
   const fetchUsers = useCallback(async () => {
     try {
       const { data } = await api.admin.getUsers({ limit: 100 });
       setUsers(data.users || []);
-      
+
       const consumers = (data.users || []).filter(u => u.role === 'consumer');
       const couriers  = (data.users || []).filter(u => u.role === 'food_courier');
       const vendors   = (data.users || []).filter(u => u.role === 'vendor');
       setConsumersCount(consumers.length);
       setCouriersCount(couriers.length);
       setVendorsCount(vendors.length);
+
+      api.notifications.getUnreadCount()
+        .then(({ data }) => setUnreadCount(data.unread_count || 0))
+        .catch(() => {});
     } catch (err) {
       console.error(err.message);
     } finally {
@@ -147,8 +152,9 @@ export default function AdminUsersScreen() {
             <Text style={styles.headerSubtitle}>{consumersCount + vendorsCount + couriersCount} users · {consumersCount} consumers · {vendorsCount} vendors · {couriersCount} couriers</Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.notificationBtn}>
+        <TouchableOpacity style={styles.notificationBtn} onPress={() => navigation.navigate('AdminNotifications')}>
           <Ionicons name="notifications-outline" size={22} color={COLORS.text} />
+          {unreadCount > 0 && <View style={styles.notificationBadge} />}
         </TouchableOpacity>
       </View>
 
@@ -448,6 +454,15 @@ const styles = StyleSheet.create({
     minHeight: 40,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.primary,
   },
 
   // ScrollView

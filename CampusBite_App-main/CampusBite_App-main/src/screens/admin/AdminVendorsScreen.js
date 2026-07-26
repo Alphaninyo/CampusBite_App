@@ -13,7 +13,7 @@ const docUrl = resolveImageUrl;
 
 const TABS = ['All', 'Active', 'Pending', 'Suspended'];
 
-export default function AdminVendorsScreen() {
+export default function AdminVendorsScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('All');
   const [vendors, setVendors] = useState([]);
@@ -30,16 +30,21 @@ export default function AdminVendorsScreen() {
   const [rejectMode, setRejectMode] = useState(false);
   const [rejectNote, setRejectNote] = useState('');
   const [actionMsg, setActionMsg] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const fetchVendors = useCallback(async () => {
     try {
       const { data } = await api.admin.getVendors({ limit: 100 });
       setVendors(data.vendors || []);
-      
+
       const allVendors = data.vendors || [];
       setActiveCount(allVendors.filter(v => v.approved_at && !v.rejected_at).length);
       setPendingCount(allVendors.filter(v => !v.approved_at && !v.rejected_at).length);
       setSuspendedCount(allVendors.filter(v => v.rejected_at).length);
+
+      api.notifications.getUnreadCount()
+        .then(({ data }) => setUnreadCount(data.unread_count || 0))
+        .catch(() => {});
     } catch (err) {
       console.error(err.message);
     } finally {
@@ -150,9 +155,9 @@ export default function AdminVendorsScreen() {
             <Text style={styles.headerSubtitle}>{activeCount} active - {pendingCount} pending</Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.notificationBtn}>
+        <TouchableOpacity style={styles.notificationBtn} onPress={() => navigation.navigate('AdminNotifications')}>
           <Ionicons name="notifications-outline" size={22} color={COLORS.text} />
-          {pendingCount > 0 && <View style={styles.notificationBadge} />}
+          {unreadCount > 0 && <View style={styles.notificationBadge} />}
         </TouchableOpacity>
       </View>
 

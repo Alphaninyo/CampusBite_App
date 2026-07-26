@@ -1,4 +1,5 @@
 const admin = require('firebase-admin');
+const { Notification, User } = require('../models');
 
 // Only initialize if all three Firebase env vars are present
 const CONFIGURED = !!(
@@ -45,4 +46,46 @@ async function send(token, title, body, data = {}) {
   }
 }
 
-module.exports = { send };
+/**
+ * Creates a persistent in-app notification for a user and, if they have a
+ * device token, also fires an FCM push. Never throws — a notification
+ * failure must never break the order/payment/approval flow that triggered it.
+ *
+ * @param {string} userId
+ * @param {object} opts
+ * @param {'order_status'|'payment'|'delivery'|'system'|'feedback'} opts.type
+ * @param {string} opts.title
+ * @param {string} opts.body
+ * @param {object} [opts.data] - Extra payload (e.g. { order_id })
+ */
+async function notifyUser(userId, { type = 'system', title, body, data = {} }) {
+  if (!userId) return;
+  try {
+    await Notification.create({ user_id: userId, type, title, body, data });
+  } catch (err) {
+    console.error('[NOTIFY] Failed to create notification:', err.message);
+  }
+
+  try {
+    const user = await User.findByPk(userId, { attributes: ['fcm_token'] });
+    if (user?.fcm_token) await send(user.fcm_token, title, body, data);
+  } catch (err) {
+    console.warn('[NOTIFY] Push lookup failed:', err.message);
+  }
+}
+
+/**
+ * Notifies every admin account — used for platform-level events (new vendor/
+ * courier registrations, document submissions, reported issues) that don't
+ * have one single obvious recipient.
+ */
+async function notifyAdmins(opts) {
+  try {
+    const admins = await User.findAll({ where: { role: 'admin' }, attributes: ['id'] });
+    await Promise.all(admins.map((a) => notifyUser(a.id, opts)));
+  } catch (err) {
+    console.error('[NOTIFY] Failed to notify admins:', err.message);
+  }
+}
+
+module.exports = { send, notifyUser, notifyAdmins };

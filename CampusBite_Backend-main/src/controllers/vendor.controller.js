@@ -5,6 +5,7 @@ const sharp  = require('sharp');
 const { Op, literal }   = require('sequelize');
 const { Vendor, User, MenuItem, sequelize } = require('../models');
 const { uploadBufferToCloudinary } = require('../services/upload.service');
+const notify = require('../services/notification.service');
 
 // ─── Multer Setup for Vendor Cover Images ─────────────────────────────────────
 // Files are kept in memory (never written to local disk) and uploaded straight
@@ -355,6 +356,14 @@ exports.rejectVendor = async (req, res) => {
     }
     await vendor.update({ rejected_at: new Date() }, { transaction: t });
     await t.commit();
+
+    notify.notifyUser(vendor.user_id, {
+      type: 'system',
+      title: 'Application not approved',
+      body:  `Your vendor application for "${vendor.business_name}" was not approved.`,
+      data:  { vendor_id: vendor.id },
+    }).catch(console.error);
+
     res.status(200).json({ success: true, message: `Vendor "${vendor.business_name}" has been rejected.` });
   } catch (error) {
     await t.rollback();
@@ -393,6 +402,13 @@ exports.approveVendor = async (req, res) => {
     );
 
     await t.commit();
+
+    notify.notifyUser(vendor.user_id, {
+      type: 'system',
+      title: 'Vendor account approved!',
+      body:  `"${vendor.business_name}" is approved and now live on CampusBite.`,
+      data:  { vendor_id: vendor.id },
+    }).catch(console.error);
 
     res.status(200).json({
       success: true,

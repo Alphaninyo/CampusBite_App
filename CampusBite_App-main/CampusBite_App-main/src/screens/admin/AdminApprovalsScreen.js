@@ -83,7 +83,7 @@ function VerificationBadge({ status, type, hasDocument, onView, onViewPassport, 
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function AdminApprovalsScreen() {
+export default function AdminApprovalsScreen({ navigation }) {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab]   = useState('All');
   const [vendors, setVendors]       = useState([]);
@@ -103,6 +103,7 @@ export default function AdminApprovalsScreen() {
   const [docViewer, setDocViewer]           = useState(null); // { url, label }
   const [actionMsg,  setActionMsg]          = useState(null); // { type: 'success'|'error', text }
   const [expandedCard, setExpandedCard]     = useState(null);
+  const [unreadCount, setUnreadCount]       = useState(0);
 
   // Document review tab state
   const [docUsers, setDocUsers]             = useState([]);
@@ -115,14 +116,16 @@ export default function AdminApprovalsScreen() {
 
   const fetchAll = useCallback(async () => {
     try {
-      const [vRes, cRes, dRes] = await Promise.all([
+      const [vRes, cRes, dRes, notifRes] = await Promise.all([
         api.admin.getPendingVendors(),
         api.admin.getPendingFoodCouriers(),
         api.admin.getPendingDocUsers(),
+        api.notifications.getUnreadCount().catch(() => ({ data: { unread_count: 0 } })),
       ]);
       setVendors(vRes.data.vendors || []);
       setCouriers(cRes.data.couriers || []);
       setDocUsers(dRes.data.users || []);
+      setUnreadCount(notifRes.data.unread_count || 0);
 
       const now = new Date();
       const longWaiting = (vRes.data.vendors || []).filter(v => {
@@ -893,9 +896,9 @@ export default function AdminApprovalsScreen() {
             <Text style={styles.headerSubtitle}>{totalPending} pending review</Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.notificationBtn}>
+        <TouchableOpacity style={styles.notificationBtn} onPress={() => navigation.navigate('AdminNotifications')}>
           <Ionicons name="notifications-outline" size={22} color={COLORS.text} />
-          {totalPending > 0 && <View style={styles.notificationBadge} />}
+          {unreadCount > 0 && <View style={styles.notificationBadge} />}
         </TouchableOpacity>
       </View>
 

@@ -1,18 +1,38 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useNavigationState } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
-import AdminStatsScreen     from '../screens/admin/AdminStatsScreen';
-import AdminVendorsScreen   from '../screens/admin/AdminVendorsScreen';
-import AdminOrdersScreen    from '../screens/admin/AdminOrdersScreen';
-import AdminUsersScreen     from '../screens/admin/AdminUsersScreen';
-import AdminApprovalsScreen from '../screens/admin/AdminApprovalsScreen';
+import AdminStatsScreen         from '../screens/admin/AdminStatsScreen';
+import AdminVendorsScreen       from '../screens/admin/AdminVendorsScreen';
+import AdminOrdersScreen        from '../screens/admin/AdminOrdersScreen';
+import AdminUsersScreen         from '../screens/admin/AdminUsersScreen';
+import AdminApprovalsScreen     from '../screens/admin/AdminApprovalsScreen';
+import AdminNotificationsScreen from '../screens/admin/AdminNotificationsScreen';
 import ProfileScreen        from '../screens/shared/ProfileScreen';
 import { COLORS }           from '../constants';
 import { api }              from '../api';
 
-const Tab = createBottomTabNavigator();
+const Tab   = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
+
+function withNotifications(MainComponent, mainName) {
+  return function Stacked() {
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name={mainName} component={MainComponent} />
+        <Stack.Screen name="AdminNotifications" component={AdminNotificationsScreen} />
+      </Stack.Navigator>
+    );
+  };
+}
+
+const StatsStack     = withNotifications(AdminStatsScreen,     'StatsMain');
+const ApprovalsStack = withNotifications(AdminApprovalsScreen, 'ApprovalsMain');
+const VendorsStack   = withNotifications(AdminVendorsScreen,   'VendorsMain');
+const OrdersStack    = withNotifications(AdminOrdersScreen,    'OrdersMain');
+const UsersStack     = withNotifications(AdminUsersScreen,     'UsersMain');
 
 export default function AdminNavigator() {
   const [pendingCount, setPendingCount] = useState(0);
@@ -53,12 +73,12 @@ export default function AdminNavigator() {
     <Tab.Navigator screenOptions={{ tabBarActiveTintColor: COLORS.primary }}>
       <Tab.Screen
         name="Stats"
-        component={AdminStatsScreen}
+        component={StatsStack}
         options={{ title: 'Stats', headerShown: false, tabBarIcon: ({ color, size }) => <Ionicons name="bar-chart-outline" size={size} color={color} /> }}
       />
       <Tab.Screen
         name="Approvals"
-        component={AdminApprovalsScreen}
+        component={ApprovalsStack}
         listeners={{ tabPress: () => fetchCounts() }}
         options={{
           title: 'Approvals',
@@ -70,12 +90,12 @@ export default function AdminNavigator() {
       />
       <Tab.Screen
         name="Vendors"
-        component={AdminVendorsScreen}
+        component={VendorsStack}
         options={{ title: 'Vendors', headerShown: false, tabBarIcon: ({ color, size }) => <Ionicons name="storefront-outline" size={size} color={color} /> }}
       />
       <Tab.Screen
         name="Orders"
-        component={AdminOrdersScreen}
+        component={OrdersStack}
         listeners={{ tabPress: () => fetchCounts() }}
         options={{
           title: 'Orders',
@@ -87,7 +107,7 @@ export default function AdminNavigator() {
       />
       <Tab.Screen
         name="Users"
-        component={AdminUsersScreen}
+        component={UsersStack}
         options={{ title: 'Users', headerShown: false, tabBarIcon: ({ color, size }) => <Ionicons name="people-outline" size={size} color={color} /> }}
       />
       <Tab.Screen

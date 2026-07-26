@@ -67,15 +67,27 @@ exports.handleCallback = async (req, res) => {
     await t.commit();
     console.log(`[MPESA] Payment confirmed. Order ${order.id} created. Receipt: ${mpesa_ref}`);
 
-    // Fire-and-forget notifications — failures must never affect the response to Safaricom
-    const { consumer_id, vendor_id, total_amount } = payment.cart_data || {};
+    // Fire-and-forget notifications — failures must never affect the response to Safaricom.
+    // Read from `order` (not payment.cart_data) — the update above already nulled that field
+    // both in the DB and on this in-memory instance.
+    notify.notifyUser(order.consumer_id, {
+      type: 'payment',
+      title: 'Order Confirmed!',
+      body:  `Payment of KES ${order.total_amount} received. Your order is being prepared.`,
+      data:  { order_id: order.id },
+    }).catch(console.error);
+
     Promise.all([
-      User.findByPk(consumer_id, { attributes: ['fcm_token'] }),
-      Vendor.findByPk(vendor_id, { include: [{ model: User, as: 'owner', attributes: ['name', 'fcm_token'] }] }),
-      User.findByPk(consumer_id, { attributes: ['name'] }),
-    ]).then(([consumer, vendor, consumerUser]) => {
-      notify.send(consumer?.fcm_token, 'Order Confirmed!', `Payment of KES ${total_amount} received. Your order is being prepared.`, { order_id: order.id });
-      notify.send(vendor?.owner?.fcm_token, 'New Order!', `${consumerUser?.name ?? 'A customer'} placed a new order.`, { order_id: order.id });
+      Vendor.findByPk(order.vendor_id, { attributes: ['user_id'] }),
+      User.findByPk(order.consumer_id, { attributes: ['name'] }),
+    ]).then(([vendor, consumerUser]) => {
+      if (!vendor) return;
+      notify.notifyUser(vendor.user_id, {
+        type: 'order_status',
+        title: 'New Order!',
+        body:  `${consumerUser?.name ?? 'A customer'} placed a new order.`,
+        data:  { order_id: order.id },
+      });
     }).catch(console.error);
 
     return res.status(200).json({ ResultCode: 0, ResultDesc: 'Accepted' });

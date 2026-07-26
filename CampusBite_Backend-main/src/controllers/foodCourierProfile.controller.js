@@ -1,5 +1,6 @@
 const { FoodCourierProfile, User, Order, sequelize } = require('../models');
 const { Op } = require('sequelize');
+const notify = require('../services/notification.service');
 
 /**
  * GET /api/food-courier/profile
@@ -174,6 +175,13 @@ exports.approveFoodCourier = async (req, res) => {
     await profile.update({ approved_at: new Date() }, { transaction: t });
     await User.update({ is_approved: true }, { where: { id: profile.user_id }, transaction: t });
     await t.commit();
+
+    notify.notifyUser(profile.user_id, {
+      type: 'system',
+      title: 'Food courier account approved!',
+      body:  'Your food courier application is approved — you can start accepting deliveries.',
+    }).catch(console.error);
+
     res.status(200).json({ success: true, message: 'Food courier has been approved successfully.' });
   } catch (error) {
     await t.rollback();
@@ -205,6 +213,13 @@ exports.rejectFoodCourier = async (req, res) => {
     }
     await profile.update({ rejected_at: new Date() }, { transaction: t });
     await t.commit();
+
+    notify.notifyUser(profile.user_id, {
+      type: 'system',
+      title: 'Application not approved',
+      body:  'Your food courier application was not approved.',
+    }).catch(console.error);
+
     res.status(200).json({ success: true, message: 'Food courier has been rejected.' });
   } catch (error) {
     await t.rollback();

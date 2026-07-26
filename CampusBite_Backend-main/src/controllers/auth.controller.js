@@ -6,6 +6,7 @@ const { Op }  = require('sequelize');
 const { User, Vendor, FoodCourierProfile, sequelize } = require('../models');
 const emailService = require('../services/email.service');
 const { uploadBufferToCloudinary } = require('../services/upload.service');
+const notify = require('../services/notification.service');
 
 // ─── Avatar upload ────────────────────────────────────────────────────────────
 // Kept in memory and uploaded straight to Cloudinary — Render's filesystem is
@@ -193,6 +194,15 @@ exports.register = async (req, res) => {
     } catch (txErr) {
       await t.rollback();
       throw txErr;
+    }
+
+    if (userRole === 'vendor' || userRole === 'food_courier') {
+      notify.notifyAdmins({
+        type: 'system',
+        title: `New ${userRole === 'vendor' ? 'vendor' : 'food courier'} application`,
+        body:  `${user.name} has applied as a ${userRole === 'vendor' ? 'vendor' : 'food courier'} and needs approval.`,
+        data:  { user_id: user.id, role: userRole },
+      }).catch(console.error);
     }
 
     sendTokenResponse(user, 201, res);

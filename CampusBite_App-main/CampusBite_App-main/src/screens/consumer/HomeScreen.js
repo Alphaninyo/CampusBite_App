@@ -118,6 +118,22 @@ export default function HomeScreen({ navigation }) {
     return filtered;
   }, [allMenuItems, selectedCategory, searchText]);
 
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const { data } = await api.notifications.getAll();
+      setNotifications(data.notifications || []);
+    } catch (err) {
+      console.error('Error fetching notifications:', err.message);
+    }
+  }, []);
+
+  const markNotificationRead = async (id) => {
+    try {
+      await api.notifications.markAsRead(id);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+    } catch {}
+  };
+
   // Fetch real data from the API
   const fetchData = useCallback(async () => {
     try {
@@ -164,6 +180,7 @@ export default function HomeScreen({ navigation }) {
   }, [selectedCategory, searchText, getFilteredVendors, getFilteredItems]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
 
   if (loading) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
 
@@ -179,10 +196,10 @@ export default function HomeScreen({ navigation }) {
         </View>
         <TouchableOpacity style={styles.notificationBtn} onPress={() => setShowNotifications(true)}>
           <Ionicons name="notifications-outline" size={24} color={COLORS.black} />
-          {notifications.filter(n => !n.read).length > 0 && (
+          {notifications.filter(n => !n.is_read).length > 0 && (
             <View style={styles.notificationBadge}>
               <Text style={styles.notificationBadgeText}>
-                {notifications.filter(n => !n.read).length}
+                {notifications.filter(n => !n.is_read).length}
               </Text>
             </View>
           )}
@@ -309,13 +326,21 @@ export default function HomeScreen({ navigation }) {
                 </View>
               ) : (
                 notifications.map((notification) => (
-                  <TouchableOpacity key={notification.id} style={styles.notificationItem}>
+                  <TouchableOpacity
+                    key={notification.id}
+                    style={styles.notificationItem}
+                    onPress={() => { if (!notification.is_read) markNotificationRead(notification.id); }}
+                  >
                     <View style={styles.notificationContent}>
                       <Text style={styles.notificationTitle}>{notification.title}</Text>
-                      <Text style={styles.notificationMessage}>{notification.message}</Text>
-                      <Text style={styles.notificationTime}>{notification.time}</Text>
+                      <Text style={styles.notificationMessage}>{notification.body}</Text>
+                      <Text style={styles.notificationTime}>
+                        {new Date(notification.created_at).toLocaleDateString('en-GB', {
+                          day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+                        })}
+                      </Text>
                     </View>
-                    {!notification.read && (
+                    {!notification.is_read && (
                       <View style={styles.notificationDot} />
                     )}
                   </TouchableOpacity>

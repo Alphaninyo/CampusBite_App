@@ -97,6 +97,22 @@ exports.createOrderFromPayment = async (payment, t) => {
   return order;
 };
 
+/** Notifies a vendor's owner that a new order has come in. Never throws. */
+exports.notifyVendorNewOrder = async function notifyVendorNewOrder(order) {
+  try {
+    const vendor = await Vendor.findByPk(order.vendor_id, { attributes: ['user_id', 'business_name'] });
+    if (!vendor) return;
+    await notify.notifyUser(vendor.user_id, {
+      type: 'order_status',
+      title: 'New order received',
+      body:  `You have a new order for ${vendor.business_name}.`,
+      data:  { order_id: order.id },
+    });
+  } catch (err) {
+    console.error('[ORDER] notifyVendorNewOrder failed:', err.message);
+  }
+}
+
 // ─── Consumer: Initiate Checkout ──────────────────────────────────────────────
 
 /**
@@ -374,6 +390,7 @@ exports.initiateCheckout = async (req, res) => {
       }
 
       await t.commit();
+      exports.notifyVendorNewOrder(order);
 
       return res.status(201).json({
         success:             true,
@@ -448,6 +465,7 @@ exports.devConfirmPayment = async (req, res) => {
     );
 
     await t.commit();
+    exports.notifyVendorNewOrder(order);
 
     res.status(201).json({ success: true, message: 'Payment confirmed. Order created.', order_id: order.id, order });
   } catch (error) {
@@ -519,6 +537,7 @@ exports.confirmCardPayment = async (req, res) => {
     );
 
     await t.commit();
+    exports.notifyVendorNewOrder(order);
 
     res.status(201).json({ success: true, message: 'Payment confirmed. Order created.', order_id: order.id, order });
   } catch (error) {
@@ -676,14 +695,24 @@ exports.updateOrderStatus = async (req, res) => {
     };
     const msg = CONSUMER_MESSAGES[transition.next];
     if (msg) {
-      User.findByPk(order.consumer_id, { attributes: ['fcm_token'] })
-        .then((u) => notify.send(u?.fcm_token, msg[0], msg[1], { order_id: order.id }))
-        .catch(console.error);
+      notify.notifyUser(order.consumer_id, {
+        type: 'order_status',
+        title: msg[0],
+        body:  msg[1],
+        data:  { order_id: order.id },
+      }).catch(console.error);
     }
     if (transition.next === 'Collected') {
       User.findByPk(req.user.id, { attributes: ['name'] }).then((rider) =>
-        Vendor.findByPk(order.vendor_id, { include: [{ model: User, as: 'owner', attributes: ['fcm_token'] }] })
-          .then((v) => notify.send(v?.owner?.fcm_token, 'Order Collected', `${rider?.name ?? 'Rider'} has collected the order.`, { order_id: order.id }))
+        Vendor.findByPk(order.vendor_id, { attributes: ['user_id'] }).then((v) => {
+          if (!v) return;
+          notify.notifyUser(v.user_id, {
+            type: 'delivery',
+            title: 'Order Collected',
+            body:  `${rider?.name ?? 'Rider'} has collected the order.`,
+            data:  { order_id: order.id },
+          });
+        })
       ).catch(console.error);
     }
 
@@ -779,9 +808,21 @@ exports.cancelOrder = async (req, res) => {
       failed:          'Your order was declined by the vendor. There was an issue processing your refund — our support team has been notified.',
     };
 
-    User.findByPk(order.consumer_id, { attributes: ['fcm_token'] })
-      .then((u) => notify.send(u?.fcm_token, 'Order Cancelled', CONSUMER_REFUND_MESSAGES[refund_status], { order_id: order.id }))
-      .catch(console.error);
+    notify.notifyUser(order.consumer_id, {
+      type: 'order_status',
+      title: 'Order Cancelled',
+      body:  CONSUMER_REFUND_MESSAGES[refund_status],
+      data:  { order_id: order.id },
+    }).catch(console.error);
+
+    if (refund_status === 'manual_required') {
+      notify.notifyAdmins({
+        type: 'system',
+        title: 'Manual M-Pesa refund needed',
+        body:  `Order #${order.id.slice(0, 8)} was declined and needs a manual M-Pesa refund.`,
+        data:  { order_id: order.id },
+      }).catch(console.error);
+    }
 
     res.status(200).json({ success: true, message: 'Order declined.', order_id: order.id, new_status: 'Cancelled', refund_status });
   } catch (error) {
@@ -822,6 +863,13 @@ exports.reportIssue = async (req, res) => {
       issue_note: note || null,
       issue_reported_at: new Date(),
     });
+
+    notify.notifyAdmins({
+      type: 'system',
+      title: 'Order issue reported',
+      body:  `${req.user.name || 'A consumer'} reported an issue (${reason.replace(/_/g, ' ')}) on order #${order.id.slice(0, 8)}.`,
+      data:  { order_id: order.id },
+    }).catch(console.error);
 
     res.status(200).json({ success: true, message: 'Issue reported. Our team will review it shortly.', order });
   } catch (error) {
@@ -874,8 +922,15 @@ exports.assignRider = async (req, res) => {
     await t.commit();
 
     User.findByPk(req.user.id, { attributes: ['name'] }).then((rider) =>
-      Vendor.findByPk(order.vendor_id, { include: [{ model: User, as: 'owner', attributes: ['fcm_token'] }] })
-        .then((v) => notify.send(v?.owner?.fcm_token, 'Rider Assigned', `${rider?.name ?? 'A rider'} is on the way to collect the order.`, { order_id: order.id }))
+      Vendor.findByPk(order.vendor_id, { attributes: ['user_id'] }).then((v) => {
+        if (!v) return;
+        notify.notifyUser(v.user_id, {
+          type: 'delivery',
+          title: 'Rider Assigned',
+          body:  `${rider?.name ?? 'A rider'} is on the way to collect the order.`,
+          data:  { order_id: order.id },
+        });
+      })
     ).catch(console.error);
 
     res.status(200).json({ success: true, message: 'You are now assigned. Head to the vendor to collect the order.', order_id: order.id });
@@ -956,10 +1011,12 @@ exports.collectCash = async (req, res) => {
     await order.update({ payment_method: 'cash' }, { transaction: t });
     await t.commit();
 
-    // Notify consumer
-    User.findByPk(order.consumer_id, { attributes: ['fcm_token'] })
-      .then((u) => notify.send(u?.fcm_token, 'Cash Received', 'The rider has confirmed your cash payment.', { order_id: order.id }))
-      .catch(console.error);
+    notify.notifyUser(order.consumer_id, {
+      type: 'payment',
+      title: 'Cash Received',
+      body:  'The rider has confirmed your cash payment.',
+      data:  { order_id: order.id },
+    }).catch(console.error);
 
     res.status(200).json({ success: true, message: 'Cash collection confirmed.', order_id: order.id });
   } catch (error) {

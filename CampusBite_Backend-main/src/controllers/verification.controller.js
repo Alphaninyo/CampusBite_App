@@ -2,6 +2,7 @@ const multer  = require('multer');
 const bcrypt  = require('bcryptjs');
 const { User } = require('../models');
 const { uploadBufferToCloudinary } = require('../services/upload.service');
+const notify = require('../services/notification.service');
 
 // ── Multer config ─────────────────────────────────────────────────────────────
 // Kept in memory and uploaded straight to Cloudinary — Render's filesystem is
@@ -72,6 +73,13 @@ exports.uploadDocument = (req, res) => {
       }
 
       await user.update(updates);
+
+      notify.notifyAdmins({
+        type: 'system',
+        title: 'Documents submitted for review',
+        body:  `${user.name} submitted verification documents.`,
+        data:  { user_id: user.id },
+      }).catch(console.error);
 
       res.status(200).json({
         success: true,
@@ -149,6 +157,13 @@ exports.submitInfo = (req, res) => {
       }
 
       await user.update(updates);
+
+      notify.notifyAdmins({
+        type: 'system',
+        title: 'Documents submitted for review',
+        body:  `${user.name} resubmitted verification information.`,
+        data:  { user_id: user.id },
+      }).catch(console.error);
 
       res.status(200).json({
         success: true,
