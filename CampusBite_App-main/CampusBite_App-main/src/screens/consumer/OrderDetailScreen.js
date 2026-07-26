@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl, Modal, TextInput, Alert, KeyboardAvoidingView, Platform, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import QRCode from 'react-native-qrcode-svg';
 import { api } from '../../api';
 import { COLORS, STATUS_COLORS } from '../../constants';
 import RiderMapView from '../../components/RiderMapView';
@@ -175,6 +176,11 @@ export default function OrderDetailScreen({ route, navigation }) {
             <Text style={styles.pinHeaderText}>Delivery PIN</Text>
           </View>
           <Text style={styles.pinValue}>{order.delivery_pin}</Text>
+
+          <View style={styles.qrWrap}>
+            <QRCode value={order.delivery_pin} size={110} color={COLORS.text} backgroundColor="transparent" />
+          </View>
+
           <Text style={styles.pinHint}>
             Give this to your rider only once they hand you your order — it's how we confirm delivery actually happened.
           </Text>
@@ -488,6 +494,12 @@ const styles = StyleSheet.create({
   pinHeaderText: { fontSize: 13, fontWeight: '700', color: COLORS.primary, textTransform: 'uppercase', letterSpacing: 0.5 },
   pinValue: { fontSize: 36, fontWeight: 'bold', color: COLORS.text, letterSpacing: 8, marginBottom: 8 },
   pinHint: { fontSize: 12, color: COLORS.subtext, textAlign: 'center', lineHeight: 17 },
+  qrWrap: {
+    backgroundColor: COLORS.card,
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 12,
+  },
 
   // Cards
   card: {
