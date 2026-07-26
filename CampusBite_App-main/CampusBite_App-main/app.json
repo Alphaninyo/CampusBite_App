@@ -16,7 +16,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.campusbite.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "CampusBite needs your location to set your delivery address."
+        "NSLocationWhenInUseUsageDescription": "CampusBite needs your location to set your delivery address.",
+        "NSCameraUsageDescription": "CampusBite needs your camera to scan the delivery QR code."
       }
     },
     "android": {
@@ -30,7 +31,8 @@
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "CAMERA"
       ],
       "config": {
         "googleMaps": {
@@ -43,6 +45,12 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "CampusBite needs your location to set your delivery address."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "CampusBite needs your camera to scan the delivery QR code."
         }
       ],
       "expo-asset",

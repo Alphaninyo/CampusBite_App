@@ -387,6 +387,31 @@ ALTER TABLE vendors ADD COLUMN IF NOT EXISTS kra_pin     VARCHAR(20);
 
 ---
 
+## [1.10.0] - 2026-07-26
+
+### 🎉 New Features
+- **Real in-app notification system, for real this time** — `Notification.create()` was never actually called anywhere in the backend, so every role's bell icon was cosmetic. Added `notifyUser`/`notifyAdmins`/`notifyAvailableCouriers` helpers and wired them into every event that should produce a notification: order placed, status changes, rider assigned/available-for-pickup, cash collected, order cancelled/refunded, issues reported, vendor/courier registration and approval/rejection, and document verification. All four roles (consumer, vendor, food courier, admin) now have a working notifications screen with unread badges, "Mark all as read", and tap-through to the relevant order. Admin previously had no notification route at all — `AdminNavigator.js` was restructured with per-tab stacks so a shared `AdminNotifications` screen could be pushed from any tab.
+- **Delivery PIN + QR code proof-of-delivery** — every order now generates a 4-digit delivery PIN at creation time, shown only to the consumer (as digits and as a QR code on the order tracking screen). The courier cannot transition an order to "Delivered" without submitting the correct PIN; a wrong or missing PIN returns a clear inline error instead of silently completing. This closes the "order marked delivered but customer never got it" / "customer claims non-delivery" dispute loop. `delivery_pin_verified` distinguishes a real PIN-confirmed delivery from an admin override.
+- **Camera QR-code scanning for couriers** — the courier no longer has to type the PIN by hand. A "Scan QR Code Instead" button on the PIN-entry sheet opens the device camera (`expo-camera`), decodes the customer's QR code, and auto-submits it as the delivery PIN. Falls back cleanly to manual entry if camera permission is denied or the code doesn't match.
+- **Admin force-complete override** — for orders stuck or disputed because the PIN was lost or never verified, an admin can force-complete the order with a required reason, which is stored and shown on the order (`admin_override_reason`). Admin's order list/detail also now shows a clear "PIN-verified" vs "admin override" badge.
+
+### 🔄 Modified files (key)
+| File | What changed |
+|---|---|
+| `CampusBite_Backend-main/src/services/notification.service.js` | Added `notifyUser`/`notifyAdmins`/`notifyAvailableCouriers` |
+| `CampusBite_Backend-main/src/controllers/order.controller.js` | PIN generation + verification on the Delivered transition, courier broadcast on Ready, notifications wired into every order event |
+| `CampusBite_Backend-main/src/controllers/payment.controller.js` | Fixed M-Pesa callback reading nulled `payment.cart_data` for notification text |
+| `CampusBite_Backend-main/src/controllers/admin.controller.js` | Added `forceCompleteOrder`, notifications on issue/refund/verification actions |
+| `CampusBite_Backend-main/src/models/Order.js` + `server.js` | Added `delivery_pin`, `delivery_pin_verified`, `admin_override_reason` columns |
+| `CampusBite_App-main/src/screens/admin/AdminNotificationsScreen.js` | New screen |
+| `CampusBite_App-main/src/navigation/AdminNavigator.js` | Restructured with per-tab stacks so notifications can be pushed from any admin tab |
+| `CampusBite_App-main/src/screens/consumer/OrderDetailScreen.js` | PIN + QR code display card |
+| `CampusBite_App-main/src/screens/foodCourier/RiderOrderDetailScreen.js` | PIN-entry modal + camera QR scanner |
+| `CampusBite_App-main/src/screens/admin/AdminOrdersScreen.js` | PIN-verified/override badges + force-complete panel |
+| `CampusBite_App-main/app.json` | Added `expo-camera` plugin + camera permission strings |
+
+---
+
 ## [Unreleased] - Development
 
 ### 🚀 Upcoming Features

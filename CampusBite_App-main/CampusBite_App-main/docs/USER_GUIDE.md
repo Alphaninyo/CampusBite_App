@@ -211,6 +211,21 @@ CampusBite is your ultimate food delivery companion for campus life. Order from 
 - Delivered: Order delivered successfully
 ```
 
+### **Delivery PIN & QR Code (Proof of Delivery)**
+```javascript
+// Confirming your order was really delivered
+- As soon as you place an order, a 4-digit delivery PIN is generated
+- Find it on the order's tracking screen, once status reaches "Collected"
+  or later — shown both as digits and as a scannable QR code
+- Give the PIN (or let the courier scan the QR code) only once you have
+  the food in hand
+- The courier cannot mark the order "Delivered" without the correct PIN —
+  this protects you from orders being marked delivered before they arrive,
+  and protects the courier from disputes once it's confirmed
+- Lost or can't find your PIN? Contact support — an admin can verify and
+  force-complete the order on their side if needed
+```
+
 ### **Order History**
 ```javascript
 // Order Features
@@ -556,6 +571,21 @@ A: Go to Orders tab to view all platform orders,
 - After accepting an order, it appears at the top under "My Active Delivery"
 - Tap the active delivery card to open the order detail
 - Advance the order status: Collected → In Transit → Delivered
+```
+
+### **Confirming Delivery (PIN / QR Code)**
+```javascript
+// Required to mark an order "Delivered"
+- Tapping "Mark as Delivered" opens a PIN-entry sheet — you cannot
+  complete the delivery without it
+- Ask the customer to read out their 4-digit delivery PIN and type it in, OR
+- Tap "Scan QR Code Instead" to open the camera and scan the QR code
+  shown on the customer's order screen — it fills in the PIN automatically
+- Wrong PIN or unrecognized QR code → you'll see an inline error and can
+  try again
+- This protects you: once the correct PIN is confirmed, the order is
+  marked delivered with a verified proof-of-delivery record, so a customer
+  can't later claim they never received it
 ```
 
 ### **Earnings Tab**

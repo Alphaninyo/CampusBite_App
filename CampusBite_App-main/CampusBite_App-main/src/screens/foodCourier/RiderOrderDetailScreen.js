@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, Platform, Linking, Modal, TextInput, KeyboardAvoidingView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { api } from '../../api';
 import { COLORS } from '../../constants';
 import RiderMapView from '../../components/RiderMapView';
@@ -31,7 +32,10 @@ export default function RiderOrderDetailScreen({ route }) {
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
+  const [showScanner, setShowScanner] = useState(false);
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const locationIntervalRef = useRef(null);
+  const scanLockRef = useRef(false);
 
   const startLocationTracking = useCallback(async (activeOrderId) => {
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -135,6 +139,31 @@ export default function RiderOrderDetailScreen({ route }) {
       return;
     }
     advanceStatus(pinInput.trim());
+  };
+
+  const openScanner = async () => {
+    let granted = cameraPermission?.granted;
+    if (!granted) {
+      const result = await requestCameraPermission();
+      granted = result?.granted;
+    }
+    if (!granted) {
+      setPinError('Camera permission is required to scan the QR code.');
+      return;
+    }
+    scanLockRef.current = false;
+    setShowScanner(true);
+  };
+
+  const handleBarcodeScanned = ({ data }) => {
+    if (scanLockRef.current) return;
+    const code = String(data || '').replace(/[^0-9]/g, '').slice(0, 4);
+    if (code.length !== 4) return; // not the delivery-PIN QR code, ignore and keep scanning
+    scanLockRef.current = true;
+    setShowScanner(false);
+    setPinInput(code);
+    setPinError('');
+    advanceStatus(code);
   };
 
   const handleCollectCash = () => {
@@ -397,6 +426,10 @@ export default function RiderOrderDetailScreen({ route }) {
             autoFocus
           />
           {!!pinError && <Text style={pinStyles.error}>{pinError}</Text>}
+          <TouchableOpacity style={pinStyles.scanBtn} onPress={openScanner} disabled={updating}>
+            <Ionicons name="qr-code-outline" size={18} color={COLORS.primary} />
+            <Text style={pinStyles.scanBtnText}>Scan QR Code Instead</Text>
+          </TouchableOpacity>
           <View style={pinStyles.actions}>
             <TouchableOpacity
               style={pinStyles.cancelBtn}
@@ -417,6 +450,26 @@ export default function RiderOrderDetailScreen({ route }) {
           </View>
         </View>
       </KeyboardAvoidingView>
+    </Modal>
+
+    {/* ── QR Scanner Modal ── */}
+    <Modal visible={showScanner} animationType="slide" onRequestClose={() => setShowScanner(false)}>
+      <View style={pinStyles.scannerContainer}>
+        <CameraView
+          style={StyleSheet.absoluteFillObject}
+          facing="back"
+          barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+          onBarcodeScanned={showScanner ? handleBarcodeScanned : undefined}
+        />
+        <View style={pinStyles.scannerOverlay}>
+          <View style={pinStyles.scannerFrame} />
+          <Text style={pinStyles.scannerHint}>Point the camera at the customer's QR code</Text>
+        </View>
+        <TouchableOpacity style={pinStyles.scannerCloseBtn} onPress={() => setShowScanner(false)}>
+          <Ionicons name="close" size={22} color="#fff" />
+          <Text style={pinStyles.scannerCloseText}>Cancel</Text>
+        </TouchableOpacity>
+      </View>
     </Modal>
     </>
   );
@@ -605,6 +658,12 @@ const pinStyles = StyleSheet.create({
     marginBottom: 8,
   },
   error: { color: COLORS.danger, fontSize: 13, textAlign: 'center', marginBottom: 8 },
+  scanBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    paddingVertical: 10, borderRadius: 10,
+    borderWidth: 1.5, borderColor: COLORS.primary, borderStyle: 'dashed',
+  },
+  scanBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.primary },
   actions: { flexDirection: 'row', gap: 10, marginTop: 12 },
   cancelBtn: {
     flex: 1, paddingVertical: 13, borderRadius: 10,
@@ -616,5 +675,22 @@ const pinStyles = StyleSheet.create({
     backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center',
   },
   confirmBtnText: { fontSize: 14, fontWeight: '700', color: COLORS.white },
+
+  scannerContainer: { flex: 1, backgroundColor: '#000' },
+  scannerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  scannerFrame: {
+    width: 250, height: 250, borderRadius: 16,
+    borderWidth: 3, borderColor: '#fff',
+  },
+  scannerHint: { color: '#fff', fontSize: 14, fontWeight: '600', marginTop: 20, textAlign: 'center', paddingHorizontal: 40 },
+  scannerCloseBtn: {
+    position: 'absolute', top: 50, left: 20,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
+  },
+  scannerCloseText: { color: '#fff', fontSize: 14, fontWeight: '600' },
 });
 

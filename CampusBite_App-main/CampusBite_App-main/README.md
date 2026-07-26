@@ -38,6 +38,8 @@ For detailed instructions, see [QUICK_START.md](./QUICK_START.md)
 - **💰 Finance & Payouts** - Vendors save M-Pesa number, view earnings from delivered orders, save KRA PIN for tax
 - **⭐ Live Ratings** - Vendor dashboard shows real average rating calculated from actual customer reviews
 - **📊 Real-time Dashboard** - Revenue, active orders, and rating auto-refresh every 30 seconds
+- **🔔 In-App Notification Center** - Real, persisted notifications (not just push) for all four roles, with unread badges, mark-as-read/mark-all-as-read, and tap-through to the relevant order
+- **🔑 Delivery PIN / QR Proof-of-Delivery** - A 4-digit PIN (also shown as a QR code) is generated per order and required from the courier before an order can be marked "Delivered"; the courier can type the PIN or scan the customer's QR code with the in-app camera. Admins can see PIN-verified status and force-complete disputed orders with a logged reason.
 
 ### **🎨 User Experience**
 - **📱 Cross-Platform** - Web, iOS, and Android support
