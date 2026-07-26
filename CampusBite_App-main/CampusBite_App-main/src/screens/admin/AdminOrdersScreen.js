@@ -19,7 +19,7 @@ const ISSUE_REASON_LABELS = {
   other:         'Something else',
 };
 
-export default function AdminOrdersScreen({ navigation }) {
+export default function AdminOrdersScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('All');
   const [orders, setOrders] = useState([]);
@@ -106,6 +106,17 @@ export default function AdminOrdersScreen({ navigation }) {
     setSelectedOrder(order);
     setShowDetailModal(true);
   };
+
+  // Opened from a notification tap (e.g. an issue report or refund alert) —
+  // find the order once the list has loaded and jump straight to its detail.
+  useEffect(() => {
+    const openOrderId = route.params?.openOrderId;
+    if (!openOrderId || orders.length === 0) return;
+
+    const match = orders.find(o => o.id === openOrderId);
+    if (match) openOrderDetail(match);
+    navigation.setParams({ openOrderId: undefined });
+  }, [route.params?.openOrderId, orders]);
 
   const handleResolveIssue = async () => {
     if (!selectedOrder) return;
