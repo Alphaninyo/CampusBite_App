@@ -193,6 +193,7 @@ exports.getAllOrders = async (req, res) => {
 
     const { count, rows: orders } = await Order.findAndCountAll({
       where,
+      attributes: { exclude: ['delivery_pin'] },
       include: [
         { model: User,   as: 'consumer', attributes: ['name', 'phone'] },
         { model: Vendor, as: 'vendor',   attributes: ['business_name'] },

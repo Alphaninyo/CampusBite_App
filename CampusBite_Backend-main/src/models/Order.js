@@ -134,6 +134,11 @@ const Order = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    delivery_pin: {
+      type: DataTypes.STRING(4),
+      allowNull: true,
+      comment: 'Shown only to the consumer. The rider must obtain it from them to confirm delivery — never exposed via any rider/vendor/admin-facing query.',
+    },
   },
   {
     tableName: 'orders',

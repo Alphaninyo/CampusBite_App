@@ -19,6 +19,11 @@ const ISSUE_REASONS = ['not_delivered', 'wrong_items', 'missing_items', 'poor_qu
 
 // ─── Internal Helpers ─────────────────────────────────────────────────────────
 
+/** 4-digit proof-of-delivery PIN, shown only to the consumer. */
+function generateDeliveryPin() {
+  return String(Math.floor(1000 + Math.random() * 9000));
+}
+
 /**
  * Calculates the discount amount for a given promo code.
  * Returns { promoRecord, discount_amount } — promoRecord is null if invalid/not found.
@@ -81,6 +86,7 @@ exports.createOrderFromPayment = async (payment, t) => {
       promo_code:           promo_code || null,
       scheduled_time:       scheduled_time || null,
       payment_method:       payment_method || 'mpesa',
+      delivery_pin:         generateDeliveryPin(),
     },
     { transaction: t }
   );
@@ -378,6 +384,7 @@ exports.initiateCheckout = async (req, res) => {
           promo_code:           promoRecord ? promoRecord.code : null,
           scheduled_time:       scheduled_time || null,
           payment_method,
+          delivery_pin:         generateDeliveryPin(),
         },
         { transaction: t }
       );
@@ -629,7 +636,12 @@ exports.getOrderById = async (req, res) => {
       }
     }
 
-    res.status(200).json({ success: true, order });
+    // The delivery PIN is only ever shown to the consumer who owns the order —
+    // a rider or vendor seeing it in advance would defeat its whole purpose.
+    const orderJson = order.toJSON();
+    if (role !== 'consumer') delete orderJson.delivery_pin;
+
+    res.status(200).json({ success: true, order: orderJson });
   } catch (error) {
     console.error('[ORDER] getOrderById error:', error);
     res.status(500).json({ success: false, message: 'Server error.' });
@@ -650,6 +662,7 @@ exports.getVendorOrders = async (req, res) => {
 
     const orders = await Order.findAll({
       where,
+      attributes: { exclude: ['delivery_pin'] },
       include: [
         { model: User,      as: 'consumer', attributes: ['name', 'phone'] },
         { model: OrderItem, as: 'items',
@@ -703,6 +716,17 @@ exports.updateOrderStatus = async (req, res) => {
       if (order.rider_id !== req.user.id) {
         await t.rollback();
         return res.status(403).json({ success: false, message: 'You are not assigned to this order.' });
+      }
+    }
+
+    // Proof of delivery — the rider must get this PIN from the consumer in
+    // person before the order can be marked Delivered. Prevents an order
+    // being closed out without actually reaching the right person.
+    if (transition.next === 'Delivered') {
+      const { pin } = req.body;
+      if (!pin || String(pin) !== order.delivery_pin) {
+        await t.rollback();
+        return res.status(400).json({ success: false, message: 'Incorrect delivery PIN. Ask the customer for their PIN to confirm delivery.' });
       }
     }
 
@@ -919,6 +943,7 @@ exports.getAvailableOrders = async (req, res) => {
   try {
     const orders = await Order.findAll({
       where: { status: 'Ready', rider_id: null },
+      attributes: { exclude: ['delivery_pin'] },
       include: [
         { model: Vendor, as: 'vendor',   attributes: ['business_name', 'location'],
           include: [{ model: User, as: 'owner', attributes: ['phone'] }] },
@@ -983,6 +1008,7 @@ exports.getRiderOrders = async (req, res) => {
 
     const orders = await Order.findAll({
       where,
+      attributes: { exclude: ['delivery_pin'] },
       include: [
         { model: Vendor, as: 'vendor',   attributes: ['business_name', 'location'],
           include: [{ model: User, as: 'owner', attributes: ['phone'] }] },
