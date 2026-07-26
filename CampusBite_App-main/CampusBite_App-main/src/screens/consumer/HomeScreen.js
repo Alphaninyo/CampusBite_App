@@ -134,6 +134,13 @@ export default function HomeScreen({ navigation }) {
     } catch {}
   };
 
+  const markAllNotificationsRead = async () => {
+    try {
+      await api.notifications.markAllAsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+    } catch {}
+  };
+
   // Fetch real data from the API
   const fetchData = useCallback(async () => {
     try {
@@ -314,9 +321,16 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.notificationModal}>
             <View style={styles.notificationModalHeader}>
               <Text style={styles.notificationModalTitle}>Notifications</Text>
-              <TouchableOpacity onPress={() => setShowNotifications(false)}>
-                <Ionicons name="close-outline" size={24} color={COLORS.black} />
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                {notifications.filter(n => !n.is_read).length > 0 && (
+                  <TouchableOpacity onPress={markAllNotificationsRead}>
+                    <Text style={{ fontSize: 13, color: COLORS.primary, fontWeight: '600' }}>Mark all read</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity onPress={() => setShowNotifications(false)}>
+                  <Ionicons name="close-outline" size={24} color={COLORS.black} />
+                </TouchableOpacity>
+              </View>
             </View>
             <ScrollView style={styles.notificationList}>
               {notifications.length === 0 ? (
