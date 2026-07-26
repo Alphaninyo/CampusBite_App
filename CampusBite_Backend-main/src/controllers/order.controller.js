@@ -726,6 +726,17 @@ exports.updateOrderStatus = async (req, res) => {
         data:  { order_id: order.id },
       }).catch(console.error);
     }
+    if (transition.next === 'Ready') {
+      Vendor.findByPk(order.vendor_id, { attributes: ['business_name'] }).then((v) => {
+        if (!v) return;
+        notify.notifyAvailableCouriers({
+          type: 'delivery',
+          title: 'Order ready for pickup',
+          body:  `An order is ready for pickup at ${v.business_name}.`,
+          data:  { order_id: order.id, vendor_id: order.vendor_id },
+        });
+      }).catch(console.error);
+    }
     if (transition.next === 'Collected') {
       User.findByPk(req.user.id, { attributes: ['name'] }).then((rider) =>
         Vendor.findByPk(order.vendor_id, { attributes: ['user_id'] }).then((v) => {

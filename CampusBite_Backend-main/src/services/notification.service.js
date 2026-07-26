@@ -1,5 +1,5 @@
 const admin = require('firebase-admin');
-const { Notification, User } = require('../models');
+const { Notification, User, FoodCourierProfile } = require('../models');
 
 // Only initialize if all three Firebase env vars are present
 const CONFIGURED = !!(
@@ -88,4 +88,24 @@ async function notifyAdmins(opts) {
   }
 }
 
-module.exports = { send, notifyUser, notifyAdmins };
+/**
+ * Notifies every currently-available (online) food courier that an order is
+ * ready for pickup. There's no location tracking for idle couriers (GPS is
+ * only broadcast once a courier is already assigned to a delivery), so this
+ * can't target the "closest" rider — it reaches everyone who has toggled
+ * themselves available and lets them claim it first-come-first-served, same
+ * as the existing "available orders" list they already browse.
+ */
+async function notifyAvailableCouriers(opts) {
+  try {
+    const couriers = await FoodCourierProfile.findAll({
+      where: { is_available: true },
+      attributes: ['user_id'],
+    });
+    await Promise.all(couriers.map((c) => notifyUser(c.user_id, opts)));
+  } catch (err) {
+    console.error('[NOTIFY] Failed to notify available couriers:', err.message);
+  }
+}
+
+module.exports = { send, notifyUser, notifyAdmins, notifyAvailableCouriers };
