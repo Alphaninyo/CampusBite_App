@@ -113,6 +113,27 @@ exports.notifyVendorNewOrder = async function notifyVendorNewOrder(order) {
   }
 }
 
+/**
+ * Confirms to the consumer that their order was placed. Only used for the
+ * cash/card/dev-confirm paths — the M-Pesa callback already sends its own
+ * consumer confirmation alongside the payment-received message.
+ */
+exports.notifyConsumerOrderPlaced = async function notifyConsumerOrderPlaced(order) {
+  try {
+    const body = order.payment_method === 'cash'
+      ? 'Your order has been placed. Pay the rider in cash on delivery.'
+      : 'Your order has been placed and payment received.';
+    await notify.notifyUser(order.consumer_id, {
+      type: 'order_status',
+      title: 'Order placed!',
+      body,
+      data: { order_id: order.id },
+    });
+  } catch (err) {
+    console.error('[ORDER] notifyConsumerOrderPlaced failed:', err.message);
+  }
+}
+
 // ─── Consumer: Initiate Checkout ──────────────────────────────────────────────
 
 /**
@@ -391,6 +412,7 @@ exports.initiateCheckout = async (req, res) => {
 
       await t.commit();
       exports.notifyVendorNewOrder(order);
+      exports.notifyConsumerOrderPlaced(order);
 
       return res.status(201).json({
         success:             true,
@@ -466,6 +488,7 @@ exports.devConfirmPayment = async (req, res) => {
 
     await t.commit();
     exports.notifyVendorNewOrder(order);
+    exports.notifyConsumerOrderPlaced(order);
 
     res.status(201).json({ success: true, message: 'Payment confirmed. Order created.', order_id: order.id, order });
   } catch (error) {
@@ -538,6 +561,7 @@ exports.confirmCardPayment = async (req, res) => {
 
     await t.commit();
     exports.notifyVendorNewOrder(order);
+    exports.notifyConsumerOrderPlaced(order);
 
     res.status(201).json({ success: true, message: 'Payment confirmed. Order created.', order_id: order.id, order });
   } catch (error) {
