@@ -139,6 +139,17 @@ const Order = sequelize.define(
       allowNull: true,
       comment: 'Shown only to the consumer. The rider must obtain it from them to confirm delivery — never exposed via any rider/vendor/admin-facing query.',
     },
+    delivery_pin_verified: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      comment: 'True only when the rider entered the correct delivery PIN. False if an admin force-completed the order instead — lets a dispute be checked at a glance.',
+    },
+    admin_override_reason: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: 'Set when an admin force-completes an order without PIN verification (e.g. consumer lost access to the PIN).',
+    },
   },
   {
     tableName: 'orders',

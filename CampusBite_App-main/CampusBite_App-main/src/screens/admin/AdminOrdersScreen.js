@@ -36,6 +36,9 @@ export default function AdminOrdersScreen({ navigation, route }) {
   const [resolvingIssue, setResolvingIssue] = useState(false);
   const [markingRefund, setMarkingRefund] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showForceComplete, setShowForceComplete] = useState(false);
+  const [forceCompleteReason, setForceCompleteReason] = useState('');
+  const [forceCompleting, setForceCompleting] = useState(false);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -148,6 +151,23 @@ export default function AdminOrdersScreen({ navigation, route }) {
       Alert.alert('Error', err?.response?.data?.message || err.message || 'Could not mark the refund as complete.');
     } finally {
       setMarkingRefund(false);
+    }
+  };
+
+  const handleForceComplete = async () => {
+    if (!selectedOrder || !forceCompleteReason.trim()) return;
+    setForceCompleting(true);
+    try {
+      const { data } = await api.admin.forceCompleteOrder(selectedOrder.id, forceCompleteReason.trim());
+      const { status, delivery_pin_verified, admin_override_reason } = data.order;
+      setSelectedOrder(prev => ({ ...prev, status, delivery_pin_verified, admin_override_reason }));
+      setOrders(prev => prev.map(o => o.id === selectedOrder.id ? { ...o, status, delivery_pin_verified, admin_override_reason } : o));
+      setShowForceComplete(false);
+      setForceCompleteReason('');
+    } catch (err) {
+      Alert.alert('Error', err?.response?.data?.message || err.message || 'Could not complete the order.');
+    } finally {
+      setForceCompleting(false);
     }
   };
 
@@ -341,6 +361,63 @@ export default function AdminOrdersScreen({ navigation, route }) {
                   <Text style={styles.detailLabel}>Delivery Address</Text>
                   <Text style={styles.detailValue}>{selectedOrder?.delivery_address || 'N/A'}</Text>
                 </View>
+
+                {selectedOrder?.status === 'Delivered' && (
+                  selectedOrder.delivery_pin_verified ? (
+                    <View style={styles.resolvedBadge}>
+                      <Ionicons name="shield-checkmark" size={16} color="#388E3C" />
+                      <Text style={styles.resolvedBadgeText}>PIN Confirmed — rider verified delivery in person</Text>
+                    </View>
+                  ) : (
+                    <View style={styles.overrideBadge}>
+                      <Ionicons name="alert-circle" size={16} color={COLORS.warningText} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.overrideBadgeText}>Admin override — not PIN-verified</Text>
+                        {selectedOrder.admin_override_reason ? (
+                          <Text style={styles.overrideBadgeReason}>"{selectedOrder.admin_override_reason}"</Text>
+                        ) : null}
+                      </View>
+                    </View>
+                  )
+                )}
+
+                {!['Delivered', 'Cancelled'].includes(selectedOrder?.status) && (
+                  showForceComplete ? (
+                    <View style={styles.forceCompletePanel}>
+                      <Text style={styles.forceCompleteLabel}>REASON (e.g. consumer lost their delivery PIN)</Text>
+                      <TextInput
+                        style={styles.forceCompleteInput}
+                        placeholder="Why are you completing this without PIN verification?"
+                        placeholderTextColor={COLORS.muted}
+                        value={forceCompleteReason}
+                        onChangeText={setForceCompleteReason}
+                        multiline
+                      />
+                      <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+                        <TouchableOpacity
+                          style={styles.forceCompleteCancelBtn}
+                          onPress={() => { setShowForceComplete(false); setForceCompleteReason(''); }}
+                        >
+                          <Text style={styles.forceCompleteCancelText}>Cancel</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.resolveBtn, { flex: 2 }, (forceCompleting || !forceCompleteReason.trim()) && { opacity: 0.6 }]}
+                          onPress={handleForceComplete}
+                          disabled={forceCompleting || !forceCompleteReason.trim()}
+                        >
+                          {forceCompleting
+                            ? <ActivityIndicator color={COLORS.white} size="small" />
+                            : <Text style={styles.resolveBtnText}>Confirm Force Complete</Text>}
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : (
+                    <TouchableOpacity style={styles.forceCompleteLink} onPress={() => setShowForceComplete(true)}>
+                      <Ionicons name="warning-outline" size={14} color={COLORS.warningText} />
+                      <Text style={styles.forceCompleteLinkText}>Force-complete without PIN (admin override)</Text>
+                    </TouchableOpacity>
+                  )
+                )}
               </View>
 
               {selectedOrder?.has_issue && (
@@ -689,4 +766,32 @@ const styles = StyleSheet.create({
     borderRadius: 10, paddingVertical: 12, alignItems: 'center',
   },
   resolveBtnText: { color: COLORS.white, fontWeight: '700', fontSize: 14 },
+
+  // Delivery PIN verification / admin override
+  overrideBadge: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 8,
+    backgroundColor: '#FFFBEB', borderRadius: 10, borderWidth: 1, borderColor: '#FDE68A',
+    paddingVertical: 10, paddingHorizontal: 12, marginTop: 10,
+  },
+  overrideBadgeText: { color: COLORS.warningText, fontWeight: '600', fontSize: 13 },
+  overrideBadgeReason: { color: COLORS.warningText, fontSize: 12, marginTop: 2, fontStyle: 'italic' },
+  forceCompleteLink: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    marginTop: 12, alignSelf: 'flex-start',
+  },
+  forceCompleteLinkText: { color: COLORS.warningText, fontSize: 12, fontWeight: '600', textDecorationLine: 'underline' },
+  forceCompletePanel: {
+    backgroundColor: '#FFFBEB', borderRadius: 10, borderWidth: 1, borderColor: '#FDE68A',
+    padding: 12, marginTop: 10,
+  },
+  forceCompleteLabel: { fontSize: 10, fontWeight: '800', color: COLORS.warningText, letterSpacing: 0.5, marginBottom: 8 },
+  forceCompleteInput: {
+    backgroundColor: COLORS.card, borderRadius: 8, borderWidth: 1, borderColor: '#FDE68A',
+    padding: 10, fontSize: 13, color: COLORS.text, minHeight: 60, textAlignVertical: 'top',
+  },
+  forceCompleteCancelBtn: {
+    flex: 1, paddingVertical: 12, borderRadius: 8, borderWidth: 1.5, borderColor: COLORS.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  forceCompleteCancelText: { color: COLORS.subtext, fontWeight: '700', fontSize: 13 },
 });

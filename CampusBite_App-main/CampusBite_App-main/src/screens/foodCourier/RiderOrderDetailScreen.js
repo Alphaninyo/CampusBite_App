@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, Platform, Linking } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, Platform, Linking, Modal, TextInput, KeyboardAvoidingView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { api } from '../../api';
@@ -28,6 +28,9 @@ export default function RiderOrderDetailScreen({ route }) {
   const [updating, setUpdating]     = useState(false);
   const [collectingCash, setCollectingCash] = useState(false);
   const [myLocation, setMyLocation] = useState(null);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState('');
   const locationIntervalRef = useRef(null);
 
   const startLocationTracking = useCallback(async (activeOrderId) => {
@@ -90,23 +93,48 @@ export default function RiderOrderDetailScreen({ route }) {
     if (order?.consumer?.phone) Linking.openURL(`tel:${order.consumer.phone}`);
   };
 
-  const advanceStatus = async () => {
+  const advanceStatus = async (pin) => {
     const next = NEXT_STATUS[order.status];
     if (!next) return;
     setUpdating(true);
     try {
-      const response = await api.orders.updateStatus(orderId, next);
+      const response = await api.orders.updateStatus(orderId, next, pin);
       const newStatus = response.data?.new_status || next;
       setOrder(prev => ({ ...prev, status: newStatus }));
 
       if (newStatus === 'Delivered') {
         stopLocationTracking();
+        setShowPinModal(false);
+        setPinInput('');
+        setPinError('');
       }
     } catch (err) {
-      Alert.alert('Error', err.message);
+      if (next === 'Delivered') {
+        setPinError(err?.response?.data?.message || 'Incorrect PIN. Please try again.');
+      } else {
+        Alert.alert('Error', err.message);
+      }
     } finally {
       setUpdating(false);
     }
+  };
+
+  const handleActionPress = () => {
+    if (NEXT_STATUS[order.status] === 'Delivered') {
+      setPinError('');
+      setPinInput('');
+      setShowPinModal(true);
+      return;
+    }
+    advanceStatus();
+  };
+
+  const submitPin = () => {
+    if (pinInput.trim().length !== 4) {
+      setPinError('Enter the 4-digit PIN the customer gives you.');
+      return;
+    }
+    advanceStatus(pinInput.trim());
   };
 
   const handleCollectCash = () => {
@@ -162,6 +190,7 @@ export default function RiderOrderDetailScreen({ route }) {
     && order.payment?.status !== 'confirmed';
 
   return (
+    <>
     <ScrollView
       style={styles.container}
       contentContainerStyle={{ paddingBottom: 32 }}
@@ -328,7 +357,7 @@ export default function RiderOrderDetailScreen({ route }) {
       {nextStatus && (
         <TouchableOpacity
           style={[styles.actionButton, updating && { opacity: 0.6 }]}
-          onPress={advanceStatus}
+          onPress={handleActionPress}
           disabled={updating}
         >
           {updating
@@ -346,6 +375,50 @@ export default function RiderOrderDetailScreen({ route }) {
         </View>
       )}
     </ScrollView>
+
+    {/* ── Delivery PIN Modal ── */}
+    <Modal visible={showPinModal} animationType="slide" transparent>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={pinStyles.overlay}>
+        <View style={pinStyles.sheet}>
+          <View style={pinStyles.handle} />
+          <Ionicons name="key-outline" size={28} color={COLORS.primary} style={{ alignSelf: 'center', marginBottom: 8 }} />
+          <Text style={pinStyles.title}>Enter Delivery PIN</Text>
+          <Text style={pinStyles.subtitle}>
+            Ask {order.consumer?.name || 'the customer'} for their 4-digit delivery PIN to confirm you've handed over the order.
+          </Text>
+          <TextInput
+            style={pinStyles.input}
+            value={pinInput}
+            onChangeText={(t) => { setPinInput(t.replace(/[^0-9]/g, '').slice(0, 4)); setPinError(''); }}
+            placeholder="0000"
+            placeholderTextColor={COLORS.muted}
+            keyboardType="number-pad"
+            maxLength={4}
+            autoFocus
+          />
+          {!!pinError && <Text style={pinStyles.error}>{pinError}</Text>}
+          <View style={pinStyles.actions}>
+            <TouchableOpacity
+              style={pinStyles.cancelBtn}
+              onPress={() => { setShowPinModal(false); setPinInput(''); setPinError(''); }}
+              disabled={updating}
+            >
+              <Text style={pinStyles.cancelBtnText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[pinStyles.confirmBtn, updating && { opacity: 0.6 }]}
+              onPress={submitPin}
+              disabled={updating}
+            >
+              {updating
+                ? <ActivityIndicator color="#fff" size="small" />
+                : <Text style={pinStyles.confirmBtnText}>Confirm Delivery</Text>}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+    </>
   );
 }
 
@@ -505,5 +578,43 @@ const styles = StyleSheet.create({
   },
   successText: { fontSize: 16, fontWeight: 'bold', color: '#388E3C', marginTop: 8 },
   successSub: { fontSize: 13, color: COLORS.gray, marginTop: 4 },
+});
+
+const pinStyles = StyleSheet.create({
+  overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
+  sheet: {
+    backgroundColor: COLORS.white,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    paddingBottom: 32,
+  },
+  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: COLORS.border, alignSelf: 'center', marginBottom: 16 },
+  title: { fontSize: 18, fontWeight: 'bold', color: COLORS.black, textAlign: 'center', marginBottom: 8 },
+  subtitle: { fontSize: 13, color: COLORS.gray, textAlign: 'center', lineHeight: 19, marginBottom: 20 },
+  input: {
+    borderWidth: 1.5,
+    borderColor: COLORS.borderWarm,
+    borderRadius: 12,
+    paddingVertical: 14,
+    fontSize: 28,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    letterSpacing: 12,
+    color: COLORS.black,
+    marginBottom: 8,
+  },
+  error: { color: COLORS.danger, fontSize: 13, textAlign: 'center', marginBottom: 8 },
+  actions: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  cancelBtn: {
+    flex: 1, paddingVertical: 13, borderRadius: 10,
+    borderWidth: 1.5, borderColor: COLORS.border, alignItems: 'center',
+  },
+  cancelBtnText: { fontSize: 14, fontWeight: '700', color: COLORS.gray },
+  confirmBtn: {
+    flex: 2, paddingVertical: 13, borderRadius: 10,
+    backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center',
+  },
+  confirmBtnText: { fontSize: 14, fontWeight: '700', color: COLORS.white },
 });
 

@@ -167,6 +167,20 @@ export default function OrderDetailScreen({ route, navigation }) {
         })}
       </View>
 
+      {/* Delivery PIN — proof of delivery */}
+      {order.delivery_pin && !['Delivered', 'Cancelled'].includes(order.status) && (
+        <View style={styles.pinCard}>
+          <View style={styles.pinHeader}>
+            <Ionicons name="key-outline" size={18} color={COLORS.primary} />
+            <Text style={styles.pinHeaderText}>Delivery PIN</Text>
+          </View>
+          <Text style={styles.pinValue}>{order.delivery_pin}</Text>
+          <Text style={styles.pinHint}>
+            Give this to your rider only once they hand you your order — it's how we confirm delivery actually happened.
+          </Text>
+        </View>
+      )}
+
       {/* Order Items */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Order Items</Text>
@@ -458,6 +472,22 @@ const styles = StyleSheet.create({
   stepLabelDone: { color: '#388E3C', fontWeight: '600' },
   stepLabelCurrent: { color: COLORS.primary, fontWeight: 'bold' },
   stepSubLabel: { fontSize: 11, color: COLORS.gray, marginTop: 2 },
+
+  // Delivery PIN
+  pinCard: {
+    backgroundColor: COLORS.iconBg,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: 14,
+    padding: 16,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: COLORS.borderAccent,
+  },
+  pinHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+  pinHeaderText: { fontSize: 13, fontWeight: '700', color: COLORS.primary, textTransform: 'uppercase', letterSpacing: 0.5 },
+  pinValue: { fontSize: 36, fontWeight: 'bold', color: COLORS.text, letterSpacing: 8, marginBottom: 8 },
+  pinHint: { fontSize: 12, color: COLORS.subtext, textAlign: 'center', lineHeight: 17 },
 
   // Cards
   card: {

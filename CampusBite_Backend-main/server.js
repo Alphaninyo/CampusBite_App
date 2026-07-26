@@ -68,6 +68,8 @@ async function startServer() {
       `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel='refunded' AND enumtypid=(SELECT oid FROM pg_type WHERE typname='enum_payments_status')) THEN ALTER TYPE "enum_payments_status" ADD VALUE 'refunded'; END IF; END $$`,
       // Delivery PIN — proof of delivery, consumer-only visibility
       `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_pin VARCHAR(4)`,
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_pin_verified BOOLEAN NOT NULL DEFAULT false`,
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS admin_override_reason TEXT`,
     ];
     for (const sql of migrations) {
       await sequelize.query(sql).catch((e) => console.warn('[MIGRATION]', sql.slice(0, 60), e.message));

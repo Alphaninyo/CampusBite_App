@@ -283,6 +283,52 @@ exports.markRefundComplete = async (req, res) => {
   }
 };
 
+/**
+ * PATCH /api/admin/orders/:id/force-complete
+ * Admin only — marks an order Delivered without the rider entering the
+ * delivery PIN. This is a deliberate override, not a bypass a rider or
+ * vendor can trigger — for cases like the consumer losing access to their
+ * PIN. Always requires a reason, and `delivery_pin_verified` stays false so
+ * anyone reviewing the order later can see it wasn't PIN-confirmed.
+ */
+exports.forceCompleteOrder = async (req, res) => {
+  try {
+    const { reason } = req.body;
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ success: false, message: 'A reason is required to force-complete an order.' });
+    }
+
+    const order = await Order.findByPk(req.params.id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found.' });
+    }
+    if (order.status === 'Delivered') {
+      return res.status(400).json({ success: false, message: 'This order is already delivered.' });
+    }
+    if (order.status === 'Cancelled') {
+      return res.status(400).json({ success: false, message: 'Cannot complete a cancelled order.' });
+    }
+
+    await order.update({
+      status: 'Delivered',
+      delivery_pin_verified: false,
+      admin_override_reason: reason.trim(),
+    });
+
+    notify.notifyUser(order.consumer_id, {
+      type: 'order_status',
+      title: 'Order marked delivered',
+      body:  'An admin has marked your order as delivered.',
+      data:  { order_id: order.id },
+    }).catch(console.error);
+
+    res.status(200).json({ success: true, message: 'Order marked as delivered by admin override.', order });
+  } catch (error) {
+    console.error('[ADMIN] forceCompleteOrder error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 // ─── All Users ────────────────────────────────────────────────────────────────
 
 /**

@@ -731,7 +731,13 @@ exports.updateOrderStatus = async (req, res) => {
     }
 
     const previousStatus = order.status;
-    await order.update({ status: transition.next }, { transaction: t });
+    await order.update(
+      {
+        status: transition.next,
+        ...(transition.next === 'Delivered' ? { delivery_pin_verified: true } : {}),
+      },
+      { transaction: t }
+    );
     await t.commit();
 
     const CONSUMER_MESSAGES = {
