@@ -329,7 +329,13 @@ export default function HomeScreen({ navigation }) {
                   <TouchableOpacity
                     key={notification.id}
                     style={styles.notificationItem}
-                    onPress={() => { if (!notification.is_read) markNotificationRead(notification.id); }}
+                    onPress={() => {
+                      if (!notification.is_read) markNotificationRead(notification.id);
+                      if (notification.data?.order_id) {
+                        setShowNotifications(false);
+                        navigation.navigate('OrdersTab', { screen: 'OrderDetail', params: { orderId: notification.data.order_id } });
+                      }
+                    }}
                   >
                     <View style={styles.notificationContent}>
                       <Text style={styles.notificationTitle}>{notification.title}</Text>

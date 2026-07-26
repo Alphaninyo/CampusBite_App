@@ -101,7 +101,12 @@ export default function NotificationsScreen({ navigation }) {
         renderItem={({ item }) => (
           <TouchableOpacity
             style={[styles.notificationCard, !item.is_read && styles.unreadCard]}
-            onPress={() => { if (!item.is_read) markAsRead(item.id); }}
+            onPress={() => {
+              if (!item.is_read) markAsRead(item.id);
+              if (item.data?.order_id) {
+                navigation.navigate('FoodCourierOrderDetail', { orderId: item.data.order_id });
+              }
+            }}
           >
             <View style={[styles.iconBox, { backgroundColor: getColorForType(item.type) }]}>
               <Ionicons name={getIconForType(item.type)} size={22} color="#fff" />

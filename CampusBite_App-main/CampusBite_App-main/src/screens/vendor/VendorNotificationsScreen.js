@@ -100,7 +100,12 @@ export default function VendorNotificationsScreen({ navigation }) {
         renderItem={({ item }) => (
           <TouchableOpacity
             style={[styles.card, !item.is_read && styles.unreadCard]}
-            onPress={() => { if (!item.is_read) markAsRead(item.id); }}
+            onPress={() => {
+              if (!item.is_read) markAsRead(item.id);
+              if (item.data?.order_id) {
+                navigation.navigate('OrdersTab', { screen: 'VendorOrderDetail', params: { orderId: item.data.order_id } });
+              }
+            }}
             activeOpacity={0.75}
           >
             <View style={[styles.iconBox, { backgroundColor: TYPE_COLOR[item.type] || COLORS.gray }]}>
