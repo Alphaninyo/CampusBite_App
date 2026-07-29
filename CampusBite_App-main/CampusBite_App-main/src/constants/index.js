@@ -73,22 +73,22 @@ export const DARK_COLORS = {
   secondary:      '#FFA94D',
 
   // ── Backgrounds ────────────────────────────────────────────
-  background:     '#15100D',   // Near-black warm dark (main app screens)
+  background:     '#120D0A',   // Near-black warm dark (main app screens)
   backgroundAlt:  '#1B1512',   // Auth screens / alternate dark
-  card:           '#211A16',   // Surface / card background
-  inputBg:        '#2A211C',   // Input field background
-  iconBg:         '#3A2A20',   // Icon container background
+  card:           '#271F19',   // Surface / card background — clearly lighter than background
+  inputBg:        '#332822',   // Input field background — lighter still, so fields "pop" out of cards
+  iconBg:         '#40301F',   // Icon container background
   blob:           '#3A2415',   // Decorative blob elements
 
   // ── Text ───────────────────────────────────────────────────
   text:           '#F5F1EE',   // Primary text (on dark backgrounds)
-  subtext:        '#B9AFA8',   // Secondary / muted text
-  muted:          '#8A7E77',   // Placeholder / very muted
+  subtext:        '#C4B9B1',   // Secondary / muted text
+  muted:          '#96897F',   // Placeholder / very muted
 
   // ── Borders & Dividers ─────────────────────────────────────
-  border:         '#332922',   // Standard dark border
-  borderWarm:     '#3A2C24',   // Warm divider / border
-  borderAccent:   '#5A3826',   // Orange-tinted accent border
+  border:         '#42342A',   // Standard dark border
+  borderWarm:     '#4A3928',   // Warm divider / border
+  borderAccent:   '#63402C',   // Orange-tinted accent border
 
   // ── Monochrome ─────────────────────────────────────────────
   white:          '#FFFFFF',
@@ -122,8 +122,8 @@ export const DARK_COLORS = {
   overlay:        'rgba(0,0,0,0.65)',
 
   // ── Legacy aliases (retained for existing screens that reference these) ──
-  gray:           '#B9AFA8',
-  lightGray:      '#332922',
+  gray:           '#C4B9B1',
+  lightGray:      '#42342A',
 };
 
 export const STATUS_COLORS = {

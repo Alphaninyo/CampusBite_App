@@ -716,14 +716,14 @@ const makeStyles = (COLORS) => StyleSheet.create({
 
   addressDisplay: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-    backgroundColor: COLORS.background, borderRadius: 12, padding: 12,
+    backgroundColor: COLORS.inputBg, borderRadius: 12, padding: 12,
     borderWidth: 1, borderColor: COLORS.borderWarm,
   },
   addressDisplayText: { flex: 1, fontSize: 13, color: COLORS.text, lineHeight: 18 },
 
   addressPlaceholder: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: COLORS.background, borderRadius: 12, padding: 14,
+    backgroundColor: COLORS.inputBg, borderRadius: 12, padding: 14,
     borderWidth: 1.5, borderColor: COLORS.borderWarm, borderStyle: 'dashed',
   },
   addressPlaceholderText: { fontSize: 14, color: COLORS.muted },
@@ -767,7 +767,7 @@ const makeStyles = (COLORS) => StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: COLORS.borderWarm,
   },
   paymentOptionActive: {
-    backgroundColor: '#FFF5F0', marginHorizontal: -4, paddingHorizontal: 4, borderRadius: 12,
+    backgroundColor: COLORS.iconBg, marginHorizontal: -4, paddingHorizontal: 4, borderRadius: 12,
   },
   paymentIconWrap: {
     width: 46, height: 46, borderRadius: 12,
@@ -802,7 +802,7 @@ const makeStyles = (COLORS) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 10,
     borderWidth: 1.5, borderColor: COLORS.borderWarm, borderRadius: 12,
     paddingHorizontal: 12, paddingVertical: 11,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.inputBg,
   },
   paymentDetailRow: { flexDirection: 'row', gap: 10 },
   paymentDetailInput: { flex: 1, fontSize: 14, color: COLORS.text },
@@ -819,7 +819,7 @@ const makeStyles = (COLORS) => StyleSheet.create({
 
   suggestionCard: {
     width: 100, marginRight: 10, alignItems: 'center', borderRadius: 12, padding: 8,
-    borderWidth: 1, borderColor: COLORS.borderWarm, backgroundColor: COLORS.background,
+    borderWidth: 1, borderColor: COLORS.borderWarm, backgroundColor: COLORS.inputBg,
   },
   suggestionImg:   { width: 60, height: 60, borderRadius: 10, backgroundColor: COLORS.primary + '20', marginBottom: 6 },
   suggestionName:  { fontSize: 11, fontWeight: '600', color: COLORS.text, textAlign: 'center', marginBottom: 2 },
@@ -875,7 +875,7 @@ const makeStyles = (COLORS) => StyleSheet.create({
   slotRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     paddingVertical: 14, paddingHorizontal: 12, borderRadius: 12, marginBottom: 6,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.inputBg,
   },
   slotRowActive:   { backgroundColor: COLORS.primary + '20', borderWidth: 1.5, borderColor: COLORS.borderAccent },
   slotLabel:       { flex: 1, fontSize: 14, color: COLORS.text },

@@ -205,7 +205,7 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.logo}>CampusBite</Text>
         </View>
         <TouchableOpacity style={styles.notificationBtn} onPress={() => setShowNotifications(true)}>
-          <Ionicons name="notifications-outline" size={24} color={COLORS.black} />
+          <Ionicons name="notifications-outline" size={24} color={COLORS.text} />
           {notifications.filter(n => !n.is_read).length > 0 && (
             <View style={styles.notificationBadge}>
               <Text style={styles.notificationBadgeText}>
@@ -334,7 +334,7 @@ export default function HomeScreen({ navigation }) {
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity onPress={() => setShowNotifications(false)}>
-                  <Ionicons name="close-outline" size={24} color={COLORS.black} />
+                  <Ionicons name="close-outline" size={24} color={COLORS.text} />
                 </TouchableOpacity>
               </View>
             </View>
