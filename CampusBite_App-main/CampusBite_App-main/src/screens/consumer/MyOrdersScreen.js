@@ -264,13 +264,13 @@ const makeStyles = (COLORS) => StyleSheet.create({
     marginBottom: 16,
   },
   filterBtn: {
-    backgroundColor: COLORS.card,
+    backgroundColor: COLORS.iconBg,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: COLORS.borderWarm,
+    borderColor: COLORS.borderAccent,
   },
   filterBtnActive: {
     backgroundColor: COLORS.primary,
@@ -278,7 +278,7 @@ const makeStyles = (COLORS) => StyleSheet.create({
   },
   filterText: {
     fontSize: 14,
-    color: COLORS.gray,
+    color: COLORS.primary,
     fontWeight: '500',
   },
   filterTextActive: {

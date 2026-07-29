@@ -244,7 +244,7 @@ export default function HomeScreen({ navigation }) {
               <Ionicons 
                 name={category.icon} 
                 size={16} 
-                color={selectedCategory === category.id ? COLORS.white : COLORS.gray} 
+                color={selectedCategory === category.id ? COLORS.white : COLORS.primary}
                 style={styles.categoryIcon}
               />
               <Text style={[styles.categoryText, selectedCategory === category.id && styles.categoryTextActive]}>
@@ -472,13 +472,13 @@ const makeStyles = (COLORS) => StyleSheet.create({
     marginBottom: 20,
   },
   categoryBtn: {
-    backgroundColor: COLORS.card,
+    backgroundColor: COLORS.iconBg,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: COLORS.borderWarm,
+    borderColor: COLORS.borderAccent,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -490,7 +490,7 @@ const makeStyles = (COLORS) => StyleSheet.create({
     marginRight: 6,
   },
   categoryText: {
-    color: COLORS.gray,
+    color: COLORS.primary,
     fontWeight: '500',
     fontSize: 14,
   },
