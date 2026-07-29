@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -15,7 +15,7 @@ import MyOrdersScreen      from '../screens/consumer/MyOrdersScreen';
 import OrderDetailScreen   from '../screens/consumer/OrderDetailScreen';
 import WriteReviewScreen   from '../screens/consumer/WriteReviewScreen';
 import ProfileScreen       from '../screens/shared/ProfileScreen';
-import { COLORS }          from '../constants';
+import { useTheme }        from '../contexts/ThemeContext';
 import useCartStore        from '../stores/cartStore';
 import { api }             from '../api';
 
@@ -24,11 +24,19 @@ const ACTIVE_CONSUMER_STATUSES = ['Received', 'Preparing', 'Ready', 'Collected',
 const Tab   = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
+const stackScreenOptions = (COLORS) => ({
+  headerTintColor: COLORS.primary,
+  headerStyle:      { backgroundColor: COLORS.card },
+  headerTitleStyle: { color: COLORS.text },
+});
+
 // ── Floating cart button ──────────────────────────────────────────────────────
 
 function CartTabButton({ onPress, accessibilityState }) {
   const itemCount = useCartStore((s) => s.itemCount);
   const focused   = accessibilityState?.selected;
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
 
   return (
     <TouchableOpacity
@@ -58,8 +66,9 @@ function CartTabButton({ onPress, accessibilityState }) {
 // ── Stacks ────────────────────────────────────────────────────────────────────
 
 function HomeStack() {
+  const { colors: COLORS } = useTheme();
   return (
-    <Stack.Navigator screenOptions={{ headerTintColor: COLORS.primary }}>
+    <Stack.Navigator screenOptions={stackScreenOptions(COLORS)}>
       <Stack.Screen name="Home"          component={HomeScreen}          options={{ headerShown: false }} />
       <Stack.Screen name="VendorDetail"  component={VendorDetailScreen}  options={{ title: 'Menu' }} />
       <Stack.Screen name="Checkout"      component={CheckoutScreen}      options={{ title: 'Checkout' }} />
@@ -69,8 +78,9 @@ function HomeStack() {
 }
 
 function ExploreStack() {
+  const { colors: COLORS } = useTheme();
   return (
-    <Stack.Navigator screenOptions={{ headerTintColor: COLORS.primary }}>
+    <Stack.Navigator screenOptions={stackScreenOptions(COLORS)}>
       <Stack.Screen name="ExploreMain"  component={ExploreScreen}      options={{ headerShown: false }} />
       <Stack.Screen name="VendorDetail" component={VendorDetailScreen} options={{ title: 'Menu' }} />
       <Stack.Screen name="Checkout"     component={CheckoutScreen}     options={{ title: 'Checkout' }} />
@@ -80,8 +90,9 @@ function ExploreStack() {
 }
 
 function CartStack() {
+  const { colors: COLORS } = useTheme();
   return (
-    <Stack.Navigator screenOptions={{ headerTintColor: COLORS.primary }}>
+    <Stack.Navigator screenOptions={stackScreenOptions(COLORS)}>
       <Stack.Screen name="CartMain"          component={CartScreen}          options={{ headerShown: false }} />
       <Stack.Screen name="CartPaymentStatus" component={PaymentStatusScreen} options={{ title: 'Payment', headerBackVisible: false }} />
     </Stack.Navigator>
@@ -89,8 +100,9 @@ function CartStack() {
 }
 
 function OrdersStack() {
+  const { colors: COLORS } = useTheme();
   return (
-    <Stack.Navigator screenOptions={{ headerTintColor: COLORS.primary }}>
+    <Stack.Navigator screenOptions={stackScreenOptions(COLORS)}>
       <Stack.Screen name="MyOrders"    component={MyOrdersScreen}    options={{ title: 'My Orders' }} />
       <Stack.Screen name="OrderDetail" component={OrderDetailScreen} options={{ title: 'Order Detail' }} />
       <Stack.Screen name="WriteReview" component={WriteReviewScreen} options={{ title: 'Write a Review' }} />
@@ -102,6 +114,8 @@ function OrdersStack() {
 
 export default function ConsumerNavigator() {
   const insets = useSafeAreaInsets();
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const [orderCount, setOrderCount] = useState(0);
 
   const fetchOrderCount = useCallback(async () => {
@@ -196,9 +210,9 @@ export default function ConsumerNavigator() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   tabBar: {
-    backgroundColor:  COLORS.white,
+    backgroundColor:  COLORS.card,
     borderTopColor:   COLORS.borderWarm,
     borderTopWidth:   1,
     elevation:        12,
@@ -253,7 +267,7 @@ const styles = StyleSheet.create({
     alignItems:      'center',
     justifyContent:  'center',
     borderWidth:     1.5,
-    borderColor:     COLORS.white,
+    borderColor:     COLORS.card,
     paddingHorizontal: 3,
   },
   badgeText: {

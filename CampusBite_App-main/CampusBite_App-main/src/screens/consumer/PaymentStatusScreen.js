@@ -1,12 +1,15 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { View, Text, ActivityIndicator, TouchableOpacity, StyleSheet, Alert, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
-import { COLORS, API_BASE_URL } from '../../constants';
+import { API_BASE_URL } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 import useCartStore from '../../stores/cartStore';
 import useAuthStore from '../../stores/authStore';
 
 export default function PaymentStatusScreen({ route, navigation }) {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const {
     checkoutRequestId,
     initialStatus,   // 'confirmed' for cash — skips polling
@@ -123,7 +126,7 @@ export default function PaymentStatusScreen({ route, navigation }) {
             : 'Your order has been placed and is being prepared.'}
         </Text>
         <TouchableOpacity style={styles.button} onPress={goToOrder}>
-          <Ionicons name="receipt-outline" size={18} color={COLORS.card} />
+          <Ionicons name="receipt-outline" size={18} color={COLORS.white} />
           <Text style={styles.buttonText}>Track My Order</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.secondaryBtn} onPress={() => navigation.navigate('HomeTab')}>
@@ -142,7 +145,7 @@ export default function PaymentStatusScreen({ route, navigation }) {
         <Text style={styles.title}>Payment Failed</Text>
         <Text style={styles.subtitle}>The payment was cancelled or declined. Please try again.</Text>
         <TouchableOpacity style={styles.button} onPress={() => navigation.goBack()}>
-          <Ionicons name="refresh-outline" size={18} color={COLORS.card} />
+          <Ionicons name="refresh-outline" size={18} color={COLORS.white} />
           <Text style={styles.buttonText}>Try Again</Text>
         </TouchableOpacity>
       </View>
@@ -177,15 +180,15 @@ export default function PaymentStatusScreen({ route, navigation }) {
           disabled={simulating}
         >
           {simulating
-            ? <ActivityIndicator color={COLORS.card} size="small" />
+            ? <ActivityIndicator color={COLORS.white} size="small" />
             : <>
-                <Ionicons name="checkmark-circle-outline" size={20} color={COLORS.card} />
+                <Ionicons name="checkmark-circle-outline" size={20} color={COLORS.white} />
                 <Text style={styles.simulateBtnText}>Simulate {isCardMethod ? 'Card' : 'M-Pesa'} Payment</Text>
               </>}
         </TouchableOpacity>
       ) : isCardMethod ? (
         <TouchableOpacity style={styles.simulateBtn} onPress={openCardCheckout}>
-          <Ionicons name="card-outline" size={20} color={COLORS.card} />
+          <Ionicons name="card-outline" size={20} color={COLORS.white} />
           <Text style={styles.simulateBtnText}>Enter Card Details</Text>
         </TouchableOpacity>
       ) : (
@@ -197,7 +200,7 @@ export default function PaymentStatusScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center', padding: 32 },
   iconCircleSuccess: {
     width: 100, height: 100, borderRadius: 50,
@@ -214,7 +217,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14, paddingHorizontal: 32,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
   },
-  buttonText: { color: COLORS.card, fontWeight: 'bold', fontSize: 15 },
+  buttonText: { color: COLORS.white, fontWeight: 'bold', fontSize: 15 },
   cancelBtn:  { marginTop: 20 },
   cancelText: { color: COLORS.danger, fontSize: 14, fontWeight: '500' },
   secondaryBtn: { marginTop: 14, paddingVertical: 10, paddingHorizontal: 24 },
@@ -234,5 +237,5 @@ const styles = StyleSheet.create({
     paddingVertical: 14, paddingHorizontal: 28,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
   },
-  simulateBtnText: { color: COLORS.card, fontWeight: 'bold', fontSize: 15 },
+  simulateBtnText: { color: COLORS.white, fontWeight: 'bold', fontSize: 15 },
 });

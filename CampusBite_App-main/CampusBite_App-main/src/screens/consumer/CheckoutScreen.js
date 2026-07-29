@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
-import { COLORS } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 import useAuthStore from '../../stores/authStore';
 
 const DELIVERY_FEE = 50;
 
 export default function CheckoutScreen({ route, navigation }) {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const { vendor, items, subtotal } = route.params;
   const user = useAuthStore((s) => s.user);
   const [address, setAddress]                 = useState('');
@@ -129,7 +131,7 @@ export default function CheckoutScreen({ route, navigation }) {
       <TouchableOpacity style={styles.button} onPress={handleCheckout} disabled={loading}>
         {loading ? <ActivityIndicator color="#fff" /> : (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Ionicons name="phone-portrait-outline" size={18} color={COLORS.card} />
+            <Ionicons name="phone-portrait-outline" size={18} color={COLORS.white} />
             <Text style={styles.buttonText}>Pay KES {total.toFixed(2)} via M-Pesa</Text>
           </View>
         )}
@@ -138,7 +140,7 @@ export default function CheckoutScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
 
   // Vendor
@@ -213,5 +215,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 4,
   },
-  buttonText: { color: COLORS.card, fontWeight: 'bold', fontSize: 15 },
+  buttonText: { color: COLORS.white, fontWeight: 'bold', fontSize: 15 },
 });

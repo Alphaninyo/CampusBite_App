@@ -1,11 +1,14 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, ScrollView, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../api';
-import { COLORS, STATUS_COLORS } from '../../constants';
+import { STATUS_COLORS } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function MyOrdersScreen({ navigation }) {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const [orders, setOrders]     = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [loading, setLoading]   = useState(true);
@@ -106,7 +109,7 @@ export default function MyOrdersScreen({ navigation }) {
           <Text style={styles.orderDate}>{formatOrderTime(item.created_at)}</Text>
         </View>
         <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status] || COLORS.gray }]}>
-          <Ionicons name={getOrderStatusIcon(item.status)} size={12} color={COLORS.card} />
+          <Ionicons name={getOrderStatusIcon(item.status)} size={12} color={COLORS.white} />
           <Text style={styles.statusText}>{item.status}</Text>
         </View>
       </View>
@@ -141,7 +144,7 @@ export default function MyOrdersScreen({ navigation }) {
       {/* Action Footer */}
       <View style={styles.cardFooter}>
         <TouchableOpacity style={styles.trackBtn} onPress={() => navigation.navigate('OrderDetail', { orderId: item.id })}>
-          <Ionicons name="locate-outline" size={14} color={COLORS.card} />
+          <Ionicons name="locate-outline" size={14} color={COLORS.white} />
           <Text style={styles.trackBtnText}>Track Order</Text>
         </TouchableOpacity>
       </View>
@@ -227,7 +230,7 @@ export default function MyOrdersScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
@@ -279,7 +282,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   filterTextActive: {
-    color: COLORS.card,
+    color: COLORS.white,
   },
   
   // Orders List
@@ -326,7 +329,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   statusText: {
-    color: COLORS.card,
+    color: COLORS.white,
     fontSize: 10,
     fontWeight: 'bold',
     marginLeft: 3,
@@ -401,7 +404,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   trackBtnText: {
-    color: COLORS.card,
+    color: COLORS.white,
     fontSize: 11,
     fontWeight: '600',
   },
@@ -437,7 +440,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   shopBtnText: {
-    color: COLORS.card,
+    color: COLORS.white,
     fontWeight: 'bold',
     fontSize: 16,
   },

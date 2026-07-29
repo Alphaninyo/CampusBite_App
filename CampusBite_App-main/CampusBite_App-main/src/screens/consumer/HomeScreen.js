@@ -1,12 +1,13 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, TextInput, ScrollView, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
-import { COLORS, resolveImageUrl } from '../../constants';
+import { resolveImageUrl } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 import useCartStore from '../../stores/cartStore';
 
-function VendorImagePlaceholder({ name }) {
+function VendorImagePlaceholder({ name, styles }) {
   const initials = name ? name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : '?';
   const hue = name ? name.charCodeAt(0) % 360 : 0;
   return (
@@ -16,7 +17,7 @@ function VendorImagePlaceholder({ name }) {
   );
 }
 
-function FeaturedVendorCard({ vendor, onPress }) {
+function FeaturedVendorCard({ vendor, onPress, styles }) {
   const vendorType = vendor.vendor_type === 'home_based' ? 'Home-based' : 'Restaurant';
   const imageUri = resolveImageUrl(vendor.image);
   return (
@@ -24,7 +25,7 @@ function FeaturedVendorCard({ vendor, onPress }) {
       <View style={styles.imageContainer}>
         {imageUri
           ? <Image source={{ uri: imageUri }} style={styles.featuredImage} />
-          : <VendorImagePlaceholder name={vendor.business_name} />}
+          : <VendorImagePlaceholder name={vendor.business_name} styles={styles} />}
         <View style={styles.ratingOverlay}>
           <Text style={styles.ratingText}>{vendorType}</Text>
         </View>
@@ -36,7 +37,7 @@ function FeaturedVendorCard({ vendor, onPress }) {
   );
 }
 
-function MenuImagePlaceholder({ name }) {
+function MenuImagePlaceholder({ name, styles }) {
   const initials = name ? name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : '?';
   const hue = name ? (name.charCodeAt(0) * 7) % 360 : 30;
   return (
@@ -46,13 +47,13 @@ function MenuImagePlaceholder({ name }) {
   );
 }
 
-function TrendingItemCard({ item, onPress }) {
+function TrendingItemCard({ item, onPress, styles, COLORS }) {
   const imageUri = resolveImageUrl(item.image);
   return (
     <TouchableOpacity style={styles.trendingCard} onPress={onPress}>
       {imageUri
         ? <Image source={{ uri: imageUri }} style={styles.trendingImage} />
-        : <MenuImagePlaceholder name={item.name} />}
+        : <MenuImagePlaceholder name={item.name} styles={styles} />}
       <Text style={styles.itemVendor}>{item.vendor_name}</Text>
       <Text style={styles.itemName}>{item.name}</Text>
       <View style={styles.priceContainer}>
@@ -67,6 +68,8 @@ function TrendingItemCard({ item, onPress }) {
 
 export default function HomeScreen({ navigation }) {
   const insets = useSafeAreaInsets();
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const [vendors, setVendors]     = useState([]);
   const [trendingItems, setTrendingItems] = useState([]);
   const [loading, setLoading]     = useState(true);
@@ -270,6 +273,7 @@ export default function HomeScreen({ navigation }) {
                 <FeaturedVendorCard
                   key={vendor.id}
                   vendor={vendor}
+                  styles={styles}
                   onPress={() => navigation.navigate('VendorDetail', { vendor })}
                 />
               ))
@@ -297,6 +301,8 @@ export default function HomeScreen({ navigation }) {
                 <TrendingItemCard
                   key={item.id}
                   item={item}
+                  styles={styles}
+                  COLORS={COLORS}
                   onPress={() => addToCart(item)}
                 />
               ))
@@ -374,9 +380,9 @@ export default function HomeScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  
+
   // Header
   header: {
     flexDirection: 'row',

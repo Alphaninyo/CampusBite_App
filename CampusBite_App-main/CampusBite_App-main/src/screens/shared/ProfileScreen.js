@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, Alert,
   ActivityIndicator, ScrollView, Platform, Image, Modal,
@@ -10,7 +10,8 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
-import { COLORS, resolveImageUrl } from '../../constants';
+import { resolveImageUrl } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 
 export default function ProfileScreen({ navigation }) {
@@ -21,6 +22,8 @@ export default function ProfileScreen({ navigation }) {
   // value is available.
   const { height: screenHeight } = useWindowDimensions();
   const { user, logout, updateUser } = useAuthStore();
+  const { colors: COLORS, isDark, toggleTheme } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
 
 
   const [name, setName]   = useState(user?.name || '');
@@ -1194,6 +1197,22 @@ export default function ProfileScreen({ navigation }) {
           ))}
         </View>
 
+        {/* ── Preferences (consumer-only for now) ─────────────────────────── */}
+        {user?.role === 'consumer' && (
+          <View style={styles.section}>
+            <Text style={styles.accountLabel}>PREFERENCES</Text>
+            <TouchableOpacity style={styles.toggleRow} onPress={toggleTheme}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.menuLabel}>Dark Mode</Text>
+                <Text style={styles.menuSub}>Easier on the eyes at night</Text>
+              </View>
+              <View style={[styles.toggleSwitch, isDark && styles.toggleSwitchOn]}>
+                <View style={[styles.toggleKnob, isDark && styles.toggleKnobOn]} />
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* ── Logout ──────────────────────────────────────────────────────── */}
         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={18} color={COLORS.danger} />
@@ -1206,7 +1225,7 @@ export default function ProfileScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   root:   { flex: 1, backgroundColor: COLORS.background },
   scroll: { paddingBottom: 16 },
 
@@ -1225,13 +1244,13 @@ const styles = StyleSheet.create({
     width: 114, height: 114, borderRadius: 57,
     backgroundColor: COLORS.primary,
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: 3, borderColor: COLORS.white,
+    borderWidth: 3, borderColor: COLORS.card,
     shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15, shadowRadius: 10, elevation: 6,
   },
   avatarImg:     {
     width: 114, height: 114, borderRadius: 57,
-    borderWidth: 3, borderColor: COLORS.white,
+    borderWidth: 3, borderColor: COLORS.card,
     shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15, shadowRadius: 10, elevation: 6,
   },
@@ -1241,7 +1260,7 @@ const styles = StyleSheet.create({
     width: 30, height: 30, borderRadius: 15,
     backgroundColor: COLORS.primary,
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2.5, borderColor: COLORS.white,
+    borderWidth: 2.5, borderColor: COLORS.card,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2, shadowRadius: 4, elevation: 4,
   },
@@ -1379,7 +1398,7 @@ const styles = StyleSheet.create({
   modalAvatar:         { alignSelf: 'center', position: 'relative', marginBottom: 20 },
   modalAvatarImg:      {
     width: 90, height: 90, borderRadius: 45,
-    borderWidth: 3, borderColor: COLORS.white,
+    borderWidth: 3, borderColor: COLORS.card,
     shadowColor: '#000', shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.12, shadowRadius: 8, elevation: 5,
   },
@@ -1387,7 +1406,7 @@ const styles = StyleSheet.create({
     width: 90, height: 90, borderRadius: 45,
     backgroundColor: COLORS.primary,
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: 3, borderColor: COLORS.white,
+    borderWidth: 3, borderColor: COLORS.card,
     shadowColor: '#000', shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.12, shadowRadius: 8, elevation: 5,
   },
@@ -1397,7 +1416,7 @@ const styles = StyleSheet.create({
     width: 28, height: 28, borderRadius: 14,
     backgroundColor: COLORS.primary,
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2.5, borderColor: COLORS.white,
+    borderWidth: 2.5, borderColor: COLORS.card,
   },
   modalLabel:         { fontSize: 13, fontWeight: '600', color: COLORS.subtext, marginBottom: 6, marginTop: 14 },
   modalInput:         {

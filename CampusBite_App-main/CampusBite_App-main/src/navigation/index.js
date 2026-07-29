@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, View } from 'react-native';
 
@@ -11,10 +11,12 @@ import FoodCourierNavigator  from './FoodCourierNavigator';
 import AdminNavigator        from './AdminNavigator';
 import PendingNavigator      from './PendingNavigator';
 import { COLORS } from '../constants';
+import { useTheme } from '../contexts/ThemeContext';
 
 const Stack = createNativeStackNavigator();
 
 export default function RootNavigator() {
+  const { isDark } = useTheme();
   const user = useAuthStore((state) => state.user);
   const loading = useAuthStore((state) => state.loading);
   const hydrate = useAuthStore((state) => state.hydrate);
@@ -68,8 +70,10 @@ export default function RootNavigator() {
     }
   };
 
+  const navTheme = user.role === 'consumer' && isDark ? DarkTheme : DefaultTheme;
+
   return (
-    <NavigationContainer key={`user-${user.role}-${forceUpdate}`}>
+    <NavigationContainer key={`user-${user.role}-${forceUpdate}`} theme={navTheme}>
       {getNavigator()}
     </NavigationContainer>
   );

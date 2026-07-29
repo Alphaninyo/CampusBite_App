@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ActivityIndicator,
   Alert, ScrollView, Image, TextInput, Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { COLORS, resolveImageUrl } from '../../constants';
+import { resolveImageUrl } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 import useCartStore from '../../stores/cartStore';
 import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
@@ -32,6 +33,8 @@ function buildTimeSlots() {
 }
 
 export default function CartScreen({ navigation }) {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const {
     cartItems, totalAmount, vendorId, vendorName,
     loading, updateQuantity, loadCart,
@@ -661,13 +664,13 @@ export default function CartScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   root:   { flex: 1, backgroundColor: COLORS.background },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32, backgroundColor: COLORS.background },
   scroll: { padding: 14 },
 
   emptyIcon:     { width: 90, height: 90, borderRadius: 45, backgroundColor: COLORS.primary + '20', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
-  emptyTitle:    { fontSize: 20, fontWeight: 'bold', color: COLORS.black, marginBottom: 8 },
+  emptyTitle:    { fontSize: 20, fontWeight: 'bold', color: COLORS.text, marginBottom: 8 },
   emptySubtitle: { fontSize: 14, color: COLORS.gray, textAlign: 'center', marginBottom: 28 },
   shopBtn:       { backgroundColor: COLORS.primary, paddingHorizontal: 28, paddingVertical: 13, borderRadius: 14 },
   shopBtnText:   { color: COLORS.white, fontWeight: 'bold', fontSize: 15 },
@@ -680,14 +683,14 @@ const styles = StyleSheet.create({
   closedBannerText: { flex: 1, fontSize: 13, color: COLORS.warningText },
 
   cartItem: {
-    backgroundColor: COLORS.white, borderRadius: 14, padding: 12, marginBottom: 10,
+    backgroundColor: COLORS.card, borderRadius: 14, padding: 12, marginBottom: 10,
     flexDirection: 'row', alignItems: 'center', gap: 10,
     borderWidth: 1, borderColor: COLORS.borderWarm,
   },
   itemImage:       { width: 60, height: 60, borderRadius: 10, backgroundColor: COLORS.primary + '20', flexShrink: 0 },
   itemImageFallback: { alignItems: 'center', justifyContent: 'center' },
   itemInfo:   { flex: 1 },
-  itemName:   { fontSize: 14, fontWeight: 'bold', color: COLORS.black, marginBottom: 2 },
+  itemName:   { fontSize: 14, fontWeight: 'bold', color: COLORS.text, marginBottom: 2 },
   itemVendor: { fontSize: 11, color: COLORS.gray, marginBottom: 4 },
   itemPrice:  { fontSize: 14, color: COLORS.primary, fontWeight: 'bold' },
   itemRight:  { alignItems: 'flex-end', gap: 8 },
@@ -699,10 +702,10 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: COLORS.borderAccent,
   },
   qtyBtnFill: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  qtyText:    { fontSize: 14, fontWeight: 'bold', color: COLORS.black, minWidth: 18, textAlign: 'center' },
+  qtyText:    { fontSize: 14, fontWeight: 'bold', color: COLORS.text, minWidth: 18, textAlign: 'center' },
 
-  card:         { backgroundColor: COLORS.white, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: COLORS.borderWarm },
-  cardTitle:    { fontSize: 15, fontWeight: '700', color: COLORS.black, marginBottom: 12 },
+  card:         { backgroundColor: COLORS.card, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: COLORS.borderWarm },
+  cardTitle:    { fontSize: 15, fontWeight: '700', color: COLORS.text, marginBottom: 12 },
   cardTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   mapBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
@@ -716,7 +719,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background, borderRadius: 12, padding: 12,
     borderWidth: 1, borderColor: COLORS.borderWarm,
   },
-  addressDisplayText: { flex: 1, fontSize: 13, color: COLORS.black, lineHeight: 18 },
+  addressDisplayText: { flex: 1, fontSize: 13, color: COLORS.text, lineHeight: 18 },
 
   addressPlaceholder: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
@@ -735,12 +738,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 10,
     borderWidth: 1.5, borderColor: COLORS.borderWarm, borderRadius: 12, padding: 12,
   },
-  timeSelectorText: { flex: 1, fontSize: 14, color: COLORS.black, fontWeight: '500' },
+  timeSelectorText: { flex: 1, fontSize: 14, color: COLORS.text, fontWeight: '500' },
 
   promoRow:         { flexDirection: 'row', alignItems: 'center', gap: 10 },
   promoInput: {
     flex: 1, borderWidth: 1.5, borderColor: COLORS.borderWarm, borderRadius: 10,
-    paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: COLORS.black,
+    paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: COLORS.text,
   },
   promoInputError:  { borderColor: COLORS.danger },
   promoErrorText:   { color: COLORS.danger, fontSize: 12, marginTop: 6 },
@@ -771,7 +774,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
   paymentOptionInfo: { flex: 1 },
-  paymentOptionLabel: { fontSize: 14, fontWeight: '700', color: COLORS.black, marginBottom: 2 },
+  paymentOptionLabel: { fontSize: 14, fontWeight: '700', color: COLORS.text, marginBottom: 2 },
   paymentOptionSub:   { fontSize: 12, color: COLORS.gray },
   paymentBadge: {
     backgroundColor: '#E8F5E9', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3,
@@ -802,7 +805,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   paymentDetailRow: { flexDirection: 'row', gap: 10 },
-  paymentDetailInput: { flex: 1, fontSize: 14, color: COLORS.black },
+  paymentDetailInput: { flex: 1, fontSize: 14, color: COLORS.text },
   paymentDetailHint: { fontSize: 11, color: COLORS.muted, marginTop: 2 },
   testModeBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
@@ -819,7 +822,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: COLORS.borderWarm, backgroundColor: COLORS.background,
   },
   suggestionImg:   { width: 60, height: 60, borderRadius: 10, backgroundColor: COLORS.primary + '20', marginBottom: 6 },
-  suggestionName:  { fontSize: 11, fontWeight: '600', color: COLORS.black, textAlign: 'center', marginBottom: 2 },
+  suggestionName:  { fontSize: 11, fontWeight: '600', color: COLORS.text, textAlign: 'center', marginBottom: 2 },
   suggestionPrice: { fontSize: 11, color: COLORS.primary, fontWeight: '700', marginBottom: 6 },
   addBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 2,
@@ -830,19 +833,19 @@ const styles = StyleSheet.create({
 
   summaryRow:        { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
   summaryLabel:      { fontSize: 13, color: COLORS.gray },
-  summaryValue:      { fontSize: 13, color: COLORS.black, fontWeight: '500' },
+  summaryValue:      { fontSize: 13, color: COLORS.text, fontWeight: '500' },
   summaryDivider:    { height: 1, backgroundColor: COLORS.borderWarm, marginVertical: 10 },
-  summaryTotal:      { fontSize: 16, fontWeight: 'bold', color: COLORS.black },
+  summaryTotal:      { fontSize: 16, fontWeight: 'bold', color: COLORS.text },
   summaryTotalValue: { fontSize: 16, fontWeight: 'bold', color: COLORS.primary },
 
   instructionsInput: {
     borderWidth: 1.5, borderColor: COLORS.borderWarm, borderRadius: 12,
-    padding: 12, fontSize: 14, color: COLORS.black, minHeight: 80, textAlignVertical: 'top',
+    padding: 12, fontSize: 14, color: COLORS.text, minHeight: 80, textAlignVertical: 'top',
   },
 
   checkoutWrap: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    backgroundColor: COLORS.white, padding: 14,
+    backgroundColor: COLORS.card, padding: 14,
     borderTopWidth: 1, borderTopColor: COLORS.borderWarm,
     shadowColor: COLORS.black, shadowOpacity: 0.08, shadowRadius: 10, elevation: 10,
   },
@@ -861,37 +864,37 @@ const styles = StyleSheet.create({
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   modalSheet: {
-    backgroundColor: COLORS.white, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    backgroundColor: COLORS.card, borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: 20, paddingBottom: 36,
   },
   modalHandle: {
     width: 40, height: 4, borderRadius: 2, backgroundColor: COLORS.borderWarm,
     alignSelf: 'center', marginBottom: 16,
   },
-  modalTitle:     { fontSize: 17, fontWeight: '700', color: COLORS.black, marginBottom: 16 },
+  modalTitle:     { fontSize: 17, fontWeight: '700', color: COLORS.text, marginBottom: 16 },
   slotRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     paddingVertical: 14, paddingHorizontal: 12, borderRadius: 12, marginBottom: 6,
     backgroundColor: COLORS.background,
   },
   slotRowActive:   { backgroundColor: COLORS.primary + '20', borderWidth: 1.5, borderColor: COLORS.borderAccent },
-  slotLabel:       { flex: 1, fontSize: 14, color: COLORS.black },
+  slotLabel:       { flex: 1, fontSize: 14, color: COLORS.text },
   slotLabelActive: { color: COLORS.primary, fontWeight: '600' },
 
   // Confirmation modal
   confirmSheet: {
-    backgroundColor: COLORS.white, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    backgroundColor: COLORS.card, borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: 20, paddingBottom: 36,
   },
-  confirmTitle:   { fontSize: 18, fontWeight: '800', color: COLORS.black, marginBottom: 16 },
+  confirmTitle:   { fontSize: 18, fontWeight: '800', color: COLORS.text, marginBottom: 16 },
   confirmSection: { marginBottom: 4 },
   confirmRow:     { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  confirmItemName:  { flex: 1, fontSize: 14, color: COLORS.black, fontWeight: '500' },
+  confirmItemName:  { flex: 1, fontSize: 14, color: COLORS.text, fontWeight: '500' },
   confirmItemQty:   { fontSize: 13, color: COLORS.gray, marginHorizontal: 8 },
-  confirmItemPrice: { fontSize: 14, fontWeight: '600', color: COLORS.black, minWidth: 64, textAlign: 'right' },
+  confirmItemPrice: { fontSize: 14, fontWeight: '600', color: COLORS.text, minWidth: 64, textAlign: 'right' },
   confirmLabel:     { flex: 1, fontSize: 13, color: COLORS.gray },
-  confirmValue:     { fontSize: 13, color: COLORS.black, fontWeight: '500' },
-  confirmTotal:     { flex: 1, fontSize: 16, fontWeight: 'bold', color: COLORS.black },
+  confirmValue:     { fontSize: 13, color: COLORS.text, fontWeight: '500' },
+  confirmTotal:     { flex: 1, fontSize: 16, fontWeight: 'bold', color: COLORS.text },
   confirmTotalValue:{ fontSize: 17, fontWeight: '800', color: COLORS.primary },
   confirmDivider:   { height: 1, backgroundColor: COLORS.borderWarm, marginVertical: 12 },
   confirmMeta:  { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 6 },

@@ -1,10 +1,11 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl, Modal, TextInput, Alert, KeyboardAvoidingView, Platform, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import QRCode from 'react-native-qrcode-svg';
 import { api } from '../../api';
-import { COLORS, STATUS_COLORS } from '../../constants';
+import { STATUS_COLORS } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 import RiderMapView from '../../components/RiderMapView';
 
 const STEPS = ['Received', 'Preparing', 'Ready', 'Collected', 'In Transit', 'Delivered'];
@@ -27,6 +28,8 @@ const STEP_ICONS = {
 };
 
 export default function OrderDetailScreen({ route, navigation }) {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const { orderId } = route.params;
   const [order, setOrder]         = useState(null);
   const [loading, setLoading]     = useState(true);
@@ -122,7 +125,7 @@ export default function OrderDetailScreen({ route, navigation }) {
     >
       {/* Status Banner */}
       <View style={[styles.statusBanner, { backgroundColor: STATUS_COLORS[order.status] || COLORS.gray }]}>
-        <Ionicons name={STEP_ICONS[order.status] || 'help-circle-outline'} size={20} color={COLORS.card} />
+        <Ionicons name={STEP_ICONS[order.status] || 'help-circle-outline'} size={20} color={COLORS.white} />
         <Text style={styles.statusBannerText}>{order.status}</Text>
       </View>
 
@@ -335,7 +338,7 @@ export default function OrderDetailScreen({ route, navigation }) {
           </View>
         ) : (
           <TouchableOpacity style={styles.reviewBtn} onPress={() => navigation.navigate('WriteReview', { order })}>
-            <Ionicons name="star-outline" size={18} color={COLORS.card} />
+            <Ionicons name="star-outline" size={18} color={COLORS.white} />
             <Text style={styles.reviewBtnText}>Write a Review</Text>
           </TouchableOpacity>
         )
@@ -410,7 +413,7 @@ export default function OrderDetailScreen({ route, navigation }) {
             disabled={reportingIssue}
           >
             {reportingIssue
-              ? <ActivityIndicator color={COLORS.card} />
+              ? <ActivityIndicator color={COLORS.white} />
               : <Text style={styles.modalSubmitBtnText}>Submit Report</Text>}
           </TouchableOpacity>
         </View>
@@ -420,7 +423,7 @@ export default function OrderDetailScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
 
@@ -434,7 +437,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  statusBannerText: { color: COLORS.card, fontWeight: 'bold', fontSize: 15 },
+  statusBannerText: { color: COLORS.white, fontWeight: 'bold', fontSize: 15 },
 
   // Timeline
   timelineCard: {
@@ -590,7 +593,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  reviewBtnText: { fontWeight: 'bold', fontSize: 15, color: COLORS.card },
+  reviewBtnText: { fontWeight: 'bold', fontSize: 15, color: COLORS.white },
 
   reviewedBadge: {
     marginHorizontal: 16,
@@ -672,5 +675,5 @@ const styles = StyleSheet.create({
     marginTop: 20, backgroundColor: COLORS.primary,
     borderRadius: 12, paddingVertical: 15, alignItems: 'center',
   },
-  modalSubmitBtnText: { fontSize: 15, fontWeight: '700', color: COLORS.card },
+  modalSubmitBtnText: { fontSize: 15, fontWeight: '700', color: COLORS.white },
 });

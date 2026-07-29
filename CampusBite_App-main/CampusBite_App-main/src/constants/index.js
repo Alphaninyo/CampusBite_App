@@ -67,6 +67,65 @@ export const COLORS = {
   lightGray:      '#F0F0F0',
 };
 
+export const DARK_COLORS = {
+  // ── Brand ──────────────────────────────────────────────────
+  primary:        '#FF7A33',   // Brightened Flame Orange (contrast on dark bg)
+  secondary:      '#FFA94D',
+
+  // ── Backgrounds ────────────────────────────────────────────
+  background:     '#15100D',   // Near-black warm dark (main app screens)
+  backgroundAlt:  '#1B1512',   // Auth screens / alternate dark
+  card:           '#211A16',   // Surface / card background
+  inputBg:        '#2A211C',   // Input field background
+  iconBg:         '#3A2A20',   // Icon container background
+  blob:           '#3A2415',   // Decorative blob elements
+
+  // ── Text ───────────────────────────────────────────────────
+  text:           '#F5F1EE',   // Primary text (on dark backgrounds)
+  subtext:        '#B9AFA8',   // Secondary / muted text
+  muted:          '#8A7E77',   // Placeholder / very muted
+
+  // ── Borders & Dividers ─────────────────────────────────────
+  border:         '#332922',   // Standard dark border
+  borderWarm:     '#3A2C24',   // Warm divider / border
+  borderAccent:   '#5A3826',   // Orange-tinted accent border
+
+  // ── Monochrome ─────────────────────────────────────────────
+  white:          '#FFFFFF',
+  black:          '#000000',
+
+  // ── Status / Semantic ──────────────────────────────────────
+  success:        '#34D399',
+  successBg:      '#0F2A21',
+  successLight:   '#163527',
+  successBorder:  '#1F6E4C',
+  successIconBg:  '#14352A',
+  successText:    '#6EE7B7',
+
+  danger:         '#F87171',
+  dangerBg:       '#2C1616',
+  dangerBorder:   '#7F1D1D',
+
+  warning:        '#FBBF24',
+  warningBg:      '#2B2210',
+  warningBorder:  '#78350F',
+  warningIconBg:  '#3A2A12',
+  warningText:    '#FCD34D',
+  warningTextMid: '#F59E0B',
+
+  info:           '#60A5FA',
+  infoBg:         '#122236',
+  infoBorder:     '#1E3A5F',
+  infoText:       '#93C5FD',
+
+  // ── Overlay ────────────────────────────────────────────────
+  overlay:        'rgba(0,0,0,0.65)',
+
+  // ── Legacy aliases (retained for existing screens that reference these) ──
+  gray:           '#B9AFA8',
+  lightGray:      '#332922',
+};
+
 export const STATUS_COLORS = {
   'Received':   '#6B7280',
   'Preparing':  '#F59E0B',

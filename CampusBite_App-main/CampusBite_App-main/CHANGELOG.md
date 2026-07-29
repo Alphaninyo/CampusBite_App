@@ -412,6 +412,25 @@ ALTER TABLE vendors ADD COLUMN IF NOT EXISTS kra_pin     VARCHAR(20);
 
 ---
 
+## [1.11.0] - 2026-07-29
+
+### 🎉 New Features
+- **Dark mode (consumer, first phase)** — added a `ThemeContext` (light/dark palettes, persisted preference, `useTheme()` hook) and rolled it out across every consumer-facing screen (Home, Explore, Vendor detail, Cart, Checkout, Payment status, My Orders, Order detail, Write review) plus the shared Profile screen and the consumer tab/header chrome. A "Dark Mode" toggle now lives under a new "Preferences" section on the consumer's Profile screen. Vendor, food courier, and admin screens are unchanged for now — this is a deliberate first phase to prove out the pattern before extending it to the other roles.
+- The preference is gated by role in `ThemeContext`, not just hidden in the UI: `ProfileScreen.js` is shared between the consumer and admin navigators, so if dark mode were only UI-gated, a device that had a consumer dark-mode session could leak a dark Profile screen into an admin login on the same device (`AsyncStorage` is per-device, not per-account). Verified this doesn't happen — toggling dark as the consumer, then signing in as admin on the same browser storage, correctly shows a fully light admin Profile with no "Preferences" section at all.
+
+### 🔄 Modified files (key)
+| File | What changed |
+|---|---|
+| `CampusBite_App-main/src/contexts/ThemeContext.js` | New: theme provider/hook, dark-mode gated to the consumer role |
+| `CampusBite_App-main/src/constants/index.js` | Added `DARK_COLORS` palette |
+| `CampusBite_App-main/App.js` | Wrapped the app in `ThemeProvider` |
+| `CampusBite_App-main/src/navigation/index.js` | `NavigationContainer` now uses React Navigation's `DarkTheme` for the consumer when dark mode is on |
+| `CampusBite_App-main/src/navigation/ConsumerNavigator.js` | Tab bar, floating cart button, and stack headers now theme-aware |
+| `CampusBite_App-main/src/screens/consumer/*.js` (9 screens) | Converted from a static `COLORS` import to `useTheme()` + a `makeStyles(COLORS)` factory |
+| `CampusBite_App-main/src/screens/shared/ProfileScreen.js` | Theme-aware + new "Preferences" section with the Dark Mode toggle (consumer-only) |
+
+---
+
 ## [Unreleased] - Development
 
 ### 🚀 Upcoming Features

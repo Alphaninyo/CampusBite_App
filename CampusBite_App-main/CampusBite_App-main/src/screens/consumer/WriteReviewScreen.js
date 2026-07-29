@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
-import { COLORS } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
-function StarRow({ label, value, onChange }) {
+function StarRow({ label, value, onChange, styles, COLORS }) {
   return (
     <View style={styles.starSection}>
       <Text style={styles.starLabel}>{label}</Text>
@@ -24,6 +24,8 @@ function StarRow({ label, value, onChange }) {
 }
 
 export default function WriteReviewScreen({ route, navigation }) {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const { order } = route.params;
   const hasRider = !!order.rider;
 
@@ -100,11 +102,11 @@ export default function WriteReviewScreen({ route, navigation }) {
 
       {/* Ratings */}
       <View style={styles.card}>
-        <StarRow label="Food & Service" value={vendorRating} onChange={setVendorRating} />
+        <StarRow label="Food & Service" value={vendorRating} onChange={setVendorRating} styles={styles} COLORS={COLORS} />
         {hasRider && (
           <>
             <View style={styles.divider} />
-            <StarRow label="Delivery (Rider)" value={riderRating} onChange={setRiderRating} />
+            <StarRow label="Delivery (Rider)" value={riderRating} onChange={setRiderRating} styles={styles} COLORS={COLORS} />
           </>
         )}
       </View>
@@ -131,7 +133,7 @@ export default function WriteReviewScreen({ route, navigation }) {
       <TouchableOpacity style={styles.button} onPress={submit} disabled={loading}>
         {loading ? <ActivityIndicator color="#fff" /> : (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Ionicons name="send-outline" size={18} color={COLORS.card} />
+            <Ionicons name="send-outline" size={18} color={COLORS.white} />
             <Text style={styles.buttonText}>Submit Review</Text>
           </View>
         )}
@@ -140,7 +142,7 @@ export default function WriteReviewScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
 
   // Header
@@ -229,5 +231,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 4,
   },
-  buttonText: { color: COLORS.card, fontWeight: 'bold', fontSize: 15 },
+  buttonText: { color: COLORS.white, fontWeight: 'bold', fontSize: 15 },
 });

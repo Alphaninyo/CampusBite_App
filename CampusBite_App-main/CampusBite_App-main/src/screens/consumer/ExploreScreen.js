@@ -1,9 +1,10 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, TextInput, ScrollView, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
-import { COLORS, resolveImageUrl } from '../../constants';
+import { resolveImageUrl } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const CATEGORIES = [
   { id: 'All',        name: 'All',        icon: 'grid-outline' },
@@ -11,7 +12,7 @@ const CATEGORIES = [
   { id: 'home_based', name: 'Home-based',  icon: 'home-outline' },
 ];
 
-function VendorRow({ vendor, onPress }) {
+function VendorRow({ vendor, onPress, styles, COLORS }) {
   const vendorType = vendor.vendor_type === 'home_based' ? 'Home-based' : 'Restaurant';
   const imageUri = resolveImageUrl(vendor.image) || 'https://via.placeholder.com/80x80/E85D04/FFFFFF?text=Food';
   return (
@@ -44,6 +45,8 @@ function VendorRow({ vendor, onPress }) {
 
 export default function ExploreScreen({ navigation }) {
   const insets = useSafeAreaInsets();
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const [allVendors, setAllVendors] = useState([]);
   const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -134,7 +137,7 @@ export default function ExploreScreen({ navigation }) {
       <FlatList
         data={filteredVendors}
         keyExtractor={(item) => String(item.id)}
-        renderItem={({ item }) => <VendorRow vendor={item} onPress={() => openVendor(item)} />}
+        renderItem={({ item }) => <VendorRow vendor={item} onPress={() => openVendor(item)} styles={styles} COLORS={COLORS} />}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -156,7 +159,7 @@ export default function ExploreScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
 
