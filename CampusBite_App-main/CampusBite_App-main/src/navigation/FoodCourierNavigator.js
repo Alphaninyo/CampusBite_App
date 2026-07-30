@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StyleSheet } from 'react-native';
@@ -14,15 +14,22 @@ import EditProfileScreen           from '../screens/foodCourier/EditProfileScree
 import SupportScreen               from '../screens/foodCourier/SupportScreen';
 import CustomerFeedbackScreen       from '../screens/foodCourier/CustomerFeedbackScreen';
 import AppSettingsScreen           from '../screens/foodCourier/AppSettingsScreen';
-import { COLORS }                  from '../constants';
+import { useTheme }                from '../contexts/ThemeContext';
 import { api }                     from '../api';
 
 const Tab   = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
+const stackScreenOptions = (COLORS) => ({
+  headerTintColor: COLORS.primary,
+  headerStyle:      { backgroundColor: COLORS.card },
+  headerTitleStyle: { color: COLORS.text },
+});
+
 function AvailableStack() {
+  const { colors: COLORS } = useTheme();
   return (
-    <Stack.Navigator screenOptions={{ headerTintColor: COLORS.primary }}>
+    <Stack.Navigator screenOptions={stackScreenOptions(COLORS)}>
       <Stack.Screen name="AvailableOrders"      component={AvailableOrdersScreen}       options={{ headerShown: false }} />
       <Stack.Screen name="FoodCourierOrderDetail" component={FoodCourierOrderDetailScreen} options={{ title: 'Order Detail' }} />
       <Stack.Screen name="Notifications"        component={NotificationsScreen}        options={{ headerShown: false }} />
@@ -31,8 +38,9 @@ function AvailableStack() {
 }
 
 function EarningsStack() {
+  const { colors: COLORS } = useTheme();
   return (
-    <Stack.Navigator screenOptions={{ headerTintColor: COLORS.primary }}>
+    <Stack.Navigator screenOptions={stackScreenOptions(COLORS)}>
       <Stack.Screen name="MyDeliveries"           component={MyDeliveriesScreen}          options={{ headerShown: false }} />
       <Stack.Screen name="FoodCourierOrderDetail" component={FoodCourierOrderDetailScreen} options={{ title: 'Order Detail' }} />
       <Stack.Screen name="Notifications"         component={NotificationsScreen}        options={{ headerShown: false }} />
@@ -54,6 +62,8 @@ function ProfileStack() {
 }
 
 export default function FoodCourierNavigator() {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const insets = useSafeAreaInsets();
   const [availableCount,  setAvailableCount]  = useState(0);
   const [deliveryCount,   setDeliveryCount]   = useState(0);
@@ -122,9 +132,9 @@ export default function FoodCourierNavigator() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   tabBar: {
-    backgroundColor:  COLORS.white,
+    backgroundColor:  COLORS.card,
     borderTopColor:   COLORS.borderWarm,
     borderTopWidth:   1,
     elevation:        12,

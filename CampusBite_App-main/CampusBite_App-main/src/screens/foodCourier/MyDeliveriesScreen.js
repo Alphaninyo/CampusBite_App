@@ -1,9 +1,10 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, ScrollView, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
-import { COLORS, STATUS_COLORS } from '../../constants';
+import { STATUS_COLORS } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const PERIODS = ['Today', 'This Week', 'This Month', 'All Time'];
@@ -13,18 +14,18 @@ function getEarnings(order) {
   return parseFloat(order.delivery_fee || 0);
 }
 
-function getStatusBgColor(status) {
+function getStatusBgColor(status, COLORS) {
   return STATUS_COLORS[status] || COLORS.gray;
 }
 
-function getPerformanceBadge(completedCount) {
+function getPerformanceBadge(completedCount, COLORS) {
   if (completedCount >= 50) return { label: 'Elite Courier', color: '#7C3AED', icon: 'ribbon' };
   if (completedCount >= 20) return { label: 'Pro Courier',   color: '#2563EB', icon: 'medal' };
   if (completedCount >= 10) return { label: 'Rising Star',   color: '#D97706', icon: 'star' };
   return { label: 'Newcomer', color: COLORS.gray, icon: 'bicycle' };
 }
 
-function WeeklyBarChart({ orders }) {
+function WeeklyBarChart({ orders, styles, COLORS }) {
   const dayTotals = DAYS.map((_, i) => {
     const dayOrders = orders.filter(o => {
       const d = new Date(o.created_at);
@@ -60,6 +61,8 @@ function WeeklyBarChart({ orders }) {
 }
 
 export default function EarningsScreen({ navigation }) {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const insets = useSafeAreaInsets();
   const [orders, setOrders]         = useState([]);
   const [loading, setLoading]       = useState(true);
@@ -114,7 +117,7 @@ export default function EarningsScreen({ navigation }) {
   const inProgressOrders = filteredOrders.filter(o => o.status !== 'Delivered');
   const avgEarnings     = totalDeliveries > 0 ? Math.round(totalEarnings / totalDeliveries) : 0;
   const completionRate  = filteredOrders.length > 0 ? Math.round((deliveredOrders.length / filteredOrders.length) * 100) : 100;
-  const badge           = getPerformanceBadge(allDelivered.length);
+  const badge           = getPerformanceBadge(allDelivered.length, COLORS);
 
   // Best day this week
   const dayTotals = DAYS.map((day, i) => ({
@@ -179,7 +182,7 @@ export default function EarningsScreen({ navigation }) {
       </View>
 
       {/* ── Weekly Chart ── */}
-      <WeeklyBarChart orders={orders} />
+      <WeeklyBarChart orders={orders} styles={styles} COLORS={COLORS} />
 
       {/* ── Payout Breakdown ── */}
       <View style={styles.breakdownCard}>
@@ -246,7 +249,7 @@ export default function EarningsScreen({ navigation }) {
             fetchUnreadCount();
           }}
         >
-          <Ionicons name="notifications-outline" size={22} color={COLORS.black} />
+          <Ionicons name="notifications-outline" size={22} color={COLORS.text} />
           {unreadCount > 0 && <View style={styles.badge}><Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text></View>}
         </TouchableOpacity>
       </View>
@@ -289,7 +292,7 @@ export default function EarningsScreen({ navigation }) {
                 <Text style={[styles.earningsValue, !isDelivered && { color: COLORS.gray }]}>
                   {isDelivered ? `+KES ${earned.toFixed(0)}` : 'Pending'}
                 </Text>
-                <View style={[styles.statusPill, { backgroundColor: getStatusBgColor(item.status) }]}>
+                <View style={[styles.statusPill, { backgroundColor: getStatusBgColor(item.status, COLORS) }]}>
                   <Text style={styles.statusText}>{item.status}</Text>
                 </View>
               </View>
@@ -309,7 +312,7 @@ export default function EarningsScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   screenContainer: { flex: 1, backgroundColor: COLORS.background },
 
   // Header — matches VendorDashboardScreen
@@ -320,12 +323,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 12,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.black },
+  headerTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.text },
   notifBtn: { padding: 4 },
   badge: {
     position: 'absolute',
@@ -379,26 +382,26 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: 'rgba(255,255,255,0.2)',
   },
-  periodChipActive: { backgroundColor: COLORS.white },
+  periodChipActive: { backgroundColor: COLORS.card },
   periodChipText: { color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: '600' },
   periodChipTextActive: { color: COLORS.primary, fontWeight: 'bold' },
   statsRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
   statCard: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     padding: 14,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: COLORS.borderWarm,
   },
-  statValue: { fontSize: 16, fontWeight: 'bold', color: COLORS.black, marginTop: 6, marginBottom: 2 },
+  statValue: { fontSize: 16, fontWeight: 'bold', color: COLORS.text, marginTop: 6, marginBottom: 2 },
   statLabel: { fontSize: 11, color: COLORS.gray, fontWeight: '500', textAlign: 'center' },
-  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.black, marginBottom: 14 },
-  historyTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.black, marginBottom: 12, marginTop: 4 },
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.text, marginBottom: 14 },
+  historyTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.text, marginBottom: 12, marginTop: 4 },
   // Performance badge
   badgeCard: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     padding: 14,
     marginBottom: 14,
@@ -425,22 +428,22 @@ const styles = StyleSheet.create({
   completionLabel: { fontSize: 10, color: COLORS.gray, fontWeight: '600' },
   // Weekly chart
   chartCard: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     padding: 16,
     marginBottom: 14,
     borderWidth: 1,
     borderColor: COLORS.borderWarm,
   },
-  chartTitle: { fontSize: 15, fontWeight: '800', color: COLORS.black, marginBottom: 16 },
+  chartTitle: { fontSize: 15, fontWeight: '800', color: COLORS.text, marginBottom: 16 },
   chartBars: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 120 },
   barCol:    { alignItems: 'center', flex: 1 },
   barValue:  { fontSize: 9, color: COLORS.gray, marginBottom: 4, fontWeight: '600' },
-  barTrack:  { width: 20, height: 80, backgroundColor: '#F3F4F6', borderRadius: 6, justifyContent: 'flex-end', overflow: 'hidden' },
+  barTrack:  { width: 20, height: 80, backgroundColor: COLORS.inputBg, borderRadius: 6, justifyContent: 'flex-end', overflow: 'hidden' },
   barFill:   { width: '100%', borderRadius: 6 },
   barLabel:  { fontSize: 11, color: COLORS.gray, marginTop: 6, fontWeight: '600' },
   breakdownCard: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     padding: 16,
     marginBottom: 14,
@@ -449,13 +452,13 @@ const styles = StyleSheet.create({
   },
   breakdownRow: { flexDirection: 'row', alignItems: 'center' },
   breakdownItem: { flex: 1, alignItems: 'center', gap: 6 },
-  breakdownValue: { fontSize: 15, fontWeight: '800', color: COLORS.black },
+  breakdownValue: { fontSize: 15, fontWeight: '800', color: COLORS.text },
   breakdownLabel: { fontSize: 11, color: COLORS.gray, fontWeight: '600' },
   breakdownDivider: { width: 1, height: 50, backgroundColor: COLORS.borderWarm },
   infoRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
   infoCard: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     padding: 12,
     alignItems: 'center',
@@ -463,11 +466,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.borderWarm,
   },
-  infoValue: { fontSize: 18, fontWeight: '900', color: COLORS.black },
+  infoValue: { fontSize: 18, fontWeight: '900', color: COLORS.text },
   infoLabel: { fontSize: 11, color: COLORS.gray, fontWeight: '600', textAlign: 'center' },
   infoSub:   { fontSize: 10, color: COLORS.lightGray, textAlign: 'center' },
   card: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     padding: 14,
     marginBottom: 10,
@@ -492,7 +495,7 @@ const styles = StyleSheet.create({
   vendorName: {
     fontSize: 14,
     fontWeight: '700',
-    color: COLORS.black,
+    color: COLORS.text,
     marginBottom: 3,
   },
   addressRow: {
@@ -514,7 +517,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: 6,
   },
-  earningsValue: { fontSize: 14, fontWeight: 'bold', color: '#00796B' },
+  earningsValue: { fontSize: 14, fontWeight: 'bold', color: COLORS.success },
   statusPill: {
     paddingHorizontal: 8,
     paddingVertical: 3,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Switch, Alert, Platform, ActivityIndicator, RefreshControl, Image,
@@ -9,7 +9,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
-import { COLORS, resolveImageUrl } from '../../constants';
+import { resolveImageUrl } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const VEHICLE_TYPES = ['Electric Bicycle', 'Bicycle', 'Motorcycle', 'Walking'];
 
@@ -18,6 +19,8 @@ function getMockEarnings(total) {
 }
 
 export default function FoodCourierProfileScreen({ navigation }) {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const insets = useSafeAreaInsets();
   const { height: screenHeight } = useWindowDimensions();
   const { user, logout, updateUser } = useAuthStore();
@@ -277,7 +280,7 @@ export default function FoodCourierProfileScreen({ navigation }) {
             fetchUnreadCount();
           }}
         >
-          <Ionicons name="notifications-outline" size={22} color={COLORS.black} />
+          <Ionicons name="notifications-outline" size={22} color={COLORS.text} />
           {unreadCount > 0 && <View style={styles.badge}><Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text></View>}
         </TouchableOpacity>
       </View>
@@ -370,14 +373,14 @@ export default function FoodCourierProfileScreen({ navigation }) {
         {/* ── Weekly Trend & Support (2 cols) ── */}
         <View style={styles.twoColRow}>
           <TouchableOpacity style={styles.twoColCard} onPress={() => navigation.navigate('DeliveriesTab')}>
-            <View style={[styles.twoColIconBox, { backgroundColor: '#E0F2F1' }]}>
-              <Ionicons name="trending-up-outline" size={22} color="#00796B" />
+            <View style={[styles.twoColIconBox, { backgroundColor: COLORS.successLight }]}>
+              <Ionicons name="trending-up-outline" size={22} color={COLORS.success} />
             </View>
             <View style={[styles.twoColIconBox, { backgroundColor: COLORS.successLight, marginTop: 4 }]}>
-              <Ionicons name="bar-chart-outline" size={22} color="#388E3C" />
+              <Ionicons name="bar-chart-outline" size={22} color={COLORS.success} />
             </View>
             <Text style={styles.twoColTitle}>Weekly Trend</Text>
-            <Text style={[styles.twoColSub, { color: '#388E3C' }]}>+12% vs last week</Text>
+            <Text style={[styles.twoColSub, { color: COLORS.success }]}>+12% vs last week</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.twoColCard} onPress={() => navigation.navigate('Support')}>
             <View style={[styles.twoColIconBox, { backgroundColor: COLORS.iconBg }]}>
@@ -443,7 +446,7 @@ export default function FoodCourierProfileScreen({ navigation }) {
           {/* Security */}
           <TouchableOpacity style={styles.menuRow} onPress={handleSecurity}>
             <View style={styles.menuLeft}>
-              <View style={[styles.menuIconBox, { backgroundColor: '#E8EAF6' }]}>
+              <View style={[styles.menuIconBox, { backgroundColor: '#8B5CF622' }]}>
                 <Ionicons name="lock-closed-outline" size={18} color="#8B5CF6" />
               </View>
               <View>
@@ -710,7 +713,7 @@ export default function FoodCourierProfileScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
 
   // Header
@@ -952,7 +955,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.65)',
   },
   modalSheet: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: 24, paddingBottom: 44,
     maxHeight: '85%',
@@ -971,11 +974,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between',
     alignItems: 'center', marginBottom: 20,
   },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: COLORS.black },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: COLORS.text },
   modalLabel: { fontSize: 13, fontWeight: '600', color: COLORS.gray, marginBottom: 6, marginTop: 14 },
   modalInput: {
     backgroundColor: COLORS.inputBg, borderRadius: 10,
-    padding: 13, fontSize: 15, color: COLORS.black,
+    padding: 13, fontSize: 15, color: COLORS.text,
     borderWidth: 1, borderColor: COLORS.border,
   },
   modalSaveBtn: {
@@ -1002,7 +1005,7 @@ const styles = StyleSheet.create({
   securityTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: COLORS.black,
+    color: COLORS.text,
     marginBottom: 2,
   },
   securityDesc: {
@@ -1018,7 +1021,7 @@ const styles = StyleSheet.create({
   toggleLabel: {
     fontSize: 15,
     fontWeight: '600',
-    color: COLORS.black,
+    color: COLORS.text,
   },
   toggleSwitch: {
     width: 52,
@@ -1034,7 +1037,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -1060,7 +1063,7 @@ const styles = StyleSheet.create({
   securitySectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: COLORS.black,
+    color: COLORS.text,
     marginBottom: 12,
   },
   tipItem: {
@@ -1079,7 +1082,7 @@ const styles = StyleSheet.create({
   setupTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: COLORS.black,
+    color: COLORS.text,
     marginBottom: 8,
   },
   setupDesc: {
@@ -1109,7 +1112,7 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 24,
     fontWeight: '700',
-    color: COLORS.black,
+    color: COLORS.text,
     borderWidth: 1,
     borderColor: COLORS.border,
     letterSpacing: 8,

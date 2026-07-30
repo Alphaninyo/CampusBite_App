@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function SupportScreen({ navigation }) {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const insets = useSafeAreaInsets();
   const handleEmailSupport = () => {
     Linking.openURL('mailto:support@campusbite.com?subject=Food Courier Support');
@@ -58,7 +60,7 @@ export default function SupportScreen({ navigation }) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.black} />
+          <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Support</Text>
         <View style={{ width: 24 }} />
@@ -103,7 +105,7 @@ export default function SupportScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   header: {
     flexDirection: 'row',
@@ -111,17 +113,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderWarm,
   },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.black },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.text },
   scrollView: { flex: 1 },
-  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.black, marginTop: 16, marginBottom: 12 },
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.text, marginTop: 16, marginBottom: 12 },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -138,19 +140,19 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   cardContent: { flex: 1 },
-  cardTitle: { fontSize: 15, fontWeight: '600', color: COLORS.black },
+  cardTitle: { fontSize: 15, fontWeight: '600', color: COLORS.text },
   cardSubtitle: { fontSize: 13, color: COLORS.gray, marginTop: 2 },
   listItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 10,
     padding: 14,
     marginBottom: 8,
     borderWidth: 1,
     borderColor: COLORS.borderWarm,
   },
-  listText: { flex: 1, fontSize: 14, color: COLORS.black, marginLeft: 12 },
+  listText: { flex: 1, fontSize: 14, color: COLORS.text, marginLeft: 12 },
   infoCard: {
     flexDirection: 'row',
     backgroundColor: COLORS.iconBg,
@@ -159,6 +161,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   infoContent: { flex: 1, marginLeft: 12 },
-  infoTitle: { fontSize: 14, fontWeight: '600', color: COLORS.black },
+  infoTitle: { fontSize: 14, fontWeight: '600', color: COLORS.text },
   infoText: { fontSize: 13, color: COLORS.gray, marginTop: 2 },
 });

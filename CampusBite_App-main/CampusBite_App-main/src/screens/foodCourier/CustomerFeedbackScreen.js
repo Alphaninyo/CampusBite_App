@@ -1,11 +1,13 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
-import { COLORS } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function CustomerFeedbackScreen({ navigation }) {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const insets = useSafeAreaInsets();
   const [feedback, setFeedback] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,7 +55,7 @@ export default function CustomerFeedbackScreen({ navigation }) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.black} />
+          <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Customer Feedback</Text>
         <View style={{ width: 24 }} />
@@ -118,7 +120,7 @@ export default function CustomerFeedbackScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   header: {
     flexDirection: 'row',
@@ -126,11 +128,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderWarm,
   },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.black },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.text },
   scrollView: { flex: 1 },
   summaryCard: {
     flexDirection: 'row',
@@ -144,9 +146,9 @@ const styles = StyleSheet.create({
   ratingLabel: { fontSize: 14, color: 'rgba(255,255,255,0.9)', marginTop: 4 },
   summaryRight: { alignItems: 'flex-end' },
   reviewCount: { fontSize: 14, color: 'rgba(255,255,255,0.9)', marginTop: 4 },
-  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.black, marginBottom: 12 },
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.text, marginBottom: 12 },
   feedbackCard: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -165,7 +167,7 @@ const styles = StyleSheet.create({
   },
   avatarText: { color: COLORS.white, fontSize: 16, fontWeight: 'bold' },
   feedbackInfo: { flex: 1 },
-  customerName: { fontSize: 15, fontWeight: '600', color: COLORS.black },
+  customerName: { fontSize: 15, fontWeight: '600', color: COLORS.text },
   feedbackDate: { fontSize: 12, color: COLORS.gray, marginTop: 2 },
   ratingBadge: {
     flexDirection: 'row',
@@ -176,7 +178,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   ratingText: { fontSize: 12, fontWeight: 'bold', color: COLORS.primary, marginLeft: 4 },
-  comment: { fontSize: 14, color: COLORS.black, marginBottom: 12, lineHeight: 20 },
+  comment: { fontSize: 14, color: COLORS.text, marginBottom: 12, lineHeight: 20 },
   tags: { flexDirection: 'row', gap: 8 },
   tag: {
     backgroundColor: COLORS.iconBg,

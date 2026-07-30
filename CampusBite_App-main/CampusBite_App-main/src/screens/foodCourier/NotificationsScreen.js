@@ -1,11 +1,13 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
-import { COLORS } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function NotificationsScreen({ navigation }) {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const insets = useSafeAreaInsets();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -76,7 +78,7 @@ export default function NotificationsScreen({ navigation }) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.black} />
+          <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notifications</Text>
         {unreadCount > 0 && (
@@ -126,7 +128,7 @@ export default function NotificationsScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   header: {
     flexDirection: 'row',
@@ -134,16 +136,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderWarm,
   },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.black },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.text },
   markAllBtn: { paddingHorizontal: 8 },
   markAllText: { fontSize: 13, color: COLORS.primary, fontWeight: '600' },
   notificationCard: {
     flexDirection: 'row',
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
@@ -160,7 +162,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   content: { flex: 1 },
-  title: { fontSize: 15, fontWeight: '600', color: COLORS.black, marginBottom: 4 },
+  title: { fontSize: 15, fontWeight: '600', color: COLORS.text, marginBottom: 4 },
   unreadTitle: { color: COLORS.primary },
   body: { fontSize: 13, color: COLORS.gray, marginBottom: 4 },
   time: { fontSize: 11, color: COLORS.muted },
@@ -177,6 +179,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 60,
   },
-  emptyTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.black, marginTop: 16 },
+  emptyTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.text, marginTop: 16 },
   emptySub: { fontSize: 14, color: COLORS.gray, marginTop: 4 },
 });

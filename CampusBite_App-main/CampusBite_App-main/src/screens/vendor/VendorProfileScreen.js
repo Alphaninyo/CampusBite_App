@@ -743,7 +743,7 @@ export default function VendorProfileScreen({ navigation = {} }) {
           <View style={styles.settingDivider} />
 
           <TouchableOpacity style={styles.settingRow} onPress={handleSecurity}>
-            <View style={[styles.settingIcon, { backgroundColor: '#E8EAF6' }]}>
+            <View style={[styles.settingIcon, { backgroundColor: '#8B5CF622' }]}>
               <Ionicons name="lock-closed-outline" size={20} color="#8B5CF6" />
             </View>
             <View style={styles.settingInfo}>

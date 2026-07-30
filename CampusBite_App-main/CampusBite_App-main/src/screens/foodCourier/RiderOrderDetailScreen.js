@@ -1,10 +1,10 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, Platform, Linking, Modal, TextInput, KeyboardAvoidingView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { api } from '../../api';
-import { COLORS } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 import RiderMapView from '../../components/RiderMapView';
 
 const STATUS_STEPS = ['Ready', 'Collected', 'In Transit', 'Delivered'];
@@ -22,6 +22,9 @@ const ACTION_LABEL = {
 };
 
 export default function RiderOrderDetailScreen({ route }) {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
+  const pinStyles = useMemo(() => makePinStyles(COLORS), [COLORS]);
   const { orderId } = route.params;
   const [order, setOrder]           = useState(null);
   const [loading, setLoading]       = useState(true);
@@ -475,7 +478,7 @@ export default function RiderOrderDetailScreen({ route }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
 
   // Status banner
@@ -487,12 +490,12 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     backgroundColor: COLORS.primary,
   },
-  statusBannerGreen: { backgroundColor: '#388E3C' },
+  statusBannerGreen: { backgroundColor: COLORS.success },
   statusText: { color: COLORS.white, fontSize: 16, fontWeight: 'bold' },
 
   // Timeline
   timelineCard: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     margin: 16,
     marginTop: 16,
     borderRadius: 14,
@@ -500,7 +503,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.borderWarm,
   },
-  timelineTitle: { fontSize: 15, fontWeight: 'bold', color: COLORS.black, marginBottom: 16 },
+  timelineTitle: { fontSize: 15, fontWeight: 'bold', color: COLORS.text, marginBottom: 16 },
   timeline: { flexDirection: 'row', justifyContent: 'space-between' },
   timelineStep: { alignItems: 'center', flex: 1 },
   stepDot: {
@@ -512,10 +515,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 6,
   },
-  stepDotDone: { backgroundColor: '#388E3C' },
+  stepDotDone: { backgroundColor: COLORS.success },
   stepDotCurrent: { backgroundColor: COLORS.primary },
   stepLabel: { fontSize: 11, color: COLORS.gray, textAlign: 'center' },
-  stepLabelDone: { color: '#388E3C', fontWeight: '600' },
+  stepLabelDone: { color: COLORS.success, fontWeight: '600' },
   stepLabelCurrent: { color: COLORS.primary, fontWeight: 'bold' },
   stepLine: {
     position: 'absolute',
@@ -526,11 +529,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.border,
     zIndex: -1,
   },
-  stepLineDone: { backgroundColor: '#388E3C' },
+  stepLineDone: { backgroundColor: COLORS.success },
 
   // Cards
   card: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     margin: 16,
     marginTop: 0,
     borderRadius: 14,
@@ -539,8 +542,8 @@ const styles = StyleSheet.create({
     borderColor: COLORS.borderWarm,
   },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
-  cardTitle: { fontSize: 15, fontWeight: 'bold', color: COLORS.black },
-  cardName: { fontSize: 16, fontWeight: '600', color: COLORS.black, marginBottom: 8 },
+  cardTitle: { fontSize: 15, fontWeight: 'bold', color: COLORS.text },
+  cardName: { fontSize: 16, fontWeight: '600', color: COLORS.text, marginBottom: 8 },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
   infoText: { fontSize: 13, color: COLORS.gray, flex: 1 },
   miniCallBtn: {
@@ -550,14 +553,14 @@ const styles = StyleSheet.create({
 
   // Items
   itemRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  itemName: { fontSize: 14, color: COLORS.black, flex: 1 },
+  itemName: { fontSize: 14, color: COLORS.text, flex: 1 },
   itemQtyRow: { alignItems: 'flex-end' },
   itemQty: { fontSize: 13, color: COLORS.gray, marginRight: 12 },
-  itemPrice: { fontSize: 14, fontWeight: '600', color: COLORS.black },
+  itemPrice: { fontSize: 14, fontWeight: '600', color: COLORS.text },
   divider: { height: 1, backgroundColor: COLORS.borderWarm, marginVertical: 10 },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
   totalLabel: { fontSize: 14, fontWeight: '600', color: COLORS.gray },
-  totalValue: { fontSize: 16, fontWeight: 'bold', color: COLORS.black },
+  totalValue: { fontSize: 16, fontWeight: 'bold', color: COLORS.text },
   earningsRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -576,31 +579,31 @@ const styles = StyleSheet.create({
     marginLeft: 'auto',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#e8f5e9',
+    backgroundColor: COLORS.successBg,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 20,
     gap: 4,
   },
-  liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#388E3C' },
-  liveText: { fontSize: 11, color: '#388E3C', fontWeight: '800' },
+  liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: COLORS.success },
+  liveText: { fontSize: 11, color: COLORS.success, fontWeight: '800' },
 
   // Cash collection card
   cashCard: {
     margin: 16,
     marginTop: 0,
-    backgroundColor: '#f1f8e9',
+    backgroundColor: COLORS.successBg,
     borderRadius: 14,
     padding: 16,
     borderWidth: 1.5,
-    borderColor: '#a5d6a7',
+    borderColor: COLORS.successBorder,
   },
   cashCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  cashCardTitle:  { fontSize: 16, fontWeight: 'bold', color: '#2e7d32' },
-  cashCardSub:    { fontSize: 13, color: '#388E3C', lineHeight: 19, marginBottom: 14 },
+  cashCardTitle:  { fontSize: 16, fontWeight: 'bold', color: COLORS.success },
+  cashCardSub:    { fontSize: 13, color: COLORS.success, lineHeight: 19, marginBottom: 14 },
   cashAmount:     { fontWeight: 'bold' },
   cashBtn: {
-    backgroundColor: '#2e7d32',
+    backgroundColor: COLORS.success,
     borderRadius: 10,
     paddingVertical: 13,
     flexDirection: 'row',
@@ -629,21 +632,21 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
   },
-  successText: { fontSize: 16, fontWeight: 'bold', color: '#388E3C', marginTop: 8 },
+  successText: { fontSize: 16, fontWeight: 'bold', color: COLORS.success, marginTop: 8 },
   successSub: { fontSize: 13, color: COLORS.gray, marginTop: 4 },
 });
 
-const pinStyles = StyleSheet.create({
+const makePinStyles = (COLORS) => StyleSheet.create({
   overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
   sheet: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 24,
     paddingBottom: 32,
   },
   handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: COLORS.border, alignSelf: 'center', marginBottom: 16 },
-  title: { fontSize: 18, fontWeight: 'bold', color: COLORS.black, textAlign: 'center', marginBottom: 8 },
+  title: { fontSize: 18, fontWeight: 'bold', color: COLORS.text, textAlign: 'center', marginBottom: 8 },
   subtitle: { fontSize: 13, color: COLORS.gray, textAlign: 'center', lineHeight: 19, marginBottom: 20 },
   input: {
     borderWidth: 1.5,
@@ -654,7 +657,7 @@ const pinStyles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     letterSpacing: 12,
-    color: COLORS.black,
+    color: COLORS.text,
     marginBottom: 8,
   },
   error: { color: COLORS.danger, fontSize: 13, textAlign: 'center', marginBottom: 8 },

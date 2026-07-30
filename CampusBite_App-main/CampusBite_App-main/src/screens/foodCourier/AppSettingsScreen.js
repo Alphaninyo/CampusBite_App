@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
   Switch, Alert, Modal, ActivityIndicator, Image,
@@ -8,16 +8,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { api } from '../../api';
-import { COLORS, resolveImageUrl } from '../../constants';
+import { resolveImageUrl } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 import useAuthStore from '../../stores/authStore';
 
 // updateMode: 'id' | 'photo' | null
 export default function AppSettingsScreen({ navigation }) {
+  const { colors: COLORS, isDark, toggleTheme } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuthStore();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [locationEnabled, setLocationEnabled] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
 
   const [verification, setVerification] = useState(null);
   const [updateMode, setUpdateMode] = useState(null);
@@ -105,7 +107,7 @@ export default function AppSettingsScreen({ navigation }) {
   const statusColor = (s) =>
     s === 'approved'       ? COLORS.success :
     s === 'pending'        ? COLORS.warning :
-    s === 'info_requested' ? '#F59E0B' : COLORS.danger;
+    s === 'info_requested' ? COLORS.warning : COLORS.danger;
 
   const statusLabel = (s) =>
     s === 'approved'       ? 'Approved' :
@@ -134,7 +136,7 @@ export default function AppSettingsScreen({ navigation }) {
     {
       title: 'Appearance',
       items: [
-        { icon: 'moon-outline', label: 'Dark Mode', value: darkMode, onToggle: setDarkMode },
+        { icon: isDark ? 'moon' : 'moon-outline', label: 'Dark Mode', value: isDark, onToggle: toggleTheme },
       ],
     },
     {
@@ -158,13 +160,13 @@ export default function AppSettingsScreen({ navigation }) {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.black} />
+          <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>App Settings</Text>
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 32 }}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 100 }}>
 
         {/* ── Verification Documents ── */}
         <Text style={styles.sectionTitle} onStartShouldSetResponder={() => true}>VERIFICATION DOCUMENTS</Text>
@@ -418,14 +420,14 @@ export default function AppSettingsScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingVertical: 12,
-    backgroundColor: COLORS.white, borderBottomWidth: 1, borderBottomColor: COLORS.borderWarm,
+    backgroundColor: COLORS.card, borderBottomWidth: 1, borderBottomColor: COLORS.borderWarm,
   },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.black },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.text },
   scrollView: { flex: 1 },
 
   // Section label
@@ -437,7 +439,7 @@ const styles = StyleSheet.create({
   // Status banner
   statusBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: COLORS.white, borderRadius: 14, marginHorizontal: 16,
+    backgroundColor: COLORS.card, borderRadius: 14, marginHorizontal: 16,
     padding: 14, borderWidth: 1, borderColor: COLORS.borderWarm, marginBottom: 10,
   },
   statusDot: { width: 10, height: 10, borderRadius: 5 },
@@ -447,14 +449,14 @@ const styles = StyleSheet.create({
   // Admin note
   adminNote: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-    backgroundColor: '#FFFBEB', borderRadius: 10, marginHorizontal: 16,
-    marginBottom: 10, padding: 12, borderWidth: 1, borderColor: '#FDE68A',
+    backgroundColor: COLORS.warningBg, borderRadius: 10, marginHorizontal: 16,
+    marginBottom: 10, padding: 12, borderWidth: 1, borderColor: COLORS.warningBorder,
   },
-  adminNoteText: { flex: 1, fontSize: 13, color: '#92400E', lineHeight: 18 },
+  adminNoteText: { flex: 1, fontSize: 13, color: COLORS.warningText, lineHeight: 18 },
 
   // Document cards
   docCard: {
-    backgroundColor: COLORS.white, borderRadius: 14, marginHorizontal: 16,
+    backgroundColor: COLORS.card, borderRadius: 14, marginHorizontal: 16,
     marginBottom: 12, borderWidth: 1, borderColor: COLORS.borderWarm, overflow: 'hidden',
   },
   docCardHeader: {
@@ -493,18 +495,18 @@ const styles = StyleSheet.create({
 
   // Settings list sections
   section: { paddingHorizontal: 16 },
-  sectionCard: { backgroundColor: COLORS.white, borderRadius: 12, borderWidth: 1, borderColor: COLORS.borderWarm },
+  sectionCard: { backgroundColor: COLORS.card, borderRadius: 12, borderWidth: 1, borderColor: COLORS.borderWarm },
   item: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
   itemBorder: { borderBottomWidth: 1, borderBottomColor: COLORS.borderWarm },
   itemLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   iconBox: { width: 36, height: 36, borderRadius: 8, backgroundColor: COLORS.iconBg, alignItems: 'center', justifyContent: 'center' },
-  itemLabel: { fontSize: 15, color: COLORS.black },
+  itemLabel: { fontSize: 15, color: COLORS.text },
   itemValue: { fontSize: 14, color: COLORS.gray },
 
   // Danger zone
   dangerBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: COLORS.white, borderRadius: 10, padding: 14, marginBottom: 8,
+    backgroundColor: COLORS.card, borderRadius: 10, padding: 14, marginBottom: 8,
     borderWidth: 1, borderColor: COLORS.borderWarm,
   },
   dangerText: { fontSize: 15, fontWeight: '600', color: COLORS.primary },
@@ -517,7 +519,7 @@ const styles = StyleSheet.create({
   // Update modal
   modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.55)' },
   modalSheet: {
-    backgroundColor: COLORS.white, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    backgroundColor: COLORS.card, borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: 24, paddingBottom: 40, maxHeight: '85%',
   },
   modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: COLORS.border, alignSelf: 'center', marginBottom: 16 },
@@ -542,14 +544,14 @@ const styles = StyleSheet.create({
   filePick: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     paddingVertical: 16, borderRadius: 12, borderWidth: 1.5, borderColor: COLORS.primary,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
   },
   filePickText: { fontSize: 14, fontWeight: '600', color: COLORS.primary },
 
   fileSelected: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: '#F0FDF4', borderRadius: 12, padding: 12, marginBottom: 18,
-    borderWidth: 1, borderColor: '#86EFAC',
+    backgroundColor: COLORS.successBg, borderRadius: 12, padding: 12, marginBottom: 18,
+    borderWidth: 1, borderColor: COLORS.successBorder,
   },
   filePreview: { width: 52, height: 52, borderRadius: 8 },
   fileSelectedText: { fontSize: 14, fontWeight: '600', color: COLORS.success, marginBottom: 4 },
@@ -557,8 +559,8 @@ const styles = StyleSheet.create({
 
   errorBox: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: '#FEF2F2', borderRadius: 10, padding: 12, marginBottom: 14,
-    borderWidth: 1, borderColor: '#FCA5A5',
+    backgroundColor: COLORS.dangerBg, borderRadius: 10, padding: 12, marginBottom: 14,
+    borderWidth: 1, borderColor: COLORS.dangerBorder,
   },
   errorText: { flex: 1, fontSize: 13, color: COLORS.danger },
 

@@ -1,9 +1,9 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Alert, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
-import { COLORS } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const FILTERS = ['All Tasks', 'Closest', 'Highest Pay', 'Hot'];
 
@@ -29,6 +29,8 @@ function getMockBadge(index) {
 }
 
 export default function AvailableOrdersScreen({ navigation }) {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const insets = useSafeAreaInsets();
   const [orders, setOrders]     = useState([]);
   const [myOrders, setMyOrders] = useState([]);
@@ -106,7 +108,7 @@ export default function AvailableOrdersScreen({ navigation }) {
             fetchUnreadCount();
           }}
         >
-          <Ionicons name="notifications-outline" size={22} color={COLORS.black} />
+          <Ionicons name="notifications-outline" size={22} color={COLORS.text} />
           {unreadCount > 0 && <View style={styles.badge}><Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text></View>}
         </TouchableOpacity>
       </View>
@@ -255,7 +257,7 @@ export default function AvailableOrdersScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
 
   // Header — matches VendorDashboardScreen
@@ -266,12 +268,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 12,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.black },
+  headerTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.text },
   notifBtn: { padding: 4 },
   badge: {
     position: 'absolute',
@@ -293,7 +295,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 8,
   },
-  subHeaderTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.black, marginBottom: 2 },
+  subHeaderTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.text, marginBottom: 2 },
   subHeaderSub: { fontSize: 13, color: COLORS.gray },
 
   // Filter tabs
@@ -309,7 +311,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 20,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderWidth: 1,
     borderColor: COLORS.borderWarm,
   },
@@ -321,7 +323,7 @@ const styles = StyleSheet.create({
   filterChipTextActive: { color: COLORS.white },
 
   card: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     marginBottom: 16,
     overflow: 'hidden',
@@ -377,7 +379,7 @@ const styles = StyleSheet.create({
   restaurantName: {
     fontSize: 18,
     fontWeight: '800',
-    color: COLORS.black,
+    color: COLORS.text,
     marginBottom: 6,
   },
   distanceRow: {
@@ -412,7 +414,7 @@ const styles = StyleSheet.create({
   },
   destinationText: {
     fontSize: 14,
-    color: COLORS.black,
+    color: COLORS.text,
     fontWeight: '600',
   },
   acceptButton: {
@@ -475,9 +477,9 @@ const styles = StyleSheet.create({
   emptySub: { color: COLORS.gray, marginTop: 6, fontSize: 13 },
 
   // Active delivery
-  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.black, marginBottom: 10, marginTop: 8 },
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.text, marginBottom: 10, marginTop: 8 },
   activeCard: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     padding: 14,
     marginBottom: 12,
@@ -490,7 +492,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 12,
   },
-  activeRestaurant: { fontSize: 16, fontWeight: 'bold', color: COLORS.black, marginBottom: 4 },
+  activeRestaurant: { fontSize: 16, fontWeight: 'bold', color: COLORS.text, marginBottom: 4 },
   statusBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 3,
     paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10,
