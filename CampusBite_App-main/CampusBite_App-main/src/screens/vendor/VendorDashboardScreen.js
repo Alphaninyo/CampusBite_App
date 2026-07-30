@@ -1,14 +1,16 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Switch, Alert, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../api';
-import { COLORS } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const ACTIVE_STATUSES = ['Received', 'Preparing', 'Ready'];
 
 export default function VendorDashboardScreen({ navigation }) {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const insets = useSafeAreaInsets();
   const [vendor, setVendor]         = useState(null);
   const [allOrders, setAllOrders]   = useState([]);
@@ -194,7 +196,7 @@ export default function VendorDashboardScreen({ navigation }) {
             />
           </View>
           <TouchableOpacity style={styles.notifBtn} onPress={handleNotifications}>
-            <Ionicons name="notifications-outline" size={22} color={COLORS.black} />
+            <Ionicons name="notifications-outline" size={22} color={COLORS.text} />
             {unreadCount > 0 && (
               <View style={styles.notifBadge}>
                 <Text style={styles.notifBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
@@ -401,7 +403,7 @@ export default function VendorDashboardScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   
   // Header
@@ -412,7 +414,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, 
     paddingTop: 12, 
     paddingBottom: 12, 
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
@@ -512,7 +514,7 @@ const styles = StyleSheet.create({
   },
   acceptBtnText: { color: COLORS.white, fontWeight: 'bold', fontSize: 13 },
   declineBtn: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
@@ -564,7 +566,7 @@ const styles = StyleSheet.create({
   emptySection: { 
     alignItems: 'center', 
     paddingVertical: 24, 
-    backgroundColor: COLORS.white, 
+    backgroundColor: COLORS.card, 
     borderRadius: 14,
   },
   emptyText: { color: COLORS.gray, marginTop: 8, fontSize: 13 },

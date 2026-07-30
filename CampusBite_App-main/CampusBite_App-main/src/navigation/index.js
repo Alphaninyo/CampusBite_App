@@ -10,13 +10,12 @@ import VendorNavigator       from './VendorNavigator';
 import FoodCourierNavigator  from './FoodCourierNavigator';
 import AdminNavigator        from './AdminNavigator';
 import PendingNavigator      from './PendingNavigator';
-import { COLORS } from '../constants';
 import { useTheme } from '../contexts/ThemeContext';
 
 const Stack = createNativeStackNavigator();
 
 export default function RootNavigator() {
-  const { isDark } = useTheme();
+  const { colors: COLORS, isDark } = useTheme();
   const user = useAuthStore((state) => state.user);
   const loading = useAuthStore((state) => state.loading);
   const hydrate = useAuthStore((state) => state.hydrate);
@@ -46,11 +45,13 @@ export default function RootNavigator() {
     );
   }
 
+  const navTheme = isDark ? DarkTheme : DefaultTheme;
+
   // Return different NavigationContainers based on auth state
   if (!user) {
     console.log('RootNavigator: Rendering AuthNavigator');
     return (
-      <NavigationContainer key={`auth-${forceUpdate}`}>
+      <NavigationContainer key={`auth-${forceUpdate}`} theme={navTheme}>
         <AuthNavigator />
       </NavigationContainer>
     );
@@ -69,8 +70,6 @@ export default function RootNavigator() {
         return <ConsumerNavigator />;
     }
   };
-
-  const navTheme = user.role === 'consumer' && isDark ? DarkTheme : DefaultTheme;
 
   return (
     <NavigationContainer key={`user-${user.role}-${forceUpdate}`} theme={navTheme}>

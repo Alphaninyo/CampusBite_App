@@ -1,14 +1,17 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Switch, Alert, RefreshControl, TextInput, Image, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../api';
-import { COLORS, resolveImageUrl } from '../../constants';
+import { resolveImageUrl } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const CATEGORIES = ['All', 'Main Course', 'Drinks', 'Snacks'];
 
 export default function MenuScreen({ navigation }) {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const insets = useSafeAreaInsets();
   const [menu, setMenu]         = useState([]);
   const [loading, setLoading]   = useState(true);
@@ -76,7 +79,7 @@ export default function MenuScreen({ navigation }) {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Ionicons name="menu-outline" size={24} color={COLORS.black} />
+          <Ionicons name="menu-outline" size={24} color={COLORS.text} />
           <Text style={styles.headerTitle}>Menu Management</Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
@@ -153,7 +156,7 @@ export default function MenuScreen({ navigation }) {
                       <Ionicons name="pencil-outline" size={18} color={COLORS.gray} />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => deleteItem(item)} style={styles.actionBtn}>
-                      <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                      <Ionicons name="trash-outline" size={18} color={COLORS.danger} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -205,7 +208,7 @@ export default function MenuScreen({ navigation }) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Ionicons name="trash-outline" size={24} color="#EF4444" />
+              <Ionicons name="trash-outline" size={24} color={COLORS.danger} />
               <Text style={styles.modalTitle}>Delete Item</Text>
             </View>
             <Text style={styles.modalMessage}>
@@ -232,7 +235,7 @@ export default function MenuScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
 
   // Header
@@ -357,7 +360,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.card,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
@@ -443,7 +446,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: 8,
-    backgroundColor: '#EF4444',
+    backgroundColor: COLORS.danger,
     alignItems: 'center',
   },
   modalDeleteText: {

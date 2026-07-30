@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Alert, ActivityIndicator, Image, Platform, Modal,
@@ -8,10 +8,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { api } from '../../api';
-import { COLORS, resolveImageUrl } from '../../constants';
+import { resolveImageUrl } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 // updateMode: 'id' | 'photo' | null
 export default function VendorSettingsScreen({ navigation }) {
+  const { colors: COLORS, isDark, toggleTheme } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const insets = useSafeAreaInsets();
   const [verification, setVerification] = useState(null);
   const [updateMode, setUpdateMode] = useState(null); // which doc to update
@@ -88,7 +91,7 @@ export default function VendorSettingsScreen({ navigation }) {
   const statusColor = (s) =>
     s === 'approved'       ? COLORS.success :
     s === 'pending'        ? COLORS.warning :
-    s === 'info_requested' ? '#F59E0B' : COLORS.danger;
+    s === 'info_requested' ? COLORS.warning : COLORS.danger;
 
   const statusLabel = (s) =>
     s === 'approved'       ? 'Approved' :
@@ -111,7 +114,7 @@ export default function VendorSettingsScreen({ navigation }) {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 32 }}>
+      <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 100 }}>
 
         {/* ── Overall Status ── */}
         <Text style={styles.sectionLabel}>VERIFICATION DOCUMENTS</Text>
@@ -128,7 +131,7 @@ export default function VendorSettingsScreen({ navigation }) {
 
         {verification?.verification_status === 'info_requested' && verification?.admin_note && (
           <View style={styles.adminNote}>
-            <Ionicons name="information-circle-outline" size={15} color="#B45309" />
+            <Ionicons name="information-circle-outline" size={15} color={COLORS.warningText} />
             <Text style={styles.adminNoteText}>{verification.admin_note}</Text>
           </View>
         )}
@@ -205,6 +208,21 @@ export default function VendorSettingsScreen({ navigation }) {
             <Switch
               value={notificationsEnabled}
               onValueChange={setNotificationsEnabled}
+              trackColor={{ false: COLORS.border, true: COLORS.primary }}
+              thumbColor={COLORS.white}
+            />
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.prefRow}>
+            <View style={styles.prefLeft}>
+              <View style={styles.prefIcon}>
+                <Ionicons name={isDark ? 'moon' : 'moon-outline'} size={18} color={COLORS.primary} />
+              </View>
+              <Text style={styles.prefLabel}>Dark Mode</Text>
+            </View>
+            <Switch
+              value={isDark}
+              onValueChange={toggleTheme}
               trackColor={{ false: COLORS.border, true: COLORS.primary }}
               thumbColor={COLORS.white}
             />
@@ -369,7 +387,7 @@ export default function VendorSettingsScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
 
   header: {
@@ -398,10 +416,10 @@ const styles = StyleSheet.create({
 
   adminNote: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-    backgroundColor: '#FFFBEB', borderRadius: 10, marginHorizontal: 16,
-    marginBottom: 10, padding: 12, borderWidth: 1, borderColor: '#FDE68A',
+    backgroundColor: COLORS.warningBg, borderRadius: 10, marginHorizontal: 16,
+    marginBottom: 10, padding: 12, borderWidth: 1, borderColor: COLORS.warningBorder,
   },
-  adminNoteText: { flex: 1, fontSize: 13, color: '#92400E', lineHeight: 18 },
+  adminNoteText: { flex: 1, fontSize: 13, color: COLORS.warningText, lineHeight: 18 },
 
   // Individual doc cards
   docCard: {
@@ -420,7 +438,7 @@ const styles = StyleSheet.create({
   },
   noteChipText: { fontSize: 10, fontWeight: '600', color: COLORS.primary },
 
-  docPreview: { width: '100%', height: 180, backgroundColor: COLORS.background },
+  docPreview: { width: '100%', height: 180, backgroundColor: COLORS.inputBg },
   tapHint: {
     position: 'absolute', bottom: 8, right: 10,
     flexDirection: 'row', alignItems: 'center', gap: 4,
@@ -431,7 +449,7 @@ const styles = StyleSheet.create({
 
   docEmpty: {
     height: 140, alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: COLORS.background, borderBottomWidth: 1, borderBottomColor: COLORS.borderWarm,
+    backgroundColor: COLORS.inputBg, borderBottomWidth: 1, borderBottomColor: COLORS.borderWarm,
   },
   docEmptyText: { fontSize: 13, color: COLORS.muted },
 
@@ -493,8 +511,8 @@ const styles = StyleSheet.create({
 
   fileSelected: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: '#F0FDF4', borderRadius: 12, padding: 12, marginBottom: 18,
-    borderWidth: 1, borderColor: '#86EFAC',
+    backgroundColor: COLORS.successBg, borderRadius: 12, padding: 12, marginBottom: 18,
+    borderWidth: 1, borderColor: COLORS.successBorder,
   },
   filePreview: { width: 52, height: 52, borderRadius: 8 },
   fileSelectedText: { fontSize: 14, fontWeight: '600', color: COLORS.success, marginBottom: 4 },
@@ -502,8 +520,8 @@ const styles = StyleSheet.create({
 
   errorBox: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: '#FEF2F2', borderRadius: 10, padding: 12, marginBottom: 14,
-    borderWidth: 1, borderColor: '#FCA5A5',
+    backgroundColor: COLORS.dangerBg, borderRadius: 10, padding: 12, marginBottom: 14,
+    borderWidth: 1, borderColor: COLORS.dangerBorder,
   },
   errorText: { flex: 1, fontSize: 13, color: COLORS.danger },
 

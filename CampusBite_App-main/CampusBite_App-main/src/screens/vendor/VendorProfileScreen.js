@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Switch, Image, Platform, TextInput, Modal, KeyboardAvoidingView, Linking, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
-import { COLORS, resolveImageUrl } from '../../constants';
+import { resolveImageUrl } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 // 24-hour time options: 00:00 to 23:30 in 30-min steps
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
@@ -124,7 +125,7 @@ function computeWeeklyAnalytics(orders) {
 }
 
 // Simple 7-day order-count bar chart for the Business Analytics modal.
-function WeeklyOrdersChart({ days }) {
+function WeeklyOrdersChart({ days, styles, COLORS }) {
   const maxVal = Math.max(...days.map(d => d.orders), 1);
   const todayLabel = new Date().toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 3);
   return (
@@ -147,6 +148,8 @@ function WeeklyOrdersChart({ days }) {
 }
 
 export default function VendorProfileScreen({ navigation = {} }) {
+  const { colors: COLORS, isDark, toggleTheme } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const insets = useSafeAreaInsets();
   const { height: screenHeight } = useWindowDimensions();
   const { user, logout, updateUser } = useAuthStore();
@@ -1084,7 +1087,7 @@ export default function VendorProfileScreen({ navigation = {} }) {
                   </View>
 
                   <Text style={styles.analyticsSectionTitle}>Orders — last 7 days</Text>
-                  <WeeklyOrdersChart days={a.days} />
+                  <WeeklyOrdersChart days={a.days} styles={styles} COLORS={COLORS} />
 
                   <Text style={styles.analyticsSectionTitle}>Top items this week</Text>
                   {a.topItems.length === 0 ? (
@@ -1626,7 +1629,7 @@ export default function VendorProfileScreen({ navigation = {} }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
 
@@ -1836,7 +1839,7 @@ const styles = StyleSheet.create({
   toggleLabel: {
     fontSize: 15,
     fontWeight: '600',
-    color: COLORS.black,
+    color: COLORS.text,
   },
   toggleSwitch: {
     width: 52,
@@ -1878,7 +1881,7 @@ const styles = StyleSheet.create({
   securitySectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: COLORS.black,
+    color: COLORS.text,
     marginBottom: 12,
   },
   tipItem: {
@@ -1897,7 +1900,7 @@ const styles = StyleSheet.create({
   setupTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: COLORS.black,
+    color: COLORS.text,
     marginBottom: 8,
   },
   setupDesc: {
@@ -1927,7 +1930,7 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 24,
     fontWeight: '700',
-    color: COLORS.black,
+    color: COLORS.text,
     borderWidth: 1,
     borderColor: COLORS.border,
     letterSpacing: 8,

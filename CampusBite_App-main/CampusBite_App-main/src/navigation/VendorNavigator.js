@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StyleSheet } from 'react-native';
@@ -15,13 +15,19 @@ import EditMenuItemScreen    from '../screens/vendor/EditMenuItemScreen';
 import VendorProfileScreen      from '../screens/vendor/VendorProfileScreen';
 import VendorSettingsScreen     from '../screens/vendor/VendorSettingsScreen';
 import VendorPromoCodesScreen  from '../screens/vendor/VendorPromoCodesScreen';
-import { COLORS }              from '../constants';
+import { useTheme }            from '../contexts/ThemeContext';
 import { api }                 from '../api';
 
 const ACTIVE_VENDOR_STATUSES = ['Received', 'Preparing', 'Ready'];
 
 const Tab   = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
+
+const stackScreenOptions = (COLORS) => ({
+  headerTintColor: COLORS.primary,
+  headerStyle:      { backgroundColor: COLORS.card },
+  headerTitleStyle: { color: COLORS.text },
+});
 
 function HomeStack() {
   return (
@@ -33,21 +39,23 @@ function HomeStack() {
 }
 
 function OrdersStack() {
+  const { colors: COLORS } = useTheme();
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="OrdersList"        component={VendorOrdersScreen} />
-      <Stack.Screen name="VendorOrderDetail" component={VendorOrderDetailScreen} options={{ headerShown: true, title: 'Order Detail', headerTintColor: COLORS.primary }} />
+      <Stack.Screen name="VendorOrderDetail" component={VendorOrderDetailScreen} options={{ headerShown: true, title: 'Order Detail', ...stackScreenOptions(COLORS) }} />
     </Stack.Navigator>
   );
 }
 
 function MenuStack() {
+  const { colors: COLORS } = useTheme();
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Menu"             component={MenuScreen} />
-      <Stack.Screen name="AddMenuItem"      component={AddMenuItemScreen}     options={{ headerShown: true, title: 'Add Item',    headerTintColor: COLORS.primary }} />
-      <Stack.Screen name="EditMenuItem"     component={EditMenuItemScreen}    options={{ headerShown: true, title: 'Edit Item',   headerTintColor: COLORS.primary }} />
-      <Stack.Screen name="PromoCodes"       component={VendorPromoCodesScreen} options={{ headerShown: true, title: 'Promo Codes', headerTintColor: COLORS.primary }} />
+      <Stack.Screen name="AddMenuItem"      component={AddMenuItemScreen}     options={{ headerShown: true, title: 'Add Item',    ...stackScreenOptions(COLORS) }} />
+      <Stack.Screen name="EditMenuItem"     component={EditMenuItemScreen}    options={{ headerShown: true, title: 'Edit Item',   ...stackScreenOptions(COLORS) }} />
+      <Stack.Screen name="PromoCodes"       component={VendorPromoCodesScreen} options={{ headerShown: true, title: 'Promo Codes', ...stackScreenOptions(COLORS) }} />
     </Stack.Navigator>
   );
 }
@@ -62,6 +70,8 @@ function ProfileStack() {
 }
 
 export default function VendorNavigator() {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const insets = useSafeAreaInsets();
   const [orderCount, setOrderCount] = useState(0);
 
@@ -114,9 +124,9 @@ export default function VendorNavigator() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   tabBar: {
-    backgroundColor:  COLORS.white,
+    backgroundColor:  COLORS.card,
     borderTopColor:   COLORS.borderWarm,
     borderTopWidth:   1,
     elevation:        12,

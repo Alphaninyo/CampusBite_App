@@ -1,14 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, TextInput, Modal, Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { COLORS } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 import { api } from '../../api';
 
 export default function VendorPromoCodesScreen() {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const [codes,       setCodes]       = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [showModal,   setShowModal]   = useState(false);
@@ -297,7 +299,7 @@ export default function VendorPromoCodesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   root:   { flex: 1, backgroundColor: COLORS.background },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   list:   { padding: 16, paddingBottom: 100 },

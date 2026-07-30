@@ -1,9 +1,10 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Alert, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
-import { COLORS, STATUS_COLORS } from '../../constants';
+import { STATUS_COLORS } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const TABS = ['Incoming', 'In Progress', 'Completed'];
 
@@ -17,6 +18,8 @@ const STATUS_ICONS = {
 };
 
 export default function VendorOrdersScreen({ navigation }) {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const insets = useSafeAreaInsets();
   const [allOrders, setAllOrders] = useState([]);
   const [activeTab, setActiveTab] = useState('Incoming');
@@ -123,7 +126,7 @@ export default function VendorOrdersScreen({ navigation }) {
           <Text style={styles.headerTitle}>Orders</Text>
         </View>
         <TouchableOpacity onPress={() => navigation.navigate('ProfileTab')}>
-          <Ionicons name="person-circle-outline" size={28} color={COLORS.black} />
+          <Ionicons name="person-circle-outline" size={28} color={COLORS.text} />
         </TouchableOpacity>
       </View>
 
@@ -242,7 +245,7 @@ export default function VendorOrdersScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
 
   // Header
@@ -333,7 +336,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.iconBg,
     alignItems: 'center',
   },
-  declineBtnText: { color: '#333', fontWeight: '600', fontSize: 14 },
+  declineBtnText: { color: COLORS.text, fontWeight: '600', fontSize: 14 },
   acceptBtn: {
     flex: 1.5,
     paddingVertical: 12,

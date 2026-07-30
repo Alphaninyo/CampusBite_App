@@ -1,23 +1,23 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity, Alert, RefreshControl, Platform, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../api';
-import { COLORS } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const NEXT_STATUS = {
   Received:  'Preparing',
   Preparing: 'Ready',
 };
 
-const STATUS_CONFIG = {
+const makeStatusConfig = (COLORS) => ({
   Received:  { color: COLORS.subtext, icon: 'hourglass-outline', label: 'Received' },
   Preparing: { color: COLORS.primary, icon: 'restaurant-outline', label: 'Preparing' },
   Ready:     { color: COLORS.success, icon: 'checkmark-circle-outline', label: 'Ready' },
   Collected: { color: '#00796B', icon: 'bicycle-outline', label: 'Collected' },
   'In Transit': { color: '#00796B', icon: 'car-outline', label: 'In Transit' },
   Delivered: { color: COLORS.success, icon: 'checkmark-done-outline', label: 'Delivered' },
-};
+});
 
 // Simple progress checklist — lets the vendor track the order all the way to
 // the consumer without needing a live map. Mirrors the same steps/labels the
@@ -25,6 +25,9 @@ const STATUS_CONFIG = {
 const PROGRESS_STEPS = ['Received', 'Preparing', 'Ready', 'Collected', 'In Transit', 'Delivered'];
 
 export default function VendorOrderDetailScreen({ route, navigation }) {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
+  const STATUS_CONFIG = useMemo(() => makeStatusConfig(COLORS), [COLORS]);
   const { orderId } = route.params;
   const [order, setOrder]     = useState(null);
   const [loading, setLoading] = useState(true);
@@ -230,7 +233,7 @@ export default function VendorOrderDetailScreen({ route, navigation }) {
           <Text style={styles.totalValue}>KES {parseFloat(order.delivery_fee || 0).toFixed(2)}</Text>
         </View>
         <View style={styles.totalRow}>
-          <Text style={[styles.totalLabel, { fontWeight: 'bold', color: COLORS.black }]}>Total</Text>
+          <Text style={[styles.totalLabel, { fontWeight: 'bold', color: COLORS.text }]}>Total</Text>
           <Text style={[styles.totalValue, { fontWeight: 'bold', color: COLORS.primary, fontSize: 16 }]}>
             KES {parseFloat(order.total_amount || 0).toFixed(2)}
           </Text>
@@ -261,9 +264,9 @@ export default function VendorOrderDetailScreen({ route, navigation }) {
       <View style={styles.actionButtonsContainer}>
         {order.status === 'Received' && (
           <TouchableOpacity style={styles.cancelBtn} onPress={cancelOrder} disabled={updating}>
-            {updating ? <ActivityIndicator color="#EF4444" /> : (
+            {updating ? <ActivityIndicator color={COLORS.danger} /> : (
               <>
-                <Ionicons name="close-circle-outline" size={20} color="#EF4444" />
+                <Ionicons name="close-circle-outline" size={20} color={COLORS.danger} />
                 <Text style={styles.cancelBtnText}>Cancel Order</Text>
               </>
             )}
@@ -288,7 +291,7 @@ export default function VendorOrderDetailScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
 
