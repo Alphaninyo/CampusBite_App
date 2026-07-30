@@ -516,6 +516,38 @@ Extending dark mode surfaced a long list of pre-existing bugs that were invisibl
 
 ---
 
+## [1.16.0] - 2026-07-31
+
+### 🐛 Bug Fixes
+Found via real-device testing on a native Android build — all of this session's prior verification had been through the web dev server, so this batch is entirely the class of bug that only shows up off the web:
+
+- **2FA setup showed a fake QR code** — a decorative "qr-code" icon instead of an actual scannable code, so authenticator apps couldn't add a real entry from it. Now renders a real `otpauth://` QR via `react-native-qrcode-svg`, on a fixed white background for reliable scanning regardless of theme (Consumer/Admin, Vendor, Food Courier).
+- **"Report Issue via Email" had no `onPress` handler at all** — a completely dead button in the shared Profile's Help & Support modal. Now opens a pre-filled `mailto:` link.
+- **Food Courier's "Change Password" (App Settings) showed a fake alert** instead of opening the real change-password form; **Terms of Service / Privacy Policy (Food Courier + Vendor) showed literal placeholder text** ("content here"). Change Password now deep-links into the existing real form; Terms/Privacy show actual policy text from a new shared `TERMS_OF_SERVICE_TEXT`/`PRIVACY_POLICY_TEXT` constant.
+- **Login's dark/light toggle used a fixed `top: 16`** with no safe-area awareness, risking overlap with the status bar/notch on real devices. Now offset by `useSafeAreaInsets()`.
+- **No push-notification icon/color was configured** in `app.json` — a common cause of a blank system notification icon on Android.
+- **Vendor's promo code creation modal had no `ScrollView` or `KeyboardAvoidingView`** — on a real (shorter) screen with the keyboard open, fields and the Create button could be pushed off screen entirely, which is almost certainly why "Create" looked broken. Expiry date was also raw free-text with no date picker. Now scrollable, keyboard-aware, and has a real Day/Month/Year picker.
+- **CSV report downloads always said "coming soon" on native** — there was no native implementation at all, just a placeholder alert. Now writes the CSV via `expo-file-system` and hands it to the native share sheet (`expo-sharing`), so it can be saved or shared like any other file, on Admin, Vendor, Food Courier, and Consumer reports alike.
+- **Vendor Dashboard's "Popular Items" cards weren't tappable** — now show that item's order count, revenue, and average per order on tap.
+- **Profile photo upload jumped straight from the OS crop screen to uploading**, with no chance to review. Added a confirm step (preview + Retake/Save Photo) before the upload actually happens (Consumer/Admin, Food Courier).
+- **The shared Notifications modal (Profile → Notifications) read the wrong field names** — `notif.message`/`notif.read` instead of the API's real `body`/`is_read` — so every notification's body text rendered blank and every item was stuck looking permanently unread regardless of its actual state. Fixed to the correct fields.
+- Added a defensive guard on Vendor's Customer Reviews fetch in case the vendor profile hasn't finished loading when it's opened.
+
+### 🔄 Modified files (key)
+| File | What changed |
+|---|---|
+| `src/screens/shared/ProfileScreen.js`, `src/screens/vendor/VendorProfileScreen.js`, `src/screens/foodCourier/FoodCourierProfileScreen.js` | Real QR code; photo confirm step; notifications field fix (shared Profile only) |
+| `src/screens/foodCourier/AppSettingsScreen.js`, `SupportScreen.js`, `src/screens/vendor/VendorSettingsScreen.js` | Real Terms/Privacy text, working Change Password deep link |
+| `src/constants/index.js` | New `TERMS_OF_SERVICE_TEXT` / `PRIVACY_POLICY_TEXT` |
+| `src/screens/auth/LoginScreen.js` | Safe-area-aware toggle position |
+| `app.json` | Notification icon/color config |
+| `src/screens/vendor/VendorPromoCodesScreen.js` | Scrollable + keyboard-aware modal, real date picker |
+| `src/utils/reports.js` | Native CSV export via `expo-file-system` + `expo-sharing` |
+| `src/screens/vendor/VendorDashboardScreen.js` | Popular Items now tappable |
+| `package.json` | Added `expo-file-system`, `expo-sharing` |
+
+---
+
 ## [Unreleased] - Development
 
 ### 🚀 Upcoming Features

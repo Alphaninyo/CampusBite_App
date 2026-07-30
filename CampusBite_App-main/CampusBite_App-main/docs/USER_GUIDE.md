@@ -384,9 +384,9 @@ CampusBite is your ultimate food delivery companion for campus life. Order from 
                    platform-wide summary, status breakdown, per-vendor
                    breakdown, and full order-level detail
 
-// Note: reports download as a CSV file on web. On a native
-// (iOS/Android) build, you'll see a "coming soon" message instead —
-// CSV export is currently a web-only feature.
+// Note: on web the CSV downloads directly to your Downloads folder.
+// On a native (iOS/Android) build, it opens the share sheet instead —
+// pick "Save to Files", a cloud drive, email, etc. to get the file.
 ```
 
 ---
