@@ -7,6 +7,7 @@ import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
 import { resolveImageUrl } from '../../constants';
 import { useTheme } from '../../contexts/ThemeContext';
+import { REPORT_PERIODS, filterByPeriod, csvCell, downloadCSVReport } from '../../utils/reports';
 
 // 24-hour time options: 00:00 to 23:30 in 30-min steps
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
@@ -177,6 +178,12 @@ export default function VendorProfileScreen({ navigation = {} }) {
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [analyticsOrders, setAnalyticsOrders]       = useState([]);
   const [loadingAnalytics, setLoadingAnalytics]     = useState(false);
+
+  // Sales Reports modal
+  const [showReportsModal, setShowReportsModal] = useState(false);
+  const [reportOrders, setReportOrders]         = useState([]);
+  const [loadingReports, setLoadingReports]     = useState(false);
+  const [reportPeriod, setReportPeriod]         = useState('Today');
 
   // Contact Support modal
   const [showSupportModal, setShowSupportModal] = useState(false);
@@ -449,6 +456,58 @@ export default function VendorProfileScreen({ navigation = {} }) {
     }
   };
 
+  const handleSalesReports = async () => {
+    setShowReportsModal(true);
+    setLoadingReports(true);
+    try {
+      const { data } = await api.orders.getVendorOrders();
+      setReportOrders(data.orders || []);
+    } catch (err) {
+      Alert.alert('Error', 'Could not load order history.');
+    } finally {
+      setLoadingReports(false);
+    }
+  };
+
+  const handleDownloadVendorReport = () => {
+    const periodOrders   = filterByPeriod(reportOrders, reportPeriod);
+    const delivered       = periodOrders.filter(o => o.status === 'Delivered');
+    const cancelled       = periodOrders.filter(o => o.status === 'Cancelled');
+    const revenue         = delivered.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+    const avgOrderValue   = periodOrders.length > 0
+      ? periodOrders.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0) / periodOrders.length
+      : 0;
+
+    const rows = [
+      `CampusBite Vendor Sales Report — ${reportPeriod}`,
+      `Generated: ${new Date().toLocaleString()}`,
+      '',
+      'SUMMARY',
+      'Metric,Value',
+      `Total Orders,${periodOrders.length}`,
+      `Delivered,${delivered.length}`,
+      `Cancelled,${cancelled.length}`,
+      `Revenue from Delivered (KES),${revenue.toFixed(0)}`,
+      `Avg Order Value (KES),${avgOrderValue.toFixed(0)}`,
+      '',
+      'ORDER DETAIL',
+      'Order ID,Date,Customer,Total (KES),Status',
+      ...periodOrders.map(o => [
+        csvCell(o.id?.slice(0, 8)),
+        csvCell(new Date(o.created_at).toLocaleString()),
+        csvCell(o.consumer?.name || 'N/A'),
+        parseFloat(o.total_amount || 0).toFixed(0),
+        csvCell(o.status),
+      ].join(',')),
+    ].join('\n');
+
+    const filename = `campusbite-sales-report-${reportPeriod.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.csv`;
+    const downloaded = downloadCSVReport(filename, rows);
+    if (!downloaded) {
+      Alert.alert('Download', 'CSV download is available on web. Mobile export coming soon!');
+    }
+  };
+
   const handleSecurity = () => {
     setShowSecurityModal(true);
   };
@@ -698,6 +757,19 @@ export default function VendorProfileScreen({ navigation = {} }) {
             <View style={styles.settingInfo}>
               <Text style={styles.settingLabel}>Payout History</Text>
               <Text style={styles.settingValue}>View delivered orders & earnings</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={COLORS.gray} />
+          </TouchableOpacity>
+
+          <View style={styles.settingDivider} />
+
+          <TouchableOpacity style={styles.settingRow} onPress={handleSalesReports}>
+            <View style={[styles.settingIcon, { backgroundColor: COLORS.primary + '20' }]}>
+              <Ionicons name="document-text-outline" size={20} color={COLORS.primary} />
+            </View>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingLabel}>Sales Reports</Text>
+              <Text style={styles.settingValue}>Download a detailed report for any period</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={COLORS.gray} />
           </TouchableOpacity>
@@ -1030,6 +1102,86 @@ export default function VendorProfileScreen({ navigation = {} }) {
                 </ScrollView>
               </>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Sales Reports Modal */}
+      <Modal visible={showReportsModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalSheet, { maxHeight: screenHeight * 0.85 }]}>
+            <View style={styles.modalHandle} />
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setShowReportsModal(false)}>
+                <Ionicons name="close" size={24} color={COLORS.subtext} />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Sales Reports</Text>
+              <View style={{ width: 24 }} />
+            </View>
+
+            {loadingReports ? (
+              <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
+              </View>
+            ) : (() => {
+              const periodOrders = filterByPeriod(reportOrders, reportPeriod);
+              const delivered    = periodOrders.filter(o => o.status === 'Delivered');
+              const revenue      = delivered.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+              return (
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  <View style={styles.reportPeriodRow}>
+                    {REPORT_PERIODS.map((p) => (
+                      <TouchableOpacity
+                        key={p}
+                        style={[styles.reportChip, reportPeriod === p && styles.reportChipActive]}
+                        onPress={() => setReportPeriod(p)}
+                      >
+                        <Text style={[styles.reportChipText, reportPeriod === p && styles.reportChipTextActive]}>{p}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  <View style={styles.payoutTotal}>
+                    <Text style={styles.payoutTotalLabel}>Revenue — {reportPeriod}</Text>
+                    <Text style={styles.payoutTotalValue}>KES {revenue.toFixed(2)}</Text>
+                  </View>
+
+                  <View style={styles.reportSummaryRow}>
+                    <View style={styles.reportSummaryItem}>
+                      <Text style={styles.reportSummaryValue}>{periodOrders.length}</Text>
+                      <Text style={styles.reportSummaryLabel}>Orders</Text>
+                    </View>
+                    <View style={styles.reportSummaryItem}>
+                      <Text style={styles.reportSummaryValue}>{delivered.length}</Text>
+                      <Text style={styles.reportSummaryLabel}>Delivered</Text>
+                    </View>
+                  </View>
+
+                  <TouchableOpacity style={styles.reportDownloadBtn} onPress={handleDownloadVendorReport} activeOpacity={0.8}>
+                    <Ionicons name="download-outline" size={16} color={COLORS.white} />
+                    <Text style={styles.reportDownloadBtnText}>Download {reportPeriod} Report</Text>
+                  </TouchableOpacity>
+
+                  {periodOrders.length === 0 ? (
+                    <View style={styles.payoutEmpty}>
+                      <Ionicons name="document-text-outline" size={48} color={COLORS.border} />
+                      <Text style={styles.payoutEmptyText}>No orders in this period</Text>
+                    </View>
+                  ) : (
+                    periodOrders.map(order => (
+                      <View key={order.id} style={styles.payoutRow}>
+                        <View style={styles.payoutRowLeft}>
+                          <Text style={styles.payoutOrderId}>Order #{order.id.slice(-6).toUpperCase()}</Text>
+                          <Text style={styles.payoutDate}>{new Date(order.created_at).toLocaleDateString()} · {order.status}</Text>
+                        </View>
+                        <Text style={styles.payoutAmount}>KES {parseFloat(order.total_amount || 0).toFixed(2)}</Text>
+                      </View>
+                    ))
+                  )}
+                  <View style={{ height: 20 }} />
+                </ScrollView>
+              );
+            })()}
           </View>
         </View>
       </Modal>
@@ -2077,6 +2229,28 @@ const makeStyles = (COLORS) => StyleSheet.create({
   payoutOrderId: { fontSize: 14, fontWeight: '700', color: COLORS.text },
   payoutDate: { fontSize: 12, color: COLORS.muted },
   payoutAmount: { fontSize: 15, fontWeight: '700', color: COLORS.success },
+
+  // Sales Reports
+  reportPeriodRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  reportChip: {
+    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20,
+    backgroundColor: COLORS.background, borderWidth: 1, borderColor: COLORS.borderWarm,
+  },
+  reportChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  reportChipText: { fontSize: 12, fontWeight: '600', color: COLORS.subtext },
+  reportChipTextActive: { color: COLORS.white },
+  reportSummaryRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
+  reportSummaryItem: {
+    flex: 1, alignItems: 'center', backgroundColor: COLORS.card, borderRadius: 12,
+    paddingVertical: 14, borderWidth: 1, borderColor: COLORS.border,
+  },
+  reportSummaryValue: { fontSize: 20, fontWeight: '800', color: COLORS.text },
+  reportSummaryLabel: { fontSize: 12, color: COLORS.subtext, marginTop: 2 },
+  reportDownloadBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: COLORS.primary, borderRadius: 10, paddingVertical: 13, marginBottom: 16,
+  },
+  reportDownloadBtnText: { fontSize: 14, fontWeight: '700', color: COLORS.white },
 
   // Customer Reviews
   reviewEmpty: { paddingVertical: 48, alignItems: 'center', gap: 10 },

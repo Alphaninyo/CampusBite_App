@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
 import { useTheme } from '../../contexts/ThemeContext';
+import { REPORT_PERIODS, filterByPeriod, csvCell, downloadCSVReport } from '../../utils/reports';
 
 // ── Stat card ─────────────────────────────────────────────────────────────────
 function StatCard({ label, value, subtext, badge, badgeColor, icon, iconColor, valueColor, styles }) {
@@ -96,6 +97,8 @@ export default function AdminStatsScreen({ navigation }) {
   const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [reportPeriod, setReportPeriod] = useState('Today');
+  const [generatingReport, setGeneratingReport] = useState(false);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -155,29 +158,90 @@ export default function AdminStatsScreen({ navigation }) {
     insight = `${delivered} of ${totalOrders} orders delivered. ${activeOrders > 0 ? `${activeOrders} still in progress.` : ''}`;
   }
 
-  const handleDownload = () => {
-    const rows = [
-      'CampusBite Admin Statistics Report',
-      `Generated: ${new Date().toLocaleString()}`,
-      '', 'Metric,Value',
-      `Total Orders,${totalOrders}`, `Revenue (KES),${revenue}`,
-      `Consumers,${consumers}`, `Active Vendors,${activeVendors}`,
-      `Food Couriers,${couriers}`, `Reviews,${reviews}`,
-      '', 'Status,Count', ...byStatus.map(s => `${s.status},${s.count}`),
-      '', 'Day,Orders', ...weeklyData.map(d => `${d.day},${d.value}`),
-      '', 'Vendor,Orders', ...topVendors.map(v => `${v.name},${v.orders}`),
-    ].join('\n');
-    if (Platform.OS === 'web') {
-      const blob = new Blob([rows], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.setAttribute('href', URL.createObjectURL(blob));
-      link.setAttribute('download', `campusbite-stats-${now.toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } else {
-      Alert.alert('Download', 'CSV download is available on web. Mobile export coming soon!');
+  // Pulls every order across all pages so the report reflects real totals,
+  // not just the first page the Orders tab happens to show.
+  const fetchAllOrdersForReport = async () => {
+    let page = 1;
+    let all = [];
+    while (page <= 10) {
+      const { data } = await api.admin.getOrders({ page, limit: 100 });
+      const batch = data.orders || [];
+      all = all.concat(batch);
+      if (!data.pages || page >= data.pages || batch.length === 0) break;
+      page += 1;
+    }
+    return all;
+  };
+
+  const handleGenerateReport = async () => {
+    setGeneratingReport(true);
+    try {
+      const allOrders = await fetchAllOrdersForReport();
+      const periodOrders = filterByPeriod(allOrders, reportPeriod);
+      const periodDelivered  = periodOrders.filter(o => o.status === 'Delivered');
+      const periodCancelled  = periodOrders.filter(o => o.status === 'Cancelled');
+      const periodInProgress = periodOrders.filter(o => !['Delivered', 'Cancelled'].includes(o.status));
+      const periodRevenue    = periodDelivered.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+      const avgOrderValue    = periodOrders.length > 0
+        ? periodOrders.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0) / periodOrders.length
+        : 0;
+
+      const statusCounts = {};
+      periodOrders.forEach(o => { statusCounts[o.status] = (statusCounts[o.status] || 0) + 1; });
+
+      const vendorTotals = {};
+      periodOrders.forEach(o => {
+        const name = o.vendor?.business_name || 'Unknown vendor';
+        if (!vendorTotals[name]) vendorTotals[name] = { orders: 0, revenue: 0 };
+        vendorTotals[name].orders += 1;
+        if (o.status === 'Delivered') vendorTotals[name].revenue += parseFloat(o.total_amount || 0);
+      });
+
+      const rows = [
+        `CampusBite Admin Report — ${reportPeriod}`,
+        `Generated: ${new Date().toLocaleString()}`,
+        '',
+        'SUMMARY',
+        'Metric,Value',
+        `Total Orders,${periodOrders.length}`,
+        `Delivered,${periodDelivered.length}`,
+        `Cancelled,${periodCancelled.length}`,
+        `In Progress,${periodInProgress.length}`,
+        `Revenue from Delivered (KES),${periodRevenue.toFixed(0)}`,
+        `Avg Order Value (KES),${avgOrderValue.toFixed(0)}`,
+        `Registered Consumers (all time),${consumers}`,
+        `Active Vendors (all time),${activeVendors}`,
+        `Food Couriers (all time),${couriers}`,
+        '',
+        'STATUS BREAKDOWN',
+        'Status,Count',
+        ...Object.entries(statusCounts).map(([status, count]) => `${csvCell(status)},${count}`),
+        '',
+        'VENDOR BREAKDOWN',
+        'Vendor,Orders,Revenue (KES)',
+        ...Object.entries(vendorTotals).map(([name, v]) => `${csvCell(name)},${v.orders},${v.revenue.toFixed(0)}`),
+        '',
+        'ORDER DETAIL',
+        'Order ID,Date,Vendor,Customer,Total (KES),Status',
+        ...periodOrders.map(o => [
+          csvCell(o.id?.slice(0, 8)),
+          csvCell(new Date(o.created_at).toLocaleString()),
+          csvCell(o.vendor?.business_name || 'N/A'),
+          csvCell(o.consumer?.name || 'N/A'),
+          parseFloat(o.total_amount || 0).toFixed(0),
+          csvCell(o.status),
+        ].join(',')),
+      ].join('\n');
+
+      const filename = `campusbite-admin-report-${reportPeriod.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.csv`;
+      const downloaded = downloadCSVReport(filename, rows);
+      if (!downloaded) {
+        Alert.alert('Download', 'CSV download is available on web. Mobile export coming soon!');
+      }
+    } catch (err) {
+      Alert.alert('Error', err.message || 'Could not generate the report. Please try again.');
+    } finally {
+      setGeneratingReport(false);
     }
   };
 
@@ -191,9 +255,6 @@ export default function AdminStatsScreen({ navigation }) {
         </View>
         <View style={styles.headerRight}>
           <Text style={styles.headerDate}>{dateLabel}</Text>
-          <TouchableOpacity style={styles.headerBtn} onPress={handleDownload} activeOpacity={0.7}>
-            <Ionicons name="download-outline" size={22} color={COLORS.text} />
-          </TouchableOpacity>
           <TouchableOpacity style={styles.headerBtn} activeOpacity={0.7} onPress={() => navigation.navigate('AdminNotifications')}>
             <Ionicons name="notifications-outline" size={22} color={COLORS.text} />
             {unreadCount > 0 && <View style={styles.notifDot} />}
@@ -209,6 +270,45 @@ export default function AdminStatsScreen({ navigation }) {
           <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchStats(); }} colors={[COLORS.primary]} />
         }
       >
+        {/* ── Reports ── */}
+        <View style={styles.reportSection}>
+          <View style={styles.reportHeader}>
+            <View style={styles.reportIconWrap}>
+              <Ionicons name="document-text-outline" size={18} color={COLORS.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.reportTitle}>Reports</Text>
+              <Text style={styles.reportSub}>Generate a detailed report for any period, any day</Text>
+            </View>
+          </View>
+          <View style={styles.reportPeriodRow}>
+            {REPORT_PERIODS.map((p) => (
+              <TouchableOpacity
+                key={p}
+                style={[styles.reportChip, reportPeriod === p && styles.reportChipActive]}
+                onPress={() => setReportPeriod(p)}
+              >
+                <Text style={[styles.reportChipText, reportPeriod === p && styles.reportChipTextActive]}>{p}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <TouchableOpacity
+            style={[styles.reportGenerateBtn, generatingReport && { opacity: 0.7 }]}
+            onPress={handleGenerateReport}
+            disabled={generatingReport}
+            activeOpacity={0.8}
+          >
+            {generatingReport ? (
+              <ActivityIndicator color={COLORS.white} size="small" />
+            ) : (
+              <>
+                <Ionicons name="download-outline" size={16} color={COLORS.white} />
+                <Text style={styles.reportGenerateBtnText}>Generate & Download {reportPeriod} Report</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+
         {/* ── 6 stat cards ── */}
         <View style={styles.grid}>
           <StatCard
@@ -371,6 +471,33 @@ const makeStyles = (COLORS) => StyleSheet.create({
     position: 'absolute', top: 6, right: 6,
     width: 7, height: 7, borderRadius: 4, backgroundColor: COLORS.primary,
   },
+
+  // Reports
+  reportSection: {
+    backgroundColor: COLORS.card, borderRadius: 14,
+    padding: 16, marginBottom: 12,
+    borderWidth: 1.5, borderColor: COLORS.primary,
+  },
+  reportHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
+  reportIconWrap: {
+    width: 36, height: 36, borderRadius: 10,
+    backgroundColor: COLORS.primary + '1F', alignItems: 'center', justifyContent: 'center',
+  },
+  reportTitle: { fontSize: 16, fontWeight: '800', color: COLORS.text },
+  reportSub:   { fontSize: 12, color: COLORS.subtext, marginTop: 2 },
+  reportPeriodRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
+  reportChip: {
+    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20,
+    backgroundColor: COLORS.background, borderWidth: 1, borderColor: COLORS.borderWarm,
+  },
+  reportChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  reportChipText: { fontSize: 12, fontWeight: '600', color: COLORS.subtext },
+  reportChipTextActive: { color: COLORS.white },
+  reportGenerateBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: COLORS.primary, borderRadius: 10, paddingVertical: 13,
+  },
+  reportGenerateBtnText: { fontSize: 14, fontWeight: '700', color: COLORS.white },
 
   // Stat card grid
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 },

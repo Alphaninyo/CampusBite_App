@@ -12,6 +12,7 @@ import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
 import { resolveImageUrl } from '../../constants';
 import { useTheme } from '../../contexts/ThemeContext';
+import { REPORT_PERIODS, filterByPeriod, csvCell, downloadCSVReport } from '../../utils/reports';
 
 
 export default function ProfileScreen({ navigation }) {
@@ -41,10 +42,14 @@ export default function ProfileScreen({ navigation }) {
   const [showSupportModal, setShowSupportModal]   = useState(false);
   const [showSecurityModal, setShowSecurityModal] = useState(false);
   const [showFavoritesModal, setShowFavoritesModal] = useState(false);
+  const [showReportsModal, setShowReportsModal]   = useState(false);
 
   const [totalOrders, setTotalOrders] = useState(0);
   const [totalSpent, setTotalSpent]   = useState(0);
   const [recentOrders, setRecentOrders] = useState([]);
+  const [reportOrders, setReportOrders] = useState([]);
+  const [loadingReports, setLoadingReports] = useState(false);
+  const [reportPeriod, setReportPeriod] = useState('Today');
   const [loading, setLoading] = useState(true);
 
   const [savedAddresses, setSavedAddresses] = useState([]);
@@ -87,6 +92,56 @@ export default function ProfileScreen({ navigation }) {
       setRecentOrders(orders.slice(0, 3));
     } catch (_) {}
     setLoading(false);
+  };
+
+  const handleMyReports = async () => {
+    setShowReportsModal(true);
+    setLoadingReports(true);
+    try {
+      const { data } = await api.orders.getMyOrders();
+      setReportOrders(data.orders || []);
+    } catch (_) {
+      Alert.alert('Error', 'Could not load order history.');
+    } finally {
+      setLoadingReports(false);
+    }
+  };
+
+  const handleDownloadConsumerReport = () => {
+    const periodOrders = filterByPeriod(reportOrders, reportPeriod);
+    const delivered     = periodOrders.filter(o => o.status === 'Delivered');
+    const spent         = delivered.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+    const avgOrderValue = periodOrders.length > 0
+      ? periodOrders.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0) / periodOrders.length
+      : 0;
+
+    const rows = [
+      `CampusBite Order Report — ${reportPeriod}`,
+      `Generated: ${new Date().toLocaleString()}`,
+      '',
+      'SUMMARY',
+      'Metric,Value',
+      `Total Orders,${periodOrders.length}`,
+      `Delivered,${delivered.length}`,
+      `Total Spent (KES),${spent.toFixed(0)}`,
+      `Avg Order Value (KES),${avgOrderValue.toFixed(0)}`,
+      '',
+      'ORDER DETAIL',
+      'Order ID,Date,Vendor,Total (KES),Status',
+      ...periodOrders.map(o => [
+        csvCell(o.id?.slice(0, 8)),
+        csvCell(new Date(o.created_at).toLocaleString()),
+        csvCell(o.vendor?.business_name || 'N/A'),
+        parseFloat(o.total_amount || 0).toFixed(0),
+        csvCell(o.status),
+      ].join(',')),
+    ].join('\n');
+
+    const filename = `campusbite-my-orders-${reportPeriod.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.csv`;
+    const downloaded = downloadCSVReport(filename, rows);
+    if (!downloaded) {
+      Alert.alert('Download', 'CSV download is available on web. Mobile export coming soon!');
+    }
   };
 
   const fetchNotifications = async () => {
@@ -394,6 +449,13 @@ export default function ProfileScreen({ navigation }) {
         setShowNotificationsModal(true);
       },
     },
+    ...(!isAdmin ? [{
+      icon: 'document-text-outline',
+      iconColor: COLORS.primary,
+      label: 'My Reports',
+      sub: 'Download your order history report',
+      onPress: () => handleMyReports(),
+    }] : []),
     {
       icon: 'lock-closed-outline',
       iconColor: '#8B5CF6',
@@ -1008,6 +1070,79 @@ export default function ProfileScreen({ navigation }) {
         </View>
       </Modal>
 
+      {/* My Reports Modal */}
+      <Modal visible={showReportsModal} animationType={isWeb ? 'fade' : 'slide'} transparent>
+        <View style={[styles.modalOverlay, isWeb && styles.modalOverlayWeb]}>
+          <View style={[styles.modalSheet, { maxHeight: screenHeight * 0.85 }, isWeb && styles.modalSheetWeb]}>
+            {!isWeb && <View style={styles.modalHandle} />}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>My Reports</Text>
+              <TouchableOpacity onPress={() => setShowReportsModal(false)}>
+                <Ionicons name="close" size={24} color={COLORS.subtext} />
+              </TouchableOpacity>
+            </View>
+
+            {loadingReports ? (
+              <ActivityIndicator color={COLORS.primary} style={{ marginVertical: 24 }} />
+            ) : (() => {
+              const periodOrders = filterByPeriod(reportOrders, reportPeriod);
+              const delivered    = periodOrders.filter(o => o.status === 'Delivered');
+              const spent        = delivered.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+              return (
+                <ScrollView style={{ maxHeight: screenHeight * 0.65 }} showsVerticalScrollIndicator={false}>
+                  <View style={styles.ordersReportPeriodRow}>
+                    {REPORT_PERIODS.map((p) => (
+                      <TouchableOpacity
+                        key={p}
+                        style={[styles.ordersReportChip, reportPeriod === p && styles.ordersReportChipActive]}
+                        onPress={() => setReportPeriod(p)}
+                      >
+                        <Text style={[styles.ordersReportChipText, reportPeriod === p && styles.ordersReportChipTextActive]}>{p}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  <View style={styles.ordersReportSummaryRow}>
+                    <View style={styles.ordersReportSummaryItem}>
+                      <Text style={styles.ordersReportSummaryValue}>{periodOrders.length}</Text>
+                      <Text style={styles.ordersReportSummaryLabel}>Orders</Text>
+                    </View>
+                    <View style={styles.ordersReportSummaryItem}>
+                      <Text style={styles.ordersReportSummaryValue}>KES {spent.toFixed(0)}</Text>
+                      <Text style={styles.ordersReportSummaryLabel}>Spent</Text>
+                    </View>
+                  </View>
+
+                  <TouchableOpacity style={styles.ordersReportDownloadBtn} onPress={handleDownloadConsumerReport} activeOpacity={0.8}>
+                    <Ionicons name="download-outline" size={16} color={COLORS.white} />
+                    <Text style={styles.ordersReportDownloadBtnText}>Download {reportPeriod} Report</Text>
+                  </TouchableOpacity>
+
+                  {periodOrders.length === 0 ? (
+                    <View style={styles.emptyState}>
+                      <Ionicons name="document-text-outline" size={44} color={COLORS.muted} />
+                      <Text style={styles.emptyText}>No orders in this period</Text>
+                    </View>
+                  ) : (
+                    periodOrders.map((order, i) => (
+                      <View key={order.id} style={[styles.orderRow, i === 0 && { borderTopWidth: 0 }]}>
+                        <View style={styles.orderIconWrap}>
+                          <Ionicons name="receipt-outline" size={20} color={COLORS.primary} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.orderVendor}>{order.vendor?.business_name || 'Order'}</Text>
+                          <Text style={styles.orderMeta}>KES {order.total_amount} · {order.status}</Text>
+                        </View>
+                      </View>
+                    ))
+                  )}
+                </ScrollView>
+              );
+            })()}
+          </View>
+        </View>
+      </Modal>
+
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
         {/* ── Profile Header ──────────────────────────────────────────────── */}
@@ -1325,6 +1460,28 @@ const makeStyles = (COLORS) => StyleSheet.create({
     backgroundColor: COLORS.primary + '18',
     alignItems: 'center', justifyContent: 'center',
   },
+
+  // ── My Reports modal ──────────────────────────────────────────────────────
+  ordersReportPeriodRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  ordersReportChip: {
+    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20,
+    backgroundColor: COLORS.background, borderWidth: 1, borderColor: COLORS.borderWarm,
+  },
+  ordersReportChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  ordersReportChipText: { fontSize: 12, fontWeight: '600', color: COLORS.subtext },
+  ordersReportChipTextActive: { color: COLORS.white },
+  ordersReportSummaryRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
+  ordersReportSummaryItem: {
+    flex: 1, alignItems: 'center', backgroundColor: COLORS.card, borderRadius: 12,
+    paddingVertical: 14, borderWidth: 1, borderColor: COLORS.border,
+  },
+  ordersReportSummaryValue: { fontSize: 18, fontWeight: '800', color: COLORS.text },
+  ordersReportSummaryLabel: { fontSize: 12, color: COLORS.subtext, marginTop: 2 },
+  ordersReportDownloadBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: COLORS.primary, borderRadius: 10, paddingVertical: 13, marginBottom: 8,
+  },
+  ordersReportDownloadBtnText: { fontSize: 14, fontWeight: '700', color: COLORS.white },
 
   // ── Menu rows ─────────────────────────────────────────────────────────────
   menuRow: {

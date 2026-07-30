@@ -1,10 +1,11 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, ScrollView, Dimensions } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, ScrollView, Dimensions, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
 import { STATUS_COLORS } from '../../constants';
 import { useTheme } from '../../contexts/ThemeContext';
+import { csvCell, downloadCSVReport } from '../../utils/reports';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const PERIODS = ['Today', 'This Week', 'This Month', 'All Time'];
@@ -128,6 +129,38 @@ export default function EarningsScreen({ navigation }) {
   }));
   const bestDay = dayTotals.reduce((best, d) => d.total > best.total ? d : best, { day: '—', total: 0 });
 
+  const handleDownloadReport = () => {
+    const rows = [
+      `CampusBite Courier Earnings Report — ${activePeriod}`,
+      `Generated: ${new Date().toLocaleString()}`,
+      '',
+      'SUMMARY',
+      'Metric,Value',
+      `Deliveries Completed,${totalDeliveries}`,
+      `In Progress,${inProgressOrders.length}`,
+      `Total Earnings (KES),${totalEarnings.toFixed(0)}`,
+      `Avg Earnings / Trip (KES),${avgEarnings}`,
+      `Completion Rate,${completionRate}%`,
+      '',
+      'DELIVERY DETAIL',
+      'Order ID,Date,Vendor,Address,Fee (KES),Status',
+      ...filteredOrders.map(o => [
+        csvCell(o.id?.slice(0, 8)),
+        csvCell(new Date(o.created_at).toLocaleString()),
+        csvCell(o.vendor?.business_name || 'N/A'),
+        csvCell(o.delivery_address || 'N/A'),
+        getEarnings(o).toFixed(0),
+        csvCell(o.status),
+      ].join(',')),
+    ].join('\n');
+
+    const filename = `campusbite-earnings-${activePeriod.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.csv`;
+    const downloaded = downloadCSVReport(filename, rows);
+    if (!downloaded) {
+      Alert.alert('Download', 'CSV download is available on web. Mobile export coming soon!');
+    }
+  };
+
   if (loading) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
 
   const ListHeader = () => (
@@ -144,6 +177,10 @@ export default function EarningsScreen({ navigation }) {
             </TouchableOpacity>
           ))}
         </View>
+        <TouchableOpacity style={styles.reportBtn} onPress={handleDownloadReport} activeOpacity={0.8}>
+          <Ionicons name="download-outline" size={16} color={COLORS.primary} />
+          <Text style={styles.reportBtnText}>Download {activePeriod} Report</Text>
+        </TouchableOpacity>
       </View>
 
       {/* ── Quick Stats ── */}
@@ -385,6 +422,11 @@ const makeStyles = (COLORS) => StyleSheet.create({
   periodChipActive: { backgroundColor: COLORS.card },
   periodChipText: { color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: '600' },
   periodChipTextActive: { color: COLORS.primary, fontWeight: 'bold' },
+  reportBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    backgroundColor: COLORS.card, borderRadius: 10, paddingVertical: 11, marginTop: 16,
+  },
+  reportBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.primary },
   statsRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
   statCard: {
     flex: 1,
