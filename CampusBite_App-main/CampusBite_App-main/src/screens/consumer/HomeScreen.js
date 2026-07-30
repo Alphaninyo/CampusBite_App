@@ -219,16 +219,17 @@ export default function HomeScreen({ navigation }) {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Search Bar */}
         <View style={styles.searchContainer}>
-          <Ionicons name="search-outline" size={20} color={COLORS.gray} style={styles.searchIconLeft} />
+          <Ionicons name="search-outline" size={20} color={COLORS.subtext} style={styles.searchIconLeft} />
           <TextInput
             style={styles.searchBar}
             placeholder="Search for food or restaurants"
+            placeholderTextColor={COLORS.subtext}
             value={searchText}
             onChangeText={setSearchText}
           />
           {searchText.length > 0 && (
             <TouchableOpacity onPress={() => setSearchText('')} style={styles.clearButton}>
-              <Ionicons name="close-circle-outline" size={20} color={COLORS.gray} />
+              <Ionicons name="close-circle-outline" size={20} color={COLORS.subtext} />
             </TouchableOpacity>
           )}
         </View>
@@ -459,6 +460,7 @@ const makeStyles = (COLORS) => StyleSheet.create({
   searchBar: {
     flex: 1,
     backgroundColor: 'transparent',
+    color: COLORS.text,
     fontSize: 16,
     paddingVertical: 12,
   },
