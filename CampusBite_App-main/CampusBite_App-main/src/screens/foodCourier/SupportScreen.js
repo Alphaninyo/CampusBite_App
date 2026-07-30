@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking, Alert } 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../contexts/ThemeContext';
+import { TERMS_OF_SERVICE_TEXT, PRIVACY_POLICY_TEXT } from '../../constants';
 
 export default function SupportScreen({ navigation }) {
   const { colors: COLORS } = useTheme();
@@ -50,8 +51,8 @@ export default function SupportScreen({ navigation }) {
 
   const helpTopics = [
     { icon: 'help-circle-outline', title: 'FAQ', onPress: handleFAQ },
-    { icon: 'document-text-outline', title: 'Terms of Service', onPress: () => Alert.alert('Terms', 'Full terms of service will be displayed here.') },
-    { icon: 'shield-checkmark-outline', title: 'Privacy Policy', onPress: () => Alert.alert('Privacy', 'Full privacy policy will be displayed here.') },
+    { icon: 'document-text-outline', title: 'Terms of Service', onPress: () => Alert.alert('Terms of Service', TERMS_OF_SERVICE_TEXT) },
+    { icon: 'shield-checkmark-outline', title: 'Privacy Policy', onPress: () => Alert.alert('Privacy Policy', PRIVACY_POLICY_TEXT) },
     { icon: 'alert-circle-outline', title: 'Report an Issue', onPress: handleReportIssue },
   ];
 

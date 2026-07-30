@@ -129,7 +129,7 @@ export default function EarningsScreen({ navigation }) {
   }));
   const bestDay = dayTotals.reduce((best, d) => d.total > best.total ? d : best, { day: '—', total: 0 });
 
-  const handleDownloadReport = () => {
+  const handleDownloadReport = async () => {
     const rows = [
       `CampusBite Courier Earnings Report — ${activePeriod}`,
       `Generated: ${new Date().toLocaleString()}`,
@@ -155,9 +155,9 @@ export default function EarningsScreen({ navigation }) {
     ].join('\n');
 
     const filename = `campusbite-earnings-${activePeriod.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.csv`;
-    const downloaded = downloadCSVReport(filename, rows);
+    const downloaded = await downloadCSVReport(filename, rows);
     if (!downloaded) {
-      Alert.alert('Download', 'CSV download is available on web. Mobile export coming soon!');
+      Alert.alert('Download Failed', 'Could not save or share the report. Please try again.');
     }
   };
 

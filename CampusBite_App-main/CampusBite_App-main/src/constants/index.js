@@ -8,6 +8,12 @@ export const resolveImageUrl = (path) => {
   return path.startsWith('http') ? path : `${API_BASE_URL}${path}`;
 };
 
+export const TERMS_OF_SERVICE_TEXT =
+  'By using CampusBite, you agree to place orders in good faith, provide accurate delivery details, and pay the listed price for items and delivery. Vendors are responsible for the accuracy of their menu listings and the quality of food prepared. Food couriers agree to deliver orders promptly and handle food safely. CampusBite is not liable for delays caused by vendors, couriers, or events outside our reasonable control. Accounts found abusing the platform (fraudulent orders, harassment, repeated no-shows) may be suspended. Continued use of the app after any update to these terms constitutes acceptance of the change.';
+
+export const PRIVACY_POLICY_TEXT =
+  'CampusBite collects the information you provide when you register (name, email, phone) and the data needed to fulfil orders (delivery address, order history, payment method chosen). Location is only accessed with your permission, to set a delivery address or share a courier\'s live position with the consumer during an active delivery. We do not sell your personal information. Payment details are handled directly by our payment providers (M-Pesa, Stripe) — CampusBite does not store your card number. You can request a copy of your data or ask us to delete your account at any time by contacting support.';
+
 export const COLORS = {
   // ── Brand ──────────────────────────────────────────────────
   primary:        '#E85D04',   // Flame Orange

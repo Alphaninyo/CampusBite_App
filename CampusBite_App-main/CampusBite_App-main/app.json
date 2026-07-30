@@ -12,6 +12,10 @@
       "resizeMode": "contain",
       "backgroundColor": "#FFF8F6"
     },
+    "notification": {
+      "icon": "./assets/adaptive-icon.png",
+      "color": "#FF7A33"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.campusbite.app",

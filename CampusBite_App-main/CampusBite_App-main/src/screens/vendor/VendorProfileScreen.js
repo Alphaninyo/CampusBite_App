@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, ActivityIn
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import QRCode from 'react-native-qrcode-svg';
 import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
 import { resolveImageUrl } from '../../constants';
@@ -428,6 +429,7 @@ export default function VendorProfileScreen({ navigation = {} }) {
 
   const handleCustomerReviews = async () => {
     setShowReviewsModal(true);
+    if (!vendor?.id) return; // profile still loading — nothing to fetch yet
     setLoadingReviews(true);
     try {
       const { data } = await api.reviews.getVendorReviews(vendor.id);
@@ -469,7 +471,7 @@ export default function VendorProfileScreen({ navigation = {} }) {
     }
   };
 
-  const handleDownloadVendorReport = () => {
+  const handleDownloadVendorReport = async () => {
     const periodOrders   = filterByPeriod(reportOrders, reportPeriod);
     const delivered       = periodOrders.filter(o => o.status === 'Delivered');
     const cancelled       = periodOrders.filter(o => o.status === 'Cancelled');
@@ -502,9 +504,9 @@ export default function VendorProfileScreen({ navigation = {} }) {
     ].join('\n');
 
     const filename = `campusbite-sales-report-${reportPeriod.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.csv`;
-    const downloaded = downloadCSVReport(filename, rows);
+    const downloaded = await downloadCSVReport(filename, rows);
     if (!downloaded) {
-      Alert.alert('Download', 'CSV download is available on web. Mobile export coming soon!');
+      Alert.alert('Download Failed', 'Could not save or share the report. Please try again.');
     }
   };
 
@@ -1593,7 +1595,14 @@ export default function VendorProfileScreen({ navigation = {} }) {
                     </Text>
                     
                     <View style={styles.qrPlaceholder}>
-                      <Ionicons name="qr-code" size={80} color={COLORS.primary} />
+                      <View style={{ backgroundColor: '#fff', padding: 12, borderRadius: 8 }}>
+                        <QRCode
+                          value={`otpauth://totp/CampusBite:${encodeURIComponent(user?.email || '')}?secret=${twoFactorSecret}&issuer=CampusBite`}
+                          size={160}
+                          color="#000"
+                          backgroundColor="#fff"
+                        />
+                      </View>
                       <Text style={styles.secretText}>{twoFactorSecret}</Text>
                     </View>
                     

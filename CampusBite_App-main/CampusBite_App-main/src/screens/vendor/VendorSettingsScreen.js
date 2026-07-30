@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { api } from '../../api';
-import { resolveImageUrl } from '../../constants';
+import { resolveImageUrl, TERMS_OF_SERVICE_TEXT, PRIVACY_POLICY_TEXT } from '../../constants';
 import { useTheme } from '../../contexts/ThemeContext';
 
 // updateMode: 'id' | 'photo' | null
@@ -242,7 +242,7 @@ export default function VendorSettingsScreen({ navigation }) {
             <Text style={styles.prefValue}>1.0.0</Text>
           </View>
           <View style={styles.divider} />
-          <TouchableOpacity style={styles.prefRow} onPress={() => Alert.alert('Terms', 'Terms of Service content here.')}>
+          <TouchableOpacity style={styles.prefRow} onPress={() => Alert.alert('Terms of Service', TERMS_OF_SERVICE_TEXT)}>
             <View style={styles.prefLeft}>
               <View style={styles.prefIcon}>
                 <Ionicons name="document-text-outline" size={18} color={COLORS.primary} />
@@ -252,7 +252,7 @@ export default function VendorSettingsScreen({ navigation }) {
             <Ionicons name="chevron-forward" size={18} color={COLORS.subtext} />
           </TouchableOpacity>
           <View style={styles.divider} />
-          <TouchableOpacity style={styles.prefRow} onPress={() => Alert.alert('Privacy', 'Privacy Policy content here.')}>
+          <TouchableOpacity style={styles.prefRow} onPress={() => Alert.alert('Privacy Policy', PRIVACY_POLICY_TEXT)}>
             <View style={styles.prefLeft}>
               <View style={styles.prefIcon}>
                 <Ionicons name="shield-checkmark-outline" size={18} color={COLORS.primary} />

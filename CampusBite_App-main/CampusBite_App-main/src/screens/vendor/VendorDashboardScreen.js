@@ -339,7 +339,15 @@ export default function VendorDashboardScreen({ navigation }) {
           </View>
         ) : (
           popularItems.map((item, index) => (
-            <View key={index} style={styles.popularCard}>
+            <TouchableOpacity
+              key={index}
+              style={styles.popularCard}
+              activeOpacity={0.7}
+              onPress={() => Alert.alert(
+                item.name,
+                `#${index + 1} best seller\n\n${item.count} orders sold\nKES ${item.revenue.toFixed(0)} total revenue\nKES ${(item.revenue / item.count).toFixed(0)} average per order`
+              )}
+            >
               <View style={styles.popularRank}>
                 <Text style={styles.popularRankText}>{index + 1}</Text>
               </View>
@@ -350,7 +358,7 @@ export default function VendorDashboardScreen({ navigation }) {
               <View style={styles.popularBadge}>
                 <Ionicons name="trending-up" size={16} color={COLORS.success} />
               </View>
-            </View>
+            </TouchableOpacity>
           ))
         )}
 

@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { api } from '../../api';
-import { resolveImageUrl } from '../../constants';
+import { resolveImageUrl, TERMS_OF_SERVICE_TEXT, PRIVACY_POLICY_TEXT } from '../../constants';
 import { useTheme } from '../../contexts/ThemeContext';
 import useAuthStore from '../../stores/authStore';
 
@@ -143,15 +143,15 @@ export default function AppSettingsScreen({ navigation }) {
       title: 'Account',
       items: [
         { icon: 'person-outline', label: 'Edit Profile', onPress: () => navigation.navigate('EditProfile', { user }), showArrow: true },
-        { icon: 'lock-closed-outline', label: 'Change Password', onPress: () => Alert.alert('Change Password', 'Password reset link will be sent to your email.'), showArrow: true },
+        { icon: 'lock-closed-outline', label: 'Change Password', onPress: () => navigation.navigate('FoodCourierProfile', { openChangePassword: true }), showArrow: true },
       ],
     },
     {
       title: 'About',
       items: [
         { icon: 'information-circle-outline', label: 'App Version', value: '1.0.0', showArrow: false },
-        { icon: 'document-text-outline', label: 'Terms of Service', onPress: () => Alert.alert('Terms', 'Terms of Service content here.'), showArrow: true },
-        { icon: 'shield-checkmark-outline', label: 'Privacy Policy', onPress: () => Alert.alert('Privacy', 'Privacy Policy content here.'), showArrow: true },
+        { icon: 'document-text-outline', label: 'Terms of Service', onPress: () => Alert.alert('Terms of Service', TERMS_OF_SERVICE_TEXT), showArrow: true },
+        { icon: 'shield-checkmark-outline', label: 'Privacy Policy', onPress: () => Alert.alert('Privacy Policy', PRIVACY_POLICY_TEXT), showArrow: true },
       ],
     },
   ];

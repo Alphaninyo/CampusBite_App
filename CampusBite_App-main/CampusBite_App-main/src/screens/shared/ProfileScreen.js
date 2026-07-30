@@ -2,11 +2,12 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, Alert,
   ActivityIndicator, ScrollView, Platform, Image, Modal,
-  KeyboardAvoidingView, useWindowDimensions,
+  KeyboardAvoidingView, useWindowDimensions, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import QRCode from 'react-native-qrcode-svg';
 import * as Location from 'expo-location';
 import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
@@ -43,6 +44,7 @@ export default function ProfileScreen({ navigation }) {
   const [showSecurityModal, setShowSecurityModal] = useState(false);
   const [showFavoritesModal, setShowFavoritesModal] = useState(false);
   const [showReportsModal, setShowReportsModal]   = useState(false);
+  const [pendingAvatarUri, setPendingAvatarUri]   = useState(null);
 
   const [totalOrders, setTotalOrders] = useState(0);
   const [totalSpent, setTotalSpent]   = useState(0);
@@ -107,7 +109,7 @@ export default function ProfileScreen({ navigation }) {
     }
   };
 
-  const handleDownloadConsumerReport = () => {
+  const handleDownloadConsumerReport = async () => {
     const periodOrders = filterByPeriod(reportOrders, reportPeriod);
     const delivered     = periodOrders.filter(o => o.status === 'Delivered');
     const spent         = delivered.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
@@ -138,9 +140,9 @@ export default function ProfileScreen({ navigation }) {
     ].join('\n');
 
     const filename = `campusbite-my-orders-${reportPeriod.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.csv`;
-    const downloaded = downloadCSVReport(filename, rows);
+    const downloaded = await downloadCSVReport(filename, rows);
     if (!downloaded) {
-      Alert.alert('Download', 'CSV download is available on web. Mobile export coming soon!');
+      Alert.alert('Download Failed', 'Could not save or share the report. Please try again.');
     }
   };
 
@@ -359,7 +361,7 @@ export default function ProfileScreen({ navigation }) {
         mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 1,
       });
       if (!result.canceled && result.assets?.[0]?.uri)
-        await _uploadAvatar(result.assets[0].uri);
+        setPendingAvatarUri(result.assets[0].uri);
       return;
     }
     Alert.alert('Profile Picture', 'Choose an option', [
@@ -375,7 +377,7 @@ export default function ProfileScreen({ navigation }) {
             allowsEditing: true, aspect: [1, 1], quality: 1,
           });
           if (!result.canceled && result.assets?.[0]?.uri)
-            await _uploadAvatar(result.assets[0].uri);
+            setPendingAvatarUri(result.assets[0].uri);
         },
       },
       {
@@ -390,7 +392,7 @@ export default function ProfileScreen({ navigation }) {
             mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 1,
           });
           if (!result.canceled && result.assets?.[0]?.uri)
-            await _uploadAvatar(result.assets[0].uri);
+            setPendingAvatarUri(result.assets[0].uri);
         },
       },
       { text: 'Cancel', style: 'cancel' },
@@ -676,7 +678,14 @@ export default function ProfileScreen({ navigation }) {
                     </Text>
                     
                     <View style={styles.qrPlaceholder}>
-                      <Ionicons name="qr-code" size={80} color={COLORS.primary} />
+                      <View style={{ backgroundColor: '#fff', padding: 12, borderRadius: 8 }}>
+                        <QRCode
+                          value={`otpauth://totp/CampusBite:${encodeURIComponent(user?.email || '')}?secret=${twoFactorSecret}&issuer=CampusBite`}
+                          size={160}
+                          color="#000"
+                          backgroundColor="#fff"
+                        />
+                      </View>
                       <Text style={styles.secretText}>{twoFactorSecret}</Text>
                     </View>
                     
@@ -900,24 +909,24 @@ export default function ProfileScreen({ navigation }) {
                 notifications.map((notif) => (
                   <TouchableOpacity
                     key={notif.id}
-                    style={[styles.notificationCard, !notif.read && styles.notificationUnread]}
-                    onPress={() => handleMarkAsRead(notif.id)}
+                    style={[styles.notificationCard, !notif.is_read && styles.notificationUnread]}
+                    onPress={() => { if (!notif.is_read) handleMarkAsRead(notif.id); }}
                   >
                     <View style={styles.notificationIcon}>
                       <Ionicons
-                        name={notif.type === 'order' ? 'receipt-outline' : 'information-circle-outline'}
+                        name={notif.type === 'order_status' ? 'receipt-outline' : notif.type === 'delivery' ? 'bicycle-outline' : notif.type === 'payment' ? 'card-outline' : 'information-circle-outline'}
                         size={20}
                         color={COLORS.primary}
                       />
                     </View>
                     <View style={styles.notificationContent}>
                       <Text style={styles.notificationTitle}>{notif.title || 'Notification'}</Text>
-                      <Text style={styles.notificationMessage}>{notif.message}</Text>
+                      <Text style={styles.notificationMessage}>{notif.body}</Text>
                       <Text style={styles.notificationTime}>
                         {notif.created_at ? new Date(notif.created_at).toLocaleString() : ''}
                       </Text>
                     </View>
-                    {!notif.read && <View style={styles.unreadDot} />}
+                    {!notif.is_read && <View style={styles.unreadDot} />}
                   </TouchableOpacity>
                 ))
               )}
@@ -1061,7 +1070,17 @@ export default function ProfileScreen({ navigation }) {
                     ? 'As an admin, report system issues or bugs that affect platform operations.'
                     : 'If you\'re experiencing any issues with the app, please contact us with details about the problem.'}
                 </Text>
-                <TouchableOpacity style={styles.reportBtn}>
+                <TouchableOpacity
+                  style={styles.reportBtn}
+                  onPress={() => {
+                    const to = user?.role === 'admin' ? 'admin@campusbite.app' : 'support@campusbite.app';
+                    const subject = encodeURIComponent('CampusBite — Issue Report');
+                    const body = encodeURIComponent(`Account: ${user?.email || ''}\nRole: ${user?.role || ''}\n\nDescribe the issue:\n`);
+                    Linking.openURL(`mailto:${to}?subject=${subject}&body=${body}`).catch(() => {
+                      Alert.alert('Error', 'Could not open your email app.');
+                    });
+                  }}
+                >
                   <Text style={styles.reportBtnText}>Report Issue via Email</Text>
                 </TouchableOpacity>
               </View>
@@ -1139,6 +1158,34 @@ export default function ProfileScreen({ navigation }) {
                 </ScrollView>
               );
             })()}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Photo Confirm Modal — review the cropped photo before it uploads */}
+      <Modal visible={!!pendingAvatarUri} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.photoConfirmSheet}>
+            <Text style={styles.modalTitle}>Use this photo?</Text>
+            {pendingAvatarUri && (
+              <Image source={{ uri: pendingAvatarUri }} style={styles.photoConfirmPreview} resizeMode="cover" />
+            )}
+            <View style={styles.photoConfirmBtns}>
+              <TouchableOpacity
+                style={styles.photoConfirmRetake}
+                onPress={() => { setPendingAvatarUri(null); handleImageUpload(); }}
+                disabled={saving}
+              >
+                <Text style={styles.photoConfirmRetakeText}>Retake</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.photoConfirmSave}
+                onPress={async () => { const uri = pendingAvatarUri; setPendingAvatarUri(null); await _uploadAvatar(uri); }}
+                disabled={saving}
+              >
+                {saving ? <ActivityIndicator color={COLORS.white} size="small" /> : <Text style={styles.photoConfirmSaveText}>Save Photo</Text>}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -1550,6 +1597,26 @@ const makeStyles = (COLORS) => StyleSheet.create({
     alignItems: 'center', marginBottom: 20,
   },
   modalTitle:          { fontSize: 18, fontWeight: '700', color: COLORS.text },
+
+  photoConfirmSheet: {
+    backgroundColor: COLORS.card, borderRadius: 20, padding: 24,
+    marginHorizontal: 24, alignItems: 'center',
+  },
+  photoConfirmPreview: {
+    width: 200, height: 200, borderRadius: 16, marginTop: 16, marginBottom: 20,
+    borderWidth: 2, borderColor: COLORS.border,
+  },
+  photoConfirmBtns: { flexDirection: 'row', gap: 12, alignSelf: 'stretch' },
+  photoConfirmRetake: {
+    flex: 1, paddingVertical: 13, borderRadius: 12, alignItems: 'center',
+    borderWidth: 1.5, borderColor: COLORS.borderWarm,
+  },
+  photoConfirmRetakeText: { fontSize: 14, fontWeight: '600', color: COLORS.subtext },
+  photoConfirmSave: {
+    flex: 1, paddingVertical: 13, borderRadius: 12, alignItems: 'center',
+    backgroundColor: COLORS.primary,
+  },
+  photoConfirmSaveText: { fontSize: 14, fontWeight: '700', color: COLORS.white },
   modalAvatar:         { alignSelf: 'center', position: 'relative', marginBottom: 20 },
   modalAvatarImg:      {
     width: 90, height: 90, borderRadius: 45,

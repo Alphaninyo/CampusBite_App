@@ -2,19 +2,32 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, TextInput, Modal, Switch,
+  ScrollView, Platform, KeyboardAvoidingView, useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { api } from '../../api';
 
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function daysInMonth(year, month) {
+  return new Date(year, month + 1, 0).getDate();
+}
+
 export default function VendorPromoCodesScreen() {
   const { colors: COLORS } = useTheme();
   const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
+  const { height: screenHeight } = useWindowDimensions();
   const [codes,       setCodes]       = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [showModal,   setShowModal]   = useState(false);
   const [saving,      setSaving]      = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const now = new Date();
+  const [pickYear,  setPickYear]  = useState(now.getFullYear());
+  const [pickMonth, setPickMonth] = useState(now.getMonth());
+  const [pickDay,   setPickDay]   = useState(now.getDate());
 
   // Create form
   const [form, setForm] = useState({
@@ -205,78 +218,93 @@ export default function VendorPromoCodesScreen() {
 
       {/* ── Create Modal ── */}
       <Modal visible={showModal} transparent animationType="slide" onRequestClose={() => setShowModal(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={[styles.modalSheet, { maxHeight: screenHeight * 0.85 }]}>
             <View style={styles.modalHandle} />
             <Text style={styles.modalTitle}>Create Promo Code</Text>
 
-            <Text style={styles.label}>Code *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. SAVE20"
-              placeholderTextColor={COLORS.muted}
-              value={form.code}
-              onChangeText={(v) => setForm((f) => ({ ...f, code: v.toUpperCase() }))}
-              autoCapitalize="characters"
-            />
+            <ScrollView style={{ maxHeight: screenHeight * 0.65 }} showsVerticalScrollIndicator={false}>
+              <Text style={styles.label}>Code *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. SAVE20"
+                placeholderTextColor={COLORS.muted}
+                value={form.code}
+                onChangeText={(v) => setForm((f) => ({ ...f, code: v.toUpperCase() }))}
+                autoCapitalize="characters"
+              />
 
-            <Text style={styles.label}>Discount Type *</Text>
-            <View style={styles.typeRow}>
-              {['percent', 'fixed'].map((t) => (
-                <TouchableOpacity
-                  key={t}
-                  style={[styles.typeBtn, form.discount_type === t && styles.typeBtnActive]}
-                  onPress={() => setForm((f) => ({ ...f, discount_type: t }))}
-                >
-                  <Text style={[styles.typeBtnText, form.discount_type === t && styles.typeBtnTextActive]}>
-                    {t === 'percent' ? '% Percent' : 'KES Fixed'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+              <Text style={styles.label}>Discount Type *</Text>
+              <View style={styles.typeRow}>
+                {['percent', 'fixed'].map((t) => (
+                  <TouchableOpacity
+                    key={t}
+                    style={[styles.typeBtn, form.discount_type === t && styles.typeBtnActive]}
+                    onPress={() => setForm((f) => ({ ...f, discount_type: t }))}
+                  >
+                    <Text style={[styles.typeBtnText, form.discount_type === t && styles.typeBtnTextActive]}>
+                      {t === 'percent' ? '% Percent' : 'KES Fixed'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
 
-            <Text style={styles.label}>
-              Discount Value * {form.discount_type === 'percent' ? '(0–100%)' : '(KES)'}
-            </Text>
-            <TextInput
-              style={styles.input}
-              placeholder={form.discount_type === 'percent' ? 'e.g. 15' : 'e.g. 50'}
-              placeholderTextColor={COLORS.muted}
-              value={form.discount_value}
-              onChangeText={(v) => setForm((f) => ({ ...f, discount_value: v }))}
-              keyboardType="decimal-pad"
-            />
+              <Text style={styles.label}>
+                Discount Value * {form.discount_type === 'percent' ? '(0–100%)' : '(KES)'}
+              </Text>
+              <TextInput
+                style={styles.input}
+                placeholder={form.discount_type === 'percent' ? 'e.g. 15' : 'e.g. 50'}
+                placeholderTextColor={COLORS.muted}
+                value={form.discount_value}
+                onChangeText={(v) => setForm((f) => ({ ...f, discount_value: v }))}
+                keyboardType="decimal-pad"
+              />
 
-            <Text style={styles.label}>Min Order Amount (KES, optional)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. 200"
-              placeholderTextColor={COLORS.muted}
-              value={form.min_order_amount}
-              onChangeText={(v) => setForm((f) => ({ ...f, min_order_amount: v }))}
-              keyboardType="decimal-pad"
-            />
+              <Text style={styles.label}>Min Order Amount (KES, optional)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. 200"
+                placeholderTextColor={COLORS.muted}
+                value={form.min_order_amount}
+                onChangeText={(v) => setForm((f) => ({ ...f, min_order_amount: v }))}
+                keyboardType="decimal-pad"
+              />
 
-            <Text style={styles.label}>Max Uses (optional, blank = unlimited)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. 50"
-              placeholderTextColor={COLORS.muted}
-              value={form.max_uses}
-              onChangeText={(v) => setForm((f) => ({ ...f, max_uses: v }))}
-              keyboardType="number-pad"
-            />
+              <Text style={styles.label}>Max Uses (optional, blank = unlimited)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. 50"
+                placeholderTextColor={COLORS.muted}
+                value={form.max_uses}
+                onChangeText={(v) => setForm((f) => ({ ...f, max_uses: v }))}
+                keyboardType="number-pad"
+              />
 
-            <Text style={styles.label}>Expiry Date (optional, YYYY-MM-DD)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. 2025-12-31"
-              placeholderTextColor={COLORS.muted}
-              value={form.expires_at}
-              onChangeText={(v) => setForm((f) => ({ ...f, expires_at: v }))}
-            />
+              <Text style={styles.label}>Expiry Date (optional)</Text>
+              <TouchableOpacity
+                style={styles.dateBtn}
+                onPress={() => {
+                  if (form.expires_at) {
+                    const [y, m, d] = form.expires_at.split('-').map(Number);
+                    setPickYear(y); setPickMonth(m - 1); setPickDay(d);
+                  }
+                  setShowDatePicker(true);
+                }}
+              >
+                <Ionicons name="calendar-outline" size={16} color={COLORS.primary} />
+                <Text style={styles.dateBtnText}>
+                  {form.expires_at ? new Date(form.expires_at).toLocaleDateString() : 'Select a date'}
+                </Text>
+                {!!form.expires_at && (
+                  <TouchableOpacity onPress={() => setForm((f) => ({ ...f, expires_at: '' }))} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Ionicons name="close-circle" size={16} color={COLORS.muted} />
+                  </TouchableOpacity>
+                )}
+              </TouchableOpacity>
 
-            {!!formError && <Text style={styles.formError}>{formError}</Text>}
+              {!!formError && <Text style={styles.formError}>{formError}</Text>}
+            </ScrollView>
 
             <View style={styles.modalBtns}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowModal(false)}>
@@ -290,6 +318,67 @@ export default function VendorPromoCodesScreen() {
                 {saving
                   ? <ActivityIndicator size="small" color={COLORS.white} />
                   : <Text style={styles.saveBtnText}>Create</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ── Date Picker Modal ── */}
+      <Modal visible={showDatePicker} transparent animationType="fade" onRequestClose={() => setShowDatePicker(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.datePickerSheet}>
+            <Text style={styles.modalTitle}>Select Expiry Date</Text>
+            <View style={styles.dateColsRow}>
+              <View style={styles.dateCol}>
+                <Text style={styles.dateColLabel}>Day</Text>
+                <ScrollView style={styles.dateColScroll} showsVerticalScrollIndicator={false}>
+                  {Array.from({ length: daysInMonth(pickYear, pickMonth) }, (_, i) => i + 1).map((d) => (
+                    <TouchableOpacity key={d} style={[styles.dateOption, pickDay === d && styles.dateOptionActive]} onPress={() => setPickDay(d)}>
+                      <Text style={[styles.dateOptionText, pickDay === d && styles.dateOptionTextActive]}>{d}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+              <View style={styles.dateCol}>
+                <Text style={styles.dateColLabel}>Month</Text>
+                <ScrollView style={styles.dateColScroll} showsVerticalScrollIndicator={false}>
+                  {MONTH_NAMES.map((m, i) => (
+                    <TouchableOpacity key={m} style={[styles.dateOption, pickMonth === i && styles.dateOptionActive]} onPress={() => {
+                      setPickMonth(i);
+                      const maxDay = daysInMonth(pickYear, i);
+                      if (pickDay > maxDay) setPickDay(maxDay);
+                    }}>
+                      <Text style={[styles.dateOptionText, pickMonth === i && styles.dateOptionTextActive]}>{m}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+              <View style={styles.dateCol}>
+                <Text style={styles.dateColLabel}>Year</Text>
+                <ScrollView style={styles.dateColScroll} showsVerticalScrollIndicator={false}>
+                  {[now.getFullYear(), now.getFullYear() + 1, now.getFullYear() + 2].map((y) => (
+                    <TouchableOpacity key={y} style={[styles.dateOption, pickYear === y && styles.dateOptionActive]} onPress={() => setPickYear(y)}>
+                      <Text style={[styles.dateOptionText, pickYear === y && styles.dateOptionTextActive]}>{y}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+            <View style={styles.modalBtns}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowDatePicker(false)}>
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.saveBtn}
+                onPress={() => {
+                  const mm = String(pickMonth + 1).padStart(2, '0');
+                  const dd = String(pickDay).padStart(2, '0');
+                  setForm((f) => ({ ...f, expires_at: `${pickYear}-${mm}-${dd}` }));
+                  setShowDatePicker(false);
+                }}
+              >
+                <Text style={styles.saveBtnText}>Set Date</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -369,6 +458,26 @@ const makeStyles = (COLORS) => StyleSheet.create({
   typeBtnTextActive: { color: COLORS.primary },
 
   formError: { color: COLORS.danger, fontSize: 13, marginTop: 8 },
+
+  dateBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    borderWidth: 1.5, borderColor: COLORS.borderWarm, borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 12,
+  },
+  dateBtnText: { flex: 1, fontSize: 14, color: COLORS.text },
+
+  datePickerSheet: {
+    backgroundColor: COLORS.card, borderRadius: 20, padding: 24,
+    marginHorizontal: 20, alignSelf: 'stretch',
+  },
+  dateColsRow: { flexDirection: 'row', gap: 10, marginTop: 8 },
+  dateCol: { flex: 1, alignItems: 'center' },
+  dateColLabel: { fontSize: 12, fontWeight: '700', color: COLORS.gray, marginBottom: 6 },
+  dateColScroll: { height: 160, width: '100%' },
+  dateOption: { paddingVertical: 9, alignItems: 'center', borderRadius: 8 },
+  dateOptionActive: { backgroundColor: COLORS.primary + '20' },
+  dateOptionText: { fontSize: 14, color: COLORS.text },
+  dateOptionTextActive: { color: COLORS.primary, fontWeight: 'bold' },
 
   modalBtns:    { flexDirection: 'row', gap: 12, marginTop: 24 },
   cancelBtn:    { flex: 1, paddingVertical: 13, borderRadius: 12, alignItems: 'center', borderWidth: 1.5, borderColor: COLORS.borderWarm },

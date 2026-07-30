@@ -5,6 +5,7 @@ import {
   ScrollView, Animated, Image, Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import useAuthStore from '../../stores/authStore';
 import { useTheme } from '../../contexts/ThemeContext';
 import { api } from '../../api';
@@ -12,6 +13,7 @@ import { api } from '../../api';
 export default function LoginScreen({ navigation }) {
   const { colors: COLORS, isDark, toggleTheme } = useTheme();
   const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
+  const insets = useSafeAreaInsets();
   const [email, setEmail]               = useState('');
   const [password, setPassword]         = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -102,7 +104,7 @@ export default function LoginScreen({ navigation }) {
         `}} />
       )}
       <TouchableOpacity
-        style={styles.themeToggleBtn}
+        style={[styles.themeToggleBtn, { top: insets.top + 16 }]}
         onPress={toggleTheme}
         activeOpacity={0.7}
         accessibilityLabel={isDark ? 'Switch to light mode' : 'Switch to dark mode'}

@@ -7,6 +7,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import QRCode from 'react-native-qrcode-svg';
 import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
 import { resolveImageUrl } from '../../constants';
@@ -18,7 +19,7 @@ function getMockEarnings(total) {
   return Math.round(parseFloat(total) * 0.15) + 50;
 }
 
-export default function FoodCourierProfileScreen({ navigation }) {
+export default function FoodCourierProfileScreen({ navigation, route }) {
   const { colors: COLORS } = useTheme();
   const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const insets = useSafeAreaInsets();
@@ -45,6 +46,7 @@ export default function FoodCourierProfileScreen({ navigation }) {
   const [newPw, setNewPw] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
   const [saving, setSaving] = useState(false);
+  const [pendingAvatarUri, setPendingAvatarUri] = useState(null);
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -64,6 +66,14 @@ export default function FoodCourierProfileScreen({ navigation }) {
   }, []);
 
   useEffect(() => { fetchProfile(); }, [fetchProfile]);
+
+  // Opened from App Settings → "Change Password", jump straight to the form
+  useEffect(() => {
+    if (route?.params?.openChangePassword) {
+      setShowPasswordModal(true);
+      navigation.setParams({ openChangePassword: undefined });
+    }
+  }, [route?.params?.openChangePassword]);
 
   const fetchUnreadCount = useCallback(async () => {
     try {
@@ -100,7 +110,7 @@ export default function FoodCourierProfileScreen({ navigation }) {
         mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 1,
       });
       if (!result.canceled && result.assets?.[0]?.uri)
-        await _uploadAvatar(result.assets[0].uri);
+        setPendingAvatarUri(result.assets[0].uri);
       return;
     }
     Alert.alert('Profile Picture', 'Choose an option', [
@@ -110,7 +120,7 @@ export default function FoodCourierProfileScreen({ navigation }) {
           const { status } = await ImagePicker.requestCameraPermissionsAsync();
           if (status !== 'granted') { Alert.alert('Permission needed', 'Allow camera access.'); return; }
           const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [1, 1], quality: 1 });
-          if (!result.canceled && result.assets?.[0]?.uri) await _uploadAvatar(result.assets[0].uri);
+          if (!result.canceled && result.assets?.[0]?.uri) setPendingAvatarUri(result.assets[0].uri);
         },
       },
       {
@@ -119,7 +129,7 @@ export default function FoodCourierProfileScreen({ navigation }) {
           const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
           if (status !== 'granted') { Alert.alert('Permission needed', 'Allow photo library access.'); return; }
           const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 1 });
-          if (!result.canceled && result.assets?.[0]?.uri) await _uploadAvatar(result.assets[0].uri);
+          if (!result.canceled && result.assets?.[0]?.uri) setPendingAvatarUri(result.assets[0].uri);
         },
       },
       { text: 'Cancel', style: 'cancel' },
@@ -525,7 +535,14 @@ export default function FoodCourierProfileScreen({ navigation }) {
                     </Text>
                     
                     <View style={styles.qrPlaceholder}>
-                      <Ionicons name="qr-code" size={80} color={COLORS.primary} />
+                      <View style={{ backgroundColor: '#fff', padding: 12, borderRadius: 8 }}>
+                        <QRCode
+                          value={`otpauth://totp/CampusBite:${encodeURIComponent(user?.email || '')}?secret=${twoFactorSecret}&issuer=CampusBite`}
+                          size={160}
+                          color="#000"
+                          backgroundColor="#fff"
+                        />
+                      </View>
                       <Text style={styles.secretText}>{twoFactorSecret}</Text>
                     </View>
                     
@@ -708,6 +725,34 @@ export default function FoodCourierProfileScreen({ navigation }) {
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Photo Confirm Modal — review the cropped photo before it uploads */}
+      <Modal visible={!!pendingAvatarUri} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.photoConfirmSheet}>
+            <Text style={styles.modalTitle}>Use this photo?</Text>
+            {pendingAvatarUri && (
+              <Image source={{ uri: pendingAvatarUri }} style={styles.photoConfirmPreview} resizeMode="cover" />
+            )}
+            <View style={styles.photoConfirmBtns}>
+              <TouchableOpacity
+                style={styles.photoConfirmRetake}
+                onPress={() => { setPendingAvatarUri(null); handleImageUpload(); }}
+                disabled={saving}
+              >
+                <Text style={styles.photoConfirmRetakeText}>Retake</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.photoConfirmSave}
+                onPress={async () => { const uri = pendingAvatarUri; setPendingAvatarUri(null); await _uploadAvatar(uri); }}
+                disabled={saving}
+              >
+                {saving ? <ActivityIndicator color={COLORS.white} size="small" /> : <Text style={styles.photoConfirmSaveText}>Save Photo</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
     </View>
   );
@@ -975,6 +1020,27 @@ const makeStyles = (COLORS) => StyleSheet.create({
     alignItems: 'center', marginBottom: 20,
   },
   modalTitle: { fontSize: 18, fontWeight: '700', color: COLORS.text },
+
+  photoConfirmSheet: {
+    backgroundColor: COLORS.card, borderRadius: 20, padding: 24,
+    marginHorizontal: 24, alignItems: 'center',
+  },
+  photoConfirmPreview: {
+    width: 200, height: 200, borderRadius: 16, marginTop: 16, marginBottom: 20,
+    borderWidth: 2, borderColor: COLORS.border,
+  },
+  photoConfirmBtns: { flexDirection: 'row', gap: 12, alignSelf: 'stretch' },
+  photoConfirmRetake: {
+    flex: 1, paddingVertical: 13, borderRadius: 12, alignItems: 'center',
+    borderWidth: 1.5, borderColor: COLORS.borderWarm,
+  },
+  photoConfirmRetakeText: { fontSize: 14, fontWeight: '600', color: COLORS.subtext },
+  photoConfirmSave: {
+    flex: 1, paddingVertical: 13, borderRadius: 12, alignItems: 'center',
+    backgroundColor: COLORS.primary,
+  },
+  photoConfirmSaveText: { fontSize: 14, fontWeight: '700', color: COLORS.white },
+
   modalLabel: { fontSize: 13, fontWeight: '600', color: COLORS.gray, marginBottom: 6, marginTop: 14 },
   modalInput: {
     backgroundColor: COLORS.inputBg, borderRadius: 10,

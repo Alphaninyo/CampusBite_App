@@ -1,4 +1,6 @@
 import { Platform } from 'react-native';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 
 export const REPORT_PERIODS = ['Today', 'This Week', 'This Month', 'All Time'];
 
@@ -23,9 +25,11 @@ export function csvCell(value) {
   return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
 }
 
-// Returns true if the download actually happened (web). Callers should show
-// their own native "coming soon" alert when this returns false.
-export function downloadCSVReport(filename, csvText) {
+// Returns true once the file has been downloaded (web) or handed off to the
+// native share sheet (iOS/Android — the user picks "Save to Files", a Drive
+// app, email, etc. from there). Callers should show their own fallback alert
+// only when this returns false (sharing genuinely unavailable or write failed).
+export async function downloadCSVReport(filename, csvText) {
   if (Platform.OS === 'web') {
     const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -37,5 +41,19 @@ export function downloadCSVReport(filename, csvText) {
     document.body.removeChild(link);
     return true;
   }
-  return false;
+
+  try {
+    const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+    await FileSystem.writeAsStringAsync(fileUri, csvText, { encoding: FileSystem.EncodingType.UTF8 });
+    const canShare = await Sharing.isAvailableAsync();
+    if (!canShare) return false;
+    await Sharing.shareAsync(fileUri, {
+      mimeType: 'text/csv',
+      dialogTitle: filename,
+      UTI: 'public.comma-separated-values-text',
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
