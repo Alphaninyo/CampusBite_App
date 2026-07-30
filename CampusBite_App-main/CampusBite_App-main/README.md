@@ -32,7 +32,9 @@ For detailed instructions, see [QUICK_START.md](./QUICK_START.md)
 - **❓ Help & Support** - Role-based support and accordion FAQ system
 - **📸 Vendor Cover Images** - Vendors can upload a banner photo shown on their store page
 - **🗑️ Menu Item Delete & Disable** - Vendors can delete menu items with confirmation and toggle availability to mark items out of stock
-- **📦 Active Delivery View** - Food couriers see their current assigned delivery at the top of the Tasks tab
+- **📦 Active Delivery Tab** - Food couriers have a dedicated "Active" tab (between Tasks and Earnings) listing every delivery they've currently accepted, with a badge count and one tap through to the full order detail
+- **🌙 Dark Mode** - A persisted light/dark theme toggle available to all four roles (Consumer/Admin via Profile → Preferences, Vendor via Profile → Preferences, Food Courier via Profile → App Settings → Appearance), plus a toggle on the pre-login landing page itself
+- **📊 Downloadable Reports** - Every role can generate a CSV report (Today / This Week / This Month / All Time): Admin gets a clearly-labeled "Reports" section at the top of Stats with full order-level detail and per-vendor breakdown; Vendors get "Sales Reports" under Profile → Finance & Payouts; Food Couriers get a "Download Report" button on the Earnings tab; Consumers get "My Reports" under Profile → Account
 - **⏰ Business Hours** - Vendors set opening/closing times (24-hour format, HH:MM); visible to consumers
 - **⏱️ Estimated Prep Time** - Vendors set a prep time range; visible to consumers on vendor detail
 - **💰 Finance & Payouts** - Vendors save M-Pesa number, view earnings from delivered orders, save KRA PIN for tax
@@ -187,6 +189,8 @@ CampusBite integrates with Stripe for debit/credit card checkout, using the same
 - Manage saved addresses with location services
 - Access role-based help & support
 - Configure 2FA for account security
+- Toggle Dark Mode (Profile → Preferences), or right from the pre-login landing page
+- Download a personal order-history report for any period (Profile → My Reports)
 
 ### **🏪 Vendor**
 - Manage menu items — add, edit, delete with confirmation, and toggle availability to disable/enable items
@@ -203,14 +207,18 @@ CampusBite integrates with Stripe for debit/credit card checkout, using the same
 - Notification screen with unread badge on dashboard bell
 - Upload a profile photo
 - Configure 2FA for account security
+- Toggle Dark Mode (Profile → Preferences)
+- Download a sales report for any period (Profile → Finance & Payouts → Sales Reports)
 
 ### **🚴 Food Courier**
 - View available delivery tasks
-- See your current assigned delivery under "My Active Delivery" at the top of the Tasks tab
+- A dedicated "Active" tab shows every delivery currently accepted, separate from browsing new tasks
 - Track earnings and deliveries
 - Manage availability status
 - View customer feedback
 - Configure 2FA for account security
+- Toggle Dark Mode (Profile → App Settings → Appearance)
+- Download an earnings report for any period (Earnings tab → Download Report)
 
 ### **👨‍💼 Admin**
 - Approve vendor applications
@@ -218,6 +226,8 @@ CampusBite integrates with Stripe for debit/credit card checkout, using the same
 - View platform statistics
 - Access admin-specific support
 - Configure 2FA for account security
+- Toggle Dark Mode (Profile → Preferences)
+- Generate a detailed platform report for any period, right at the top of the Stats tab — defaults to Today for a quick daily report
 
 ---
 

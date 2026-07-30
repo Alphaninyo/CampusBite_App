@@ -297,8 +297,8 @@ CampusBite is your ultimate food delivery companion for campus life. Order from 
 // Available Settings
 - Notification preferences
 - Privacy settings
-- Language selection
-- Theme preferences
+- Dark Mode toggle (see "Dark Mode" section below for the exact
+  location per role)
 - Delivery instructions
 - Payment settings
 ```
@@ -343,6 +343,50 @@ CampusBite is your ultimate food delivery companion for campus life. Order from 
 - Don't share your password with anyone
 - Keep your contact information updated
 - Save backup codes in a secure location
+```
+
+---
+
+## 🌙 **Dark Mode**
+
+```javascript
+// Available to every role
+- Turn on Dark Mode right from the pre-login landing page (sun/moon
+  icon, top-right of the Login screen) — before you've even signed in
+- Once logged in, the toggle location depends on your role:
+  📱 Consumer / Admin  → Profile → Preferences → Dark Mode
+  🏪 Vendor            → Profile → Preferences → Dark Mode
+  🚴 Food Courier      → Profile → App Settings → Appearance → Dark Mode
+- Your preference is saved on the device and applied automatically
+  the next time you open the app
+```
+
+---
+
+## 📊 **Reports**
+
+```javascript
+// Download a CSV report for Today, This Week, This Month, or All Time
+📱 Consumer      → Profile → My Reports
+                   Order count, total spent, and full order detail
+                   for the selected period
+
+🏪 Vendor        → Profile → Finance & Payouts → Sales Reports
+                   Order count, revenue, and full order detail for
+                   the selected period
+
+🚴 Food Courier  → Earnings tab → Download Report
+                   Deliveries completed, total earnings, and full
+                   delivery detail for the selected period
+
+👨‍💼 Admin       → Stats tab → Reports (top of the screen)
+                   Defaults to Today for a quick daily report —
+                   platform-wide summary, status breakdown, per-vendor
+                   breakdown, and full order-level detail
+
+// Note: reports download as a CSV file on web. On a native
+// (iOS/Android) build, you'll see a "coming soon" message instead —
+// CSV export is currently a web-only feature.
 ```
 
 ---
@@ -566,11 +610,17 @@ A: Go to Orders tab to view all platform orders,
 - Browse all ready-for-pickup orders
 - Filter by All Tasks, Closest, Highest Pay, or Hot
 - Tap "Accept Delivery" to claim an order
+```
 
-// My Active Delivery
-- After accepting an order, it appears at the top under "My Active Delivery"
-- Tap the active delivery card to open the order detail
+### **Active Tab**
+```javascript
+// Your Current Deliveries
+- Lists every delivery you've currently accepted (anything not yet
+  Delivered or Cancelled) — separate from browsing new tasks
+- Shows vendor, drop-off address, status, and earnings per delivery
+- Tap any card ("Tap to manage") to open the full order detail
 - Advance the order status: Collected → In Transit → Delivered
+- Empty? Tap "Find a delivery" to jump straight to the Tasks tab
 ```
 
 ### **Confirming Delivery (PIN / QR Code)**
@@ -595,6 +645,8 @@ A: Go to Orders tab to view all platform orders,
 - See total earnings and average earnings per trip
 - Filter by Today, This Week, This Month, or All Time
 - Tap any delivery to view its details
+- Tap "Download Report" to export a CSV of the selected period —
+  summary + full delivery detail (see "Reports" below)
 ```
 
 ---
@@ -826,6 +878,8 @@ A: Go to Orders tab to view all platform orders,
 - ✅ Profile management
 - ✅ Order history
 - ✅ Customer support
+- ✅ Dark mode (all roles, plus the landing page)
+- ✅ Downloadable CSV reports (all roles)
 
 ### **Advanced Features**
 - ✅ Group ordering

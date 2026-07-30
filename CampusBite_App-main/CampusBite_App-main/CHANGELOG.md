@@ -431,6 +431,91 @@ ALTER TABLE vendors ADD COLUMN IF NOT EXISTS kra_pin     VARCHAR(20);
 
 ---
 
+## [1.12.0] - 2026-07-30
+
+### 🎉 New Features
+- **Dark mode, completed for every role** — 1.11.0 shipped dark mode for the consumer role only as a deliberate first phase. This release extends the exact same `ThemeContext` pattern to the pre-login landing/auth screens (Login, Register, Forgot/Reset Password, Verification, Submit Info — including a sun/moon toggle right on the Login screen itself) and to all three remaining roles: Vendor (10 screens + `VendorNavigator`, toggle in Profile → Preferences), Food Courier (9 screens + `FoodCourierNavigator`, toggle in Profile → App Settings → Appearance), and Admin (6 screens + `AdminNavigator`, toggle already available for free via the shared `ProfileScreen.js` since Admin and Consumer share that screen). The consumer-only gate in `ThemeContext.js` was removed since every role now has correctly theme-aware screens.
+
+### 🐛 Bug Fixes
+Extending dark mode surfaced a long list of pre-existing bugs that were invisible until a dark palette existed to expose them — all fixed as part of this rollout:
+- `COLORS.black` used for text/icon color (a fixed, non-theme-aware constant) rendering invisible black-on-black text.
+- `COLORS.white` used directly for `backgroundColor` on headers, cards, and tab bars — found across nearly every Food Courier screen, `VendorNotificationsScreen`, `VendorDashboardScreen`, and both the Consumer and Vendor tab bars — so those surfaces stayed literally white regardless of theme.
+- Module-level constant objects/functions (`STATUS_CONFIG`, `TYPE_COLOR`, `getStatusBgColor`, `getPerformanceBadge`, admin's `StatCard`/`WeeklyBarChart`/`ProgressBar`/`VerificationBadge`/`DetailRow` helpers) built once at import time against the static light palette, so their colors never actually changed in dark mode. Converted to factory functions/props that take `COLORS` as a parameter.
+- Hardcoded hex colors on status banners and badges (e.g. `#FEE2E2`, `#FFFBEB`, `#F0FDF4`, `#DCFCE7` and their border/text pairs) that didn't adapt to theme — replaced with the corresponding theme tokens (`COLORS.dangerBg`, `COLORS.warningBg`, `COLORS.successBg`, etc.) across Vendor, Food Courier, and Admin screens.
+- `HomeScreen`'s search `TextInput` was missing `color`/`placeholderTextColor` entirely, so both the placeholder and typed text were invisible in dark mode.
+- Web `-webkit-autofill` CSS on `LoginScreen`/`RegisterScreen` hardcoded a white inset box-shadow, showing a white box around autofilled inputs regardless of theme.
+- Nested "recessed panel" surfaces (`CartScreen`'s address/payment inputs, `MenuScreen`'s tip icon, `VendorSettingsScreen`'s document preview) used `COLORS.background` — the darkest, page-level token — instead of `COLORS.inputBg`/`COLORS.card`, creating a "black hole" effect when nested inside an already-elevated card.
+- The dark palette itself (`DARK_COLORS.background`/`.card`) was widened for more contrast between page and card surfaces.
+- Five Admin screens (`AdminApprovalsScreen`, `AdminOrdersScreen`, `AdminStatsScreen`, `AdminUsersScreen`, `AdminVendorsScreen`) had a loading spinner with no background color set, rendering as solid black instead of the themed background while data was fetching.
+- `RootNavigator`'s native header/background theme was previously gated to `user.role === 'consumer'`; now applies `DarkTheme`/`DefaultTheme` for every role and the pre-login container.
+
+### 🔄 Modified files (key)
+| File | What changed |
+|---|---|
+| `src/contexts/ThemeContext.js` | Removed the consumer-only role gate |
+| `src/navigation/index.js` | Theme now applies to every role's `NavigationContainer`, not just consumer |
+| `src/navigation/VendorNavigator.js`, `FoodCourierNavigator.js`, `AdminNavigator.js` | Added themed `stackScreenOptions(COLORS)` headers + theme-aware tab bars |
+| `src/screens/auth/*.js` (6 screens) | Converted to `useTheme()`; Dark Mode toggle added to `LoginScreen.js` |
+| `src/screens/vendor/*.js` (10 screens) | Converted to `useTheme()`; Dark Mode toggle added to `VendorSettingsScreen.js` |
+| `src/screens/foodCourier/*.js` (9 screens) | Converted to `useTheme()`; Dark Mode toggle added to `AppSettingsScreen.js` (a pre-existing fake, disconnected toggle was replaced with a real one) |
+| `src/screens/admin/*.js` (6 screens) | Converted to `useTheme()` |
+| `src/screens/shared/ProfileScreen.js` | Consumer-only gate removed from the "Preferences" section — Admin now gets the same Dark Mode toggle for free |
+
+---
+
+## [1.13.0] - 2026-07-30
+
+### 🎉 New Features
+- **Active Delivery tab for food couriers** — previously the only way to see an in-progress delivery was a small "My Active Delivery" card tucked into the Tasks screen. Added a dedicated "Active" tab between Tasks and Earnings listing every delivery the courier currently has accepted (any status other than Delivered/Cancelled), each card showing vendor, drop-off address, status, and earnings, tapping through to the existing order detail screen. The active-delivery badge count that used to sit on the Earnings tab now correctly lives on this new tab.
+
+### 🔄 Modified files (key)
+| File | What changed |
+|---|---|
+| `src/screens/foodCourier/ActiveDeliveryScreen.js` | New screen |
+| `src/navigation/FoodCourierNavigator.js` | New `ActiveStack` + `ActiveTab`, badge moved from Earnings to Active |
+
+---
+
+## [1.14.0] - 2026-07-30
+
+### 🎉 New Features
+- **Downloadable reports for every role** — Admin previously had a single unlabeled download icon buried in the Stats header, generating an all-time-only CSV. Replaced with a clearly-labeled "Reports" section at the top of Stats with Today/This Week/This Month/All Time options (defaulting to Today for a quick daily report), pulling every order across pages so period totals are accurate rather than capped at the first 100. The same period-based CSV export was extended to the other three roles: Food Couriers get a "Download Report" button next to the existing period tabs on Earnings; Vendors get a new "Sales Reports" entry in Profile → Finance & Payouts; Consumers get a new "My Reports" entry in Profile → Account. Each report includes a summary, status/vendor breakdown (where applicable), and full order-level detail.
+
+### 🔧 Improvements
+- Shared period-filter and CSV-download logic lives in a new `src/utils/reports.js` to avoid reimplementing it four times.
+
+### 🐛 Bug Fixes
+- The active period chip and the new "Download Report" button on the Food Courier Earnings screen both used `COLORS.card` as their highlight background — correct on light mode's white card token, but near-black in dark mode against the always-orange summary card behind them. Pinned both to a fixed white background instead.
+
+### 🔄 Modified files (key)
+| File | What changed |
+|---|---|
+| `src/utils/reports.js` | New: `REPORT_PERIODS`, `filterByPeriod`, `csvCell`, `downloadCSVReport` |
+| `src/screens/admin/AdminStatsScreen.js` | New "Reports" section, paginated order fetch for accurate period totals |
+| `src/screens/foodCourier/MyDeliveriesScreen.js` | "Download Report" button |
+| `src/screens/vendor/VendorProfileScreen.js` | New "Sales Reports" modal |
+| `src/screens/shared/ProfileScreen.js` | New "My Reports" modal (consumer-only) |
+
+---
+
+## [1.14.1] - 2026-07-30
+
+### 🐛 Bug Fixes
+- **Low-contrast arrow icons on Login, Register, and Checkout buttons** — the arrow/checkmark badge on each used the same orange as the button background, nearly invisible against the translucent white badge behind it. Fixed to white on `LoginScreen.js`, `RegisterScreen.js`, and `CartScreen.js`'s "Proceed to Checkout".
+- **Forms didn't submit on Enter** — Login's password field now submits on Enter (the email field advances focus to password first); Cart's M-Pesa phone field opens the order-confirmation sheet on Enter, same as tapping "Proceed to Checkout" (still respects the existing delivery-address validation).
+
+---
+
+## [1.15.0] - 2026-07-30
+
+### 🐛 Bug Fixes
+- **Fixed checkout from the Explore tab / vendor detail page** — `VendorDetailScreen` (reached from both Home and Explore) had its own "quick checkout" path straight to a separate `CheckoutScreen`: a stripped-down implementation supporting only M-Pesa, with no address map picker, no promo codes, and a hard requirement for a phone number already saved on the profile — so checkout from Explore would fail outright for many users. Since `VendorDetailScreen` already syncs its local cart into the shared cart store on every change, its checkout bar now simply navigates to the Cart tab instead, giving it the exact same full-featured checkout (address picker, all 3 payment methods, promo codes) that already worked from the Cart tab directly.
+
+### 🗑️ Removed
+- `src/screens/consumer/CheckoutScreen.js` and its now-dead `Checkout`/`PaymentStatus` route registrations in `HomeStack`/`ExploreStack` (the Cart tab's own `CartMain`/`CartPaymentStatus` routes are unaffected and remain the single checkout implementation for all entry points).
+
+---
+
 ## [Unreleased] - Development
 
 ### 🚀 Upcoming Features
