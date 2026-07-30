@@ -1,9 +1,9 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
-import { COLORS } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const TYPE_ICON = {
   order_status: 'receipt-outline',
@@ -13,15 +13,18 @@ const TYPE_ICON = {
   system:       'shield-checkmark-outline',
 };
 
-const TYPE_COLOR = {
+const makeTypeColor = (COLORS) => ({
   order_status: '#2563EB',
   payment:      '#7C3AED',
   delivery:     COLORS.primary,
   feedback:     '#FFB300',
   system:       COLORS.primary,
-};
+});
 
 export default function AdminNotificationsScreen({ navigation }) {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
+  const TYPE_COLOR = useMemo(() => makeTypeColor(COLORS), [COLORS]);
   const insets = useSafeAreaInsets();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading]             = useState(true);
@@ -129,7 +132,7 @@ export default function AdminNotificationsScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, ActivityIndicator,
   RefreshControl, TouchableOpacity, Alert, Platform,
@@ -6,10 +6,10 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
-import { COLORS } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 // ── Stat card ─────────────────────────────────────────────────────────────────
-function StatCard({ label, value, subtext, badge, badgeColor, icon, iconColor, valueColor }) {
+function StatCard({ label, value, subtext, badge, badgeColor, icon, iconColor, valueColor, styles }) {
   return (
     <View style={styles.card}>
       <View style={styles.cardTopRow}>
@@ -30,7 +30,7 @@ function StatCard({ label, value, subtext, badge, badgeColor, icon, iconColor, v
 }
 
 // ── Weekly bar chart ──────────────────────────────────────────────────────────
-function WeeklyBarChart({ data, totalOrders }) {
+function WeeklyBarChart({ data, totalOrders, styles, COLORS }) {
   if (!data || data.length === 0) {
     return <Text style={styles.emptyText}>No weekly data yet</Text>;
   }
@@ -70,7 +70,7 @@ function WeeklyBarChart({ data, totalOrders }) {
 }
 
 // ── Progress bar ──────────────────────────────────────────────────────────────
-function ProgressBar({ label, value, total, color }) {
+function ProgressBar({ label, value, total, color, styles }) {
   const pct = total > 0 ? Math.min((value / total) * 100, 100) : 0;
   return (
     <View style={styles.progressItem}>
@@ -87,6 +87,8 @@ function ProgressBar({ label, value, total, color }) {
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 export default function AdminStatsScreen({ navigation }) {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const insets = useSafeAreaInsets();
   const [stats, setStats]           = useState(null);
   const [weeklyData, setWeeklyData] = useState([]);
@@ -117,7 +119,7 @@ export default function AdminStatsScreen({ navigation }) {
 
   useEffect(() => { fetchStats(); }, [fetchStats]);
 
-  if (loading) return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.primary} />;
+  if (loading) return <View style={{ flex: 1, backgroundColor: COLORS.background, justifyContent: 'center' }}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
 
   const byStatus       = stats?.orders?.by_status || [];
   const totalOrders    = stats?.orders?.total ?? 0;
@@ -214,36 +216,42 @@ export default function AdminStatsScreen({ navigation }) {
             badge="All time" badgeColor={COLORS.muted}
             icon="bag-outline" iconColor={COLORS.primary}
             subtext={totalOrders === 0 ? '— No change today' : `+${totalOrders} today`}
+            styles={styles}
           />
           <StatCard
             label="Revenue (KES)" value={revenue}
             badge={Number(todayRevenue) > 0 ? `+${todayRevenue} today` : 'All time'} badgeColor={COLORS.success}
             icon="cash-outline" iconColor={COLORS.success} valueColor={COLORS.primary}
             subtext={Number(todayRevenue) > 0 ? `↑ KES ${todayRevenue} earned today` : '— No revenue today'}
+            styles={styles}
           />
           <StatCard
             label="Consumers" value={consumers}
             badge="Registered" badgeColor="#6366F1"
             icon="people-outline" iconColor="#6366F1"
             subtext={`↑ ${consumers} registered`}
+            styles={styles}
           />
           <StatCard
             label="Active vendors" value={activeVendors}
             badge={`${pendingVendors} pending`} badgeColor="#EC4899"
             icon="storefront-outline" iconColor="#EC4899"
             subtext={pendingVendors === 0 ? '✓ All approved' : `${pendingVendors} awaiting review`}
+            styles={styles}
           />
           <StatCard
             label="Couriers" value={couriers}
             badge={`${couriers} active`} badgeColor="#F59E0B"
             icon="bicycle-outline" iconColor="#F59E0B"
             subtext={couriers > 0 ? '✓ All on duty' : '— None active'}
+            styles={styles}
           />
           <StatCard
             label="Reviews" value={reviews}
             badge="All time" badgeColor="#14B8A6"
             icon="star-outline" iconColor="#14B8A6"
             subtext={reviews === 0 ? '— No new reviews' : `${reviews} total`}
+            styles={styles}
           />
         </View>
 
@@ -258,7 +266,7 @@ export default function AdminStatsScreen({ navigation }) {
               <Text style={styles.sectionLink}>This month ›</Text>
             </TouchableOpacity>
           </View>
-          <WeeklyBarChart data={weeklyData} totalOrders={totalOrders} />
+          <WeeklyBarChart data={weeklyData} totalOrders={totalOrders} styles={styles} COLORS={COLORS} />
         </View>
 
         {/* ── Order status breakdown ── */}
@@ -270,21 +278,21 @@ export default function AdminStatsScreen({ navigation }) {
             </TouchableOpacity>
           </View>
           <View style={styles.statusBoxRow}>
-            <View style={[styles.statusBox, { backgroundColor: '#F0FDF4', borderColor: '#86EFAC' }]}>
+            <View style={[styles.statusBox, { backgroundColor: COLORS.successBg, borderColor: COLORS.successBorder }]}>
               <Text style={[styles.statusBoxNum, { color: COLORS.success }]}>{delivered}</Text>
               <Text style={[styles.statusBoxLabel, { color: COLORS.success }]}>Delivered</Text>
             </View>
-            <View style={[styles.statusBox, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' }]}>
+            <View style={[styles.statusBox, { backgroundColor: COLORS.warningBg, borderColor: COLORS.warningBorder }]}>
               <Text style={[styles.statusBoxNum, { color: '#F59E0B' }]}>{activeOrders}</Text>
               <Text style={[styles.statusBoxLabel, { color: '#F59E0B' }]}>Active</Text>
             </View>
-            <View style={[styles.statusBox, { backgroundColor: '#F5F3FF', borderColor: '#C4B5FD' }]}>
+            <View style={[styles.statusBox, { backgroundColor: '#7C3AED22', borderColor: '#7C3AED55' }]}>
               <Text style={[styles.statusBoxNum, { color: '#7C3AED' }]}>{totalOrders}</Text>
               <Text style={[styles.statusBoxLabel, { color: '#7C3AED' }]}>Total</Text>
             </View>
           </View>
-          <ProgressBar label="Delivered" value={delivered}    total={totalOrders} color={COLORS.success} />
-          <ProgressBar label="Active"    value={activeOrders} total={totalOrders} color="#F59E0B" />
+          <ProgressBar label="Delivered" value={delivered}    total={totalOrders} color={COLORS.success} styles={styles} />
+          <ProgressBar label="Active"    value={activeOrders} total={totalOrders} color="#F59E0B" styles={styles} />
           {byStatus.map(s => (
             !['Delivered'].includes(s.status) && (
               <View key={s.status} style={styles.statusDetailRow}>
@@ -311,6 +319,7 @@ export default function AdminStatsScreen({ navigation }) {
                 key={i} label={v.name} value={v.orders}
                 total={Math.max(...topVendors.map(x => x.orders), 1)}
                 color={COLORS.primary}
+                styles={styles}
               />
             ))
           )}
@@ -332,7 +341,7 @@ export default function AdminStatsScreen({ navigation }) {
         {/* ── Insight banner ── */}
         {insight ? (
           <View style={styles.insightBanner}>
-            <Ionicons name="sunny-outline" size={15} color="#B45309" style={{ marginTop: 1, flexShrink: 0 }} />
+            <Ionicons name="sunny-outline" size={15} color={COLORS.warningTextMid} style={{ marginTop: 1, flexShrink: 0 }} />
             <Text style={styles.insightText}>{insight}</Text>
           </View>
         ) : null}
@@ -342,7 +351,7 @@ export default function AdminStatsScreen({ navigation }) {
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container:     { flex: 1, backgroundColor: COLORS.background },
   scroll:        { flex: 1 },
   scrollContent: { padding: 16, paddingBottom: 32 },
@@ -430,10 +439,10 @@ const styles = StyleSheet.create({
   // Insight
   insightBanner: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-    backgroundColor: '#FFFBEB', borderRadius: 12,
-    borderWidth: 1.5, borderColor: '#FCD34D', padding: 12,
+    backgroundColor: COLORS.warningBg, borderRadius: 12,
+    borderWidth: 1.5, borderColor: COLORS.warningBorder, padding: 12,
   },
-  insightText: { flex: 1, fontSize: 12, color: '#92400E', lineHeight: 18 },
+  insightText: { flex: 1, fontSize: 12, color: COLORS.warningText, lineHeight: 18 },
 
   emptyText: { fontSize: 13, color: COLORS.subtext, textAlign: 'center', paddingVertical: 12 },
 });

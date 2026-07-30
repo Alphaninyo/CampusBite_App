@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
   ActivityIndicator, RefreshControl, ScrollView, TextInput,
@@ -7,13 +7,16 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
-import { COLORS, resolveImageUrl } from '../../constants';
+import { resolveImageUrl } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const docUrl = resolveImageUrl;
 
 const TABS = ['All', 'Active', 'Pending', 'Suspended'];
 
 export default function AdminVendorsScreen({ navigation }) {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('All');
   const [vendors, setVendors] = useState([]);
@@ -141,7 +144,7 @@ export default function AdminVendorsScreen({ navigation }) {
   };
 
   if (loading) {
-    return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.primary} />;
+    return <View style={{ flex: 1, backgroundColor: COLORS.background, justifyContent: 'center' }}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
   }
 
   return (
@@ -220,7 +223,7 @@ export default function AdminVendorsScreen({ navigation }) {
               >
                 {vendor.owner?.verification_status === 'pending' && (
                   <View style={styles.docPendingBanner}>
-                    <Ionicons name="time-outline" size={13} color="#92400E" />
+                    <Ionicons name="time-outline" size={13} color={COLORS.warningText} />
                     <Text style={styles.docPendingBannerText}>Documents pending review — tap to approve or reject</Text>
                   </View>
                 )}
@@ -382,7 +385,7 @@ export default function AdminVendorsScreen({ navigation }) {
                   )}
                   {selectedVendor?.owner?.verification_status === 'pending' && (
                     <View style={styles.docStatusBadgePending}>
-                      <Ionicons name="time-outline" size={13} color="#92400E" />
+                      <Ionicons name="time-outline" size={13} color={COLORS.warningText} />
                       <Text style={styles.docStatusBadgeTextPending}>Pending Review</Text>
                     </View>
                   )}
@@ -492,7 +495,7 @@ export default function AdminVendorsScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
 
   // Header
@@ -727,14 +730,14 @@ const styles = StyleSheet.create({
   },
 
   // Pending doc banner on card
-  vendorCardPending: { borderColor: '#FDE68A', borderWidth: 1.5 },
+  vendorCardPending: { borderColor: COLORS.warningBorder, borderWidth: 1.5 },
   docPendingBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: '#FFFBEB', borderRadius: 8,
+    backgroundColor: COLORS.warningBg, borderRadius: 8,
     paddingHorizontal: 10, paddingVertical: 7,
-    marginBottom: 10, borderWidth: 1, borderColor: '#FDE68A',
+    marginBottom: 10, borderWidth: 1, borderColor: COLORS.warningBorder,
   },
-  docPendingBannerText: { fontSize: 12, color: '#92400E', fontWeight: '600', flex: 1 },
+  docPendingBannerText: { fontSize: 12, color: COLORS.warningText, fontWeight: '600', flex: 1 },
 
   // Document thumbnails in card
   docsDivider: {
@@ -780,9 +783,9 @@ const styles = StyleSheet.create({
   docSectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   docStatusBadgeApproved: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.successLight, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4 },
   docStatusBadgeTextApproved: { fontSize: 11, fontWeight: '700', color: COLORS.success },
-  docStatusBadgePending: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FFFBEB', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: '#FDE68A' },
-  docStatusBadgeTextPending: { fontSize: 11, fontWeight: '700', color: '#92400E' },
-  docStatusBadgeRejected: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FEF2F2', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4 },
+  docStatusBadgePending: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.warningBg, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: COLORS.warningBorder },
+  docStatusBadgeTextPending: { fontSize: 11, fontWeight: '700', color: COLORS.warningText },
+  docStatusBadgeRejected: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.dangerBg, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4 },
   docStatusBadgeTextRejected: { fontSize: 11, fontWeight: '700', color: COLORS.danger },
 
   // Approve / reject controls in modal
@@ -790,7 +793,7 @@ const styles = StyleSheet.create({
   rejectDocBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
     paddingVertical: 13, borderRadius: 10, borderWidth: 1.5, borderColor: COLORS.danger,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
   },
   rejectDocBtnText: { fontSize: 14, fontWeight: '700', color: COLORS.danger },
   approveDocBtn: {
@@ -800,23 +803,23 @@ const styles = StyleSheet.create({
   approveDocBtnText: { fontSize: 14, fontWeight: '700', color: COLORS.white },
 
   // Reject note panel
-  rejectPanel: { backgroundColor: '#FEF2F2', borderRadius: 10, padding: 12, marginTop: 14, borderWidth: 1, borderColor: '#FCA5A5' },
+  rejectPanel: { backgroundColor: COLORS.dangerBg, borderRadius: 10, padding: 12, marginTop: 14, borderWidth: 1, borderColor: COLORS.dangerBorder },
   rejectPanelLabel: { fontSize: 10, fontWeight: '800', color: COLORS.danger, letterSpacing: 1, marginBottom: 8 },
   rejectInput: {
-    backgroundColor: COLORS.white, borderRadius: 8, borderWidth: 1, borderColor: '#FCA5A5',
+    backgroundColor: COLORS.card, borderRadius: 8, borderWidth: 1, borderColor: COLORS.dangerBorder,
     padding: 10, fontSize: 13, color: COLORS.text, minHeight: 72, marginBottom: 10,
     ...Platform.select({ web: { outlineStyle: 'none' } }),
   },
   rejectPanelActions: { flexDirection: 'row', gap: 8 },
-  cancelBtn: { flex: 1, paddingVertical: 10, borderRadius: 8, borderWidth: 1.5, borderColor: COLORS.border, alignItems: 'center', backgroundColor: COLORS.white },
+  cancelBtn: { flex: 1, paddingVertical: 10, borderRadius: 8, borderWidth: 1.5, borderColor: COLORS.border, alignItems: 'center', backgroundColor: COLORS.card },
   cancelBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.subtext },
   confirmRejectBtn: { flex: 2, paddingVertical: 10, borderRadius: 8, backgroundColor: COLORS.danger, alignItems: 'center', justifyContent: 'center' },
   confirmRejectBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.white },
 
   // Action message banner
   actionBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1, borderTopColor: COLORS.border },
-  actionBannerSuccess: { backgroundColor: '#F0FDF4' },
-  actionBannerError:   { backgroundColor: '#FEF2F2' },
+  actionBannerSuccess: { backgroundColor: COLORS.successBg },
+  actionBannerError:   { backgroundColor: COLORS.dangerBg },
   actionBannerText:    { flex: 1, fontSize: 13, fontWeight: '600' },
 
   // Document images in modal

@@ -11,7 +11,7 @@ import AdminUsersScreen         from '../screens/admin/AdminUsersScreen';
 import AdminApprovalsScreen     from '../screens/admin/AdminApprovalsScreen';
 import AdminNotificationsScreen from '../screens/admin/AdminNotificationsScreen';
 import ProfileScreen        from '../screens/shared/ProfileScreen';
-import { COLORS }           from '../constants';
+import { useTheme }         from '../contexts/ThemeContext';
 import { api }              from '../api';
 
 const Tab   = createBottomTabNavigator();
@@ -35,6 +35,7 @@ const OrdersStack    = withNotifications(AdminOrdersScreen,    'OrdersMain');
 const UsersStack     = withNotifications(AdminUsersScreen,     'UsersMain');
 
 export default function AdminNavigator() {
+  const { colors: COLORS } = useTheme();
   const [pendingCount, setPendingCount] = useState(0);
   const [orderCount,   setOrderCount]   = useState(0);
 

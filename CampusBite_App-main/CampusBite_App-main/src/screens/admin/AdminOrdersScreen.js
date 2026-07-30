@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   ActivityIndicator, RefreshControl, ScrollView, TextInput,
@@ -7,7 +7,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
-import { COLORS, STATUS_COLORS } from '../../constants';
+import { STATUS_COLORS } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const TABS = ['All', 'Pending', 'In Progress', 'Completed', 'Cancelled'];
 
@@ -20,6 +21,8 @@ const ISSUE_REASON_LABELS = {
 };
 
 export default function AdminOrdersScreen({ navigation, route }) {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('All');
   const [orders, setOrders] = useState([]);
@@ -172,7 +175,7 @@ export default function AdminOrdersScreen({ navigation, route }) {
   };
 
   if (loading) {
-    return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.primary} />;
+    return <View style={{ flex: 1, backgroundColor: COLORS.background, justifyContent: 'center' }}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
   }
 
   return (
@@ -365,7 +368,7 @@ export default function AdminOrdersScreen({ navigation, route }) {
                 {selectedOrder?.status === 'Delivered' && (
                   selectedOrder.delivery_pin_verified ? (
                     <View style={styles.resolvedBadge}>
-                      <Ionicons name="shield-checkmark" size={16} color="#388E3C" />
+                      <Ionicons name="shield-checkmark" size={16} color={COLORS.success} />
                       <Text style={styles.resolvedBadgeText}>PIN Confirmed — rider verified delivery in person</Text>
                     </View>
                   ) : (
@@ -443,7 +446,7 @@ export default function AdminOrdersScreen({ navigation, route }) {
 
                   {selectedOrder.issue_resolved_at ? (
                     <View style={styles.resolvedBadge}>
-                      <Ionicons name="checkmark-circle" size={16} color="#388E3C" />
+                      <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
                       <Text style={styles.resolvedBadgeText}>Resolved on {new Date(selectedOrder.issue_resolved_at).toLocaleDateString()}</Text>
                     </View>
                   ) : (
@@ -473,7 +476,7 @@ export default function AdminOrdersScreen({ navigation, route }) {
 
                   {selectedOrder.refund_status === 'refunded' ? (
                     <View style={styles.resolvedBadge}>
-                      <Ionicons name="checkmark-circle" size={16} color="#388E3C" />
+                      <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
                       <Text style={styles.resolvedBadgeText}>
                         Refunded{selectedOrder.refunded_at ? ` on ${new Date(selectedOrder.refunded_at).toLocaleDateString()}` : ''}
                       </Text>
@@ -503,7 +506,7 @@ export default function AdminOrdersScreen({ navigation, route }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
 
   // Header
@@ -748,7 +751,7 @@ const styles = StyleSheet.create({
 
   // Issue section (order detail modal)
   issueSection: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: COLORS.dangerBg,
     borderRadius: 12,
     padding: 12,
     marginBottom: 0,
@@ -756,11 +759,11 @@ const styles = StyleSheet.create({
   issueSectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
   resolvedBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: '#e8f5e9', borderRadius: 10,
+    backgroundColor: COLORS.successBg, borderRadius: 10,
     paddingVertical: 10, paddingHorizontal: 12, marginTop: 10,
     justifyContent: 'center',
   },
-  resolvedBadgeText: { color: '#388E3C', fontWeight: '600', fontSize: 13 },
+  resolvedBadgeText: { color: COLORS.success, fontWeight: '600', fontSize: 13 },
   resolveBtn: {
     marginTop: 10, backgroundColor: COLORS.danger,
     borderRadius: 10, paddingVertical: 12, alignItems: 'center',
@@ -770,7 +773,7 @@ const styles = StyleSheet.create({
   // Delivery PIN verification / admin override
   overrideBadge: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-    backgroundColor: '#FFFBEB', borderRadius: 10, borderWidth: 1, borderColor: '#FDE68A',
+    backgroundColor: COLORS.warningBg, borderRadius: 10, borderWidth: 1, borderColor: COLORS.warningBorder,
     paddingVertical: 10, paddingHorizontal: 12, marginTop: 10,
   },
   overrideBadgeText: { color: COLORS.warningText, fontWeight: '600', fontSize: 13 },
@@ -781,12 +784,12 @@ const styles = StyleSheet.create({
   },
   forceCompleteLinkText: { color: COLORS.warningText, fontSize: 12, fontWeight: '600', textDecorationLine: 'underline' },
   forceCompletePanel: {
-    backgroundColor: '#FFFBEB', borderRadius: 10, borderWidth: 1, borderColor: '#FDE68A',
+    backgroundColor: COLORS.warningBg, borderRadius: 10, borderWidth: 1, borderColor: COLORS.warningBorder,
     padding: 12, marginTop: 10,
   },
   forceCompleteLabel: { fontSize: 10, fontWeight: '800', color: COLORS.warningText, letterSpacing: 0.5, marginBottom: 8 },
   forceCompleteInput: {
-    backgroundColor: COLORS.card, borderRadius: 8, borderWidth: 1, borderColor: '#FDE68A',
+    backgroundColor: COLORS.card, borderRadius: 8, borderWidth: 1, borderColor: COLORS.warningBorder,
     padding: 10, fontSize: 13, color: COLORS.text, minHeight: 60, textAlignVertical: 'top',
   },
   forceCompleteCancelBtn: {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, RefreshControl, ScrollView,
@@ -7,7 +7,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
-import { COLORS, resolveImageUrl } from '../../constants';
+import { resolveImageUrl } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const TABS = ['All', 'Vendors', 'Couriers', 'Documents', 'Rejected'];
 
@@ -21,12 +22,12 @@ function getTimeAgo(dateStr) {
   return new Date(dateStr).toLocaleDateString();
 }
 
-function VerificationBadge({ status, type, hasDocument, onView, onViewPassport, hasPassport, passportUrl }) {
+function VerificationBadge({ status, type, hasDocument, onView, onViewPassport, hasPassport, passportUrl, styles, COLORS }) {
   if (!hasDocument && !hasPassport) {
     return (
       <View style={[styles.verBadge, styles.verBadgeNone]}>
-        <Ionicons name="warning-outline" size={13} color="#92400E" />
-        <Text style={[styles.verBadgeText, { color: '#92400E' }]}>No documents submitted</Text>
+        <Ionicons name="warning-outline" size={13} color={COLORS.warningText} />
+        <Text style={[styles.verBadgeText, { color: COLORS.warningText }]}>No documents submitted</Text>
       </View>
     );
   }
@@ -84,6 +85,8 @@ function VerificationBadge({ status, type, hasDocument, onView, onViewPassport, 
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function AdminApprovalsScreen({ navigation }) {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab]   = useState('All');
   const [vendors, setVendors]       = useState([]);
@@ -258,7 +261,7 @@ export default function AdminApprovalsScreen({ navigation }) {
         {/* ── Flag banner ── */}
         {noDoc && (
           <View style={styles.flagBanner}>
-            <Ionicons name="warning" size={14} color="#92400E" />
+            <Ionicons name="warning" size={14} color={COLORS.warningText} />
             <Text style={styles.flagBannerText}>No verification document submitted — review carefully</Text>
           </View>
         )}
@@ -294,18 +297,18 @@ export default function AdminApprovalsScreen({ navigation }) {
         {/* ── Identity & Contact ── */}
         <Text style={styles.sectionLabel}>APPLICANT DETAILS</Text>
         <View style={styles.detailGrid}>
-          <DetailRow icon="person-outline"   label="Full Name"     value={owner.name  || 'N/A'} />
-          <DetailRow icon="mail-outline"     label="Email"         value={owner.email || 'N/A'} />
-          <DetailRow icon="call-outline"     label="Phone"         value={owner.phone || 'N/A'} />
-          <DetailRow icon="calendar-outline" label="Registered"    value={owner.created_at ? new Date(owner.created_at).toLocaleDateString() : 'N/A'} />
+          <DetailRow icon="person-outline"   label="Full Name"     value={owner.name  || 'N/A'} styles={styles} COLORS={COLORS} />
+          <DetailRow icon="mail-outline"     label="Email"         value={owner.email || 'N/A'} styles={styles} COLORS={COLORS} />
+          <DetailRow icon="call-outline"     label="Phone"         value={owner.phone || 'N/A'} styles={styles} COLORS={COLORS} />
+          <DetailRow icon="calendar-outline" label="Registered"    value={owner.created_at ? new Date(owner.created_at).toLocaleDateString() : 'N/A'} styles={styles} COLORS={COLORS} />
         </View>
 
         {/* ── Business info ── */}
         <Text style={[styles.sectionLabel, { marginTop: 10 }]}>BUSINESS INFO</Text>
         <View style={styles.detailGrid}>
-          <DetailRow icon="business-outline"  label="Type"         value={item.vendor_type === 'home_based' ? 'Home-Based' : 'Restaurant'} />
-          <DetailRow icon="location-outline"  label="Location"     value={item.location || 'Not provided'} warn={!item.location} />
-          <DetailRow icon="time-outline"      label="Waiting"      value={getTimeAgo(item.created_at)} />
+          <DetailRow icon="business-outline"  label="Type"         value={item.vendor_type === 'home_based' ? 'Home-Based' : 'Restaurant'} styles={styles} COLORS={COLORS} />
+          <DetailRow icon="location-outline"  label="Location"     value={item.location || 'Not provided'} warn={!item.location} styles={styles} COLORS={COLORS} />
+          <DetailRow icon="time-outline"      label="Waiting"      value={getTimeAgo(item.created_at)} styles={styles} COLORS={COLORS} />
         </View>
 
         {/* ── Verification ── */}
@@ -319,6 +322,8 @@ export default function AdminApprovalsScreen({ navigation }) {
             passportUrl={docUrl(owner.passport_photo)}
             onView={() => setDocViewer({ url: docUrl(owner.verification_document), label: `${item.business_name} — ID Document` })}
             onViewPassport={() => setDocViewer({ url: docUrl(owner.passport_photo), label: `${item.business_name} — Passport-Sized Photo` })}
+            styles={styles}
+            COLORS={COLORS}
           />
         </View>
 
@@ -447,7 +452,7 @@ export default function AdminApprovalsScreen({ navigation }) {
         {/* ── Flag banner ── */}
         {noDoc && (
           <View style={styles.flagBanner}>
-            <Ionicons name="warning" size={14} color="#92400E" />
+            <Ionicons name="warning" size={14} color={COLORS.warningText} />
             <Text style={styles.flagBannerText}>No verification document submitted — review carefully</Text>
           </View>
         )}
@@ -458,7 +463,7 @@ export default function AdminApprovalsScreen({ navigation }) {
           onPress={() => setExpandedCard(expandedCard === item.id ? null : item.id)}
           activeOpacity={0.7}
         >
-          <View style={[styles.cardIcon, { backgroundColor: '#FFF5EB' }]}>
+          <View style={[styles.cardIcon, { backgroundColor: COLORS.iconBg }]}>
             <Ionicons name="bicycle-outline" size={22} color={COLORS.secondary} />
           </View>
           <View style={styles.cardMeta}>
@@ -483,17 +488,17 @@ export default function AdminApprovalsScreen({ navigation }) {
         {/* ── Identity & Contact ── */}
         <Text style={styles.sectionLabel}>APPLICANT DETAILS</Text>
         <View style={styles.detailGrid}>
-          <DetailRow icon="person-outline"   label="Full Name"  value={user.name  || 'N/A'} />
-          <DetailRow icon="mail-outline"     label="Email"      value={user.email || 'N/A'} />
-          <DetailRow icon="call-outline"     label="Phone"      value={user.phone || 'N/A'} />
-          <DetailRow icon="calendar-outline" label="Registered" value={user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'} />
+          <DetailRow icon="person-outline"   label="Full Name"  value={user.name  || 'N/A'} styles={styles} COLORS={COLORS} />
+          <DetailRow icon="mail-outline"     label="Email"      value={user.email || 'N/A'} styles={styles} COLORS={COLORS} />
+          <DetailRow icon="call-outline"     label="Phone"      value={user.phone || 'N/A'} styles={styles} COLORS={COLORS} />
+          <DetailRow icon="calendar-outline" label="Registered" value={user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'} styles={styles} COLORS={COLORS} />
         </View>
 
         {/* ── Delivery info ── */}
         <Text style={[styles.sectionLabel, { marginTop: 10 }]}>DELIVERY INFO</Text>
         <View style={styles.detailGrid}>
-          <DetailRow icon="bicycle-outline" label="Vehicle"  value={item.vehicle_type || 'N/A'} />
-          <DetailRow icon="time-outline"    label="Waiting"  value={getTimeAgo(item.created_at)} />
+          <DetailRow icon="bicycle-outline" label="Vehicle"  value={item.vehicle_type || 'N/A'} styles={styles} COLORS={COLORS} />
+          <DetailRow icon="time-outline"    label="Waiting"  value={getTimeAgo(item.created_at)} styles={styles} COLORS={COLORS} />
         </View>
 
         {/* ── Verification ── */}
@@ -507,6 +512,8 @@ export default function AdminApprovalsScreen({ navigation }) {
             passportUrl={docUrl(user.passport_photo)}
             onView={() => setDocViewer({ url: docUrl(user.verification_document), label: `${user.name} — ID Document` })}
             onViewPassport={() => setDocViewer({ url: docUrl(user.passport_photo), label: `${user.name} — Passport-Sized Photo` })}
+            styles={styles}
+            COLORS={COLORS}
           />
         </View>
 
@@ -665,7 +672,7 @@ export default function AdminApprovalsScreen({ navigation }) {
       <View key={user.id} style={styles.card}>
         {/* Header */}
         <View style={styles.cardHeader}>
-          <View style={[styles.cardIcon, { backgroundColor: user.role === 'vendor' ? COLORS.iconBg : '#FFF5EB' }]}>
+          <View style={styles.cardIcon}>
             <Ionicons
               name={user.role === 'vendor' ? 'storefront-outline' : 'bicycle-outline'}
               size={22}
@@ -688,8 +695,8 @@ export default function AdminApprovalsScreen({ navigation }) {
         {/* Contact */}
         <Text style={[styles.sectionLabel, { paddingHorizontal: 14, marginTop: 10, marginBottom: 6 }]}>APPLICANT</Text>
         <View style={[styles.detailGrid]}>
-          <DetailRow icon="mail-outline" label="Email" value={user.email || 'N/A'} />
-          <DetailRow icon="call-outline" label="Phone" value={user.phone || 'N/A'} />
+          <DetailRow icon="mail-outline" label="Email" value={user.email || 'N/A'} styles={styles} COLORS={COLORS} />
+          <DetailRow icon="call-outline" label="Phone" value={user.phone || 'N/A'} styles={styles} COLORS={COLORS} />
         </View>
 
         {/* Documents side by side */}
@@ -820,7 +827,7 @@ export default function AdminApprovalsScreen({ navigation }) {
   };
 
   if (loading) {
-    return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.primary} />;
+    return <View style={{ flex: 1, backgroundColor: COLORS.background, justifyContent: 'center' }}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
   }
 
   const { items } = getCurrentData();
@@ -1031,7 +1038,7 @@ export default function AdminApprovalsScreen({ navigation }) {
 
 // ── Detail row helper ─────────────────────────────────────────────────────────
 
-function DetailRow({ icon, label, value, warn }) {
+function DetailRow({ icon, label, value, warn, styles, COLORS }) {
   return (
     <View style={styles.detailRow}>
       <View style={styles.detailLabelWrap}>
@@ -1047,7 +1054,7 @@ function DetailRow({ icon, label, value, warn }) {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container:  { flex: 1, backgroundColor: COLORS.background },
   scrollView: { flex: 1 },
 
@@ -1074,8 +1081,8 @@ const styles = StyleSheet.create({
   alertText: { flex: 1, fontSize: 13, color: COLORS.warningText },
 
   actionMsgBanner:  { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 8, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, gap: 8 },
-  actionMsgSuccess: { backgroundColor: '#DCFCE7', borderWidth: 1, borderColor: '#86EFAC' },
-  actionMsgError:   { backgroundColor: '#FEE2E2', borderWidth: 1, borderColor: '#FCA5A5' },
+  actionMsgSuccess: { backgroundColor: COLORS.successBg, borderWidth: 1, borderColor: COLORS.successBorder },
+  actionMsgError:   { backgroundColor: COLORS.dangerBg, borderWidth: 1, borderColor: COLORS.dangerBorder },
   actionMsgText:    { flex: 1, fontSize: 13, fontWeight: '600' },
 
   // Tabs
@@ -1097,15 +1104,15 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 2,
   },
-  cardFlagged: { borderColor: '#FDE68A' },
+  cardFlagged: { borderColor: COLORS.warningBorder },
 
   // Flag banner (no document)
   flagBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 7,
-    backgroundColor: '#FFFBEB', paddingHorizontal: 14, paddingVertical: 8,
-    borderBottomWidth: 1, borderBottomColor: '#FDE68A',
+    backgroundColor: COLORS.warningBg, paddingHorizontal: 14, paddingVertical: 8,
+    borderBottomWidth: 1, borderBottomColor: COLORS.warningBorder,
   },
-  flagBannerText: { fontSize: 12, color: '#92400E', fontWeight: '600', flex: 1 },
+  flagBannerText: { fontSize: 12, color: COLORS.warningText, fontWeight: '600', flex: 1 },
 
   cardHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 14 },
   cardIcon: {
@@ -1136,12 +1143,12 @@ const styles = StyleSheet.create({
   verRow:     { flexDirection: 'row', alignItems: 'center', gap: 8 },
   verBadge:   { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, flex: 1 },
 
-  passportPhotoRow:    { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#F0F9FF', borderRadius: 12, padding: 10, borderWidth: 1, borderColor: '#BAE6FD' },
+  passportPhotoRow:    { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: COLORS.infoBg, borderRadius: 12, padding: 10, borderWidth: 1, borderColor: COLORS.infoBorder },
   passportThumbWrap:   { width: 64, height: 64, borderRadius: 10, overflow: 'hidden', position: 'relative' },
   passportThumb:       { width: 64, height: 64 },
   passportThumbOverlay:{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', paddingVertical: 3 },
   passportPhotoLabel:  { fontSize: 10, fontWeight: '700', color: COLORS.infoText, letterSpacing: 0.8 },
-  verBadgeNone:     { backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A' },
+  verBadgeNone:     { backgroundColor: COLORS.warningBg, borderWidth: 1, borderColor: COLORS.warningBorder },
   verBadgePending:  { backgroundColor: COLORS.infoBg,    borderWidth: 1, borderColor: COLORS.infoBorder },
   verBadgeApproved: { backgroundColor: COLORS.successBg, borderWidth: 1, borderColor: COLORS.successBorder },
   verBadgeRejected: { backgroundColor: COLORS.dangerBg,  borderWidth: 1, borderColor: COLORS.dangerBorder },
@@ -1178,7 +1185,7 @@ const styles = StyleSheet.create({
   rejectBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4,
     paddingVertical: 11, borderRadius: 10,
-    backgroundColor: COLORS.white, borderWidth: 1.5, borderColor: COLORS.danger,
+    backgroundColor: COLORS.card, borderWidth: 1.5, borderColor: COLORS.danger,
   },
   rejectBtnText:  { fontSize: 13, fontWeight: '700', color: COLORS.danger },
   requestInfoBtn: {
@@ -1207,13 +1214,13 @@ const styles = StyleSheet.create({
   docCheckBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     paddingVertical: 7, paddingHorizontal: 10, borderRadius: 8,
-    borderWidth: 1.5, borderColor: COLORS.infoBorder, backgroundColor: COLORS.white,
+    borderWidth: 1.5, borderColor: COLORS.infoBorder, backgroundColor: COLORS.card,
   },
-  docCheckBtnActive: { borderColor: COLORS.primary, backgroundColor: '#FFF5EC' },
+  docCheckBtnActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primary + '15' },
   docCheckLabel: { fontSize: 12, fontWeight: '600', color: COLORS.muted },
   docCheckLabelActive: { color: COLORS.primary },
   requestInfoInput: {
-    backgroundColor: COLORS.white, borderRadius: 8,
+    backgroundColor: COLORS.card, borderRadius: 8,
     borderWidth: 1, borderColor: COLORS.infoBorder,
     padding: 10, fontSize: 13, color: COLORS.text,
     minHeight: 72, marginBottom: 10,
@@ -1237,7 +1244,7 @@ const styles = StyleSheet.create({
   sentConfirmText: { fontSize: 13, fontWeight: '600', color: COLORS.successText, flex: 1 },
   cancelNoteBtn: {
     flex: 1, paddingVertical: 9, borderRadius: 8, borderWidth: 1.5, borderColor: COLORS.border,
-    alignItems: 'center', backgroundColor: COLORS.white,
+    alignItems: 'center', backgroundColor: COLORS.card,
   },
   cancelNoteBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.subtext },
   sendNoteBtn: {

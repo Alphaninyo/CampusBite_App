@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   ActivityIndicator, RefreshControl, ScrollView, TextInput,
@@ -7,11 +7,13 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
-import { COLORS } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const TABS = ['All', 'Consumers', 'Vendors', 'Couriers', 'Suspended'];
 
 export default function AdminUsersScreen({ navigation }) {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('All');
   const [users, setUsers] = useState([]);
@@ -138,7 +140,7 @@ export default function AdminUsersScreen({ navigation }) {
   };
 
   if (loading) {
-    return <ActivityIndicator style={{ flex: 1 }} size="large" color={COLORS.primary} />;
+    return <View style={{ flex: 1, backgroundColor: COLORS.background, justifyContent: 'center' }}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
   }
 
   return (
@@ -289,7 +291,7 @@ export default function AdminUsersScreen({ navigation }) {
               <View key={user.id} style={[styles.userCard, user.is_suspended && styles.userCardSuspended]}>
                 <TouchableOpacity onPress={() => openUserDetail(user)}>
                   <View style={styles.userHeader}>
-                    <View style={[styles.avatar, { backgroundColor: user.is_suspended ? COLORS.dangerBg : '#FFF5EB' }]}>
+                    <View style={[styles.avatar, { backgroundColor: user.is_suspended ? COLORS.dangerBg : COLORS.iconBg }]}>
                       <Text style={[styles.avatarText, { color: user.is_suspended ? COLORS.danger : COLORS.secondary }]}>{getInitials(user.name)}</Text>
                     </View>
                     <View style={styles.userMeta}>
@@ -419,7 +421,7 @@ export default function AdminUsersScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
 
   // Header
@@ -585,8 +587,8 @@ const styles = StyleSheet.create({
     color: COLORS.success,
   },
   userCardSuspended: {
-    borderColor: COLORS.dangerBorder || '#FCA5A5',
-    backgroundColor: '#FFF8F8',
+    borderColor: COLORS.dangerBorder,
+    backgroundColor: COLORS.dangerBg,
   },
   actionBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
@@ -594,13 +596,13 @@ const styles = StyleSheet.create({
     borderRadius: 10, paddingVertical: 10, paddingHorizontal: 14,
     borderWidth: 1,
   },
-  actionBannerSuccess: { backgroundColor: '#F0FDF4', borderColor: '#86EFAC' },
-  actionBannerError:   { backgroundColor: '#FEF2F2', borderColor: '#FCA5A5' },
+  actionBannerSuccess: { backgroundColor: COLORS.successBg, borderColor: COLORS.successBorder },
+  actionBannerError:   { backgroundColor: COLORS.dangerBg, borderColor: COLORS.dangerBorder },
   actionBannerText:    { flex: 1, fontSize: 13, fontWeight: '600' },
   suspendBtn: {
     paddingVertical: 10,
     borderRadius: 8,
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.card,
     borderWidth: 1,
     borderColor: COLORS.danger,
     alignItems: 'center',
