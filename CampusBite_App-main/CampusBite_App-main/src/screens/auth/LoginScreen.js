@@ -21,6 +21,7 @@ export default function LoginScreen({ navigation }) {
   const [pendingMsg, setPendingMsg]     = useState(null);
   const [errorMsg, setErrorMsg]         = useState(null);
   const btnScale                        = useRef(new Animated.Value(1)).current;
+  const passwordRef                     = useRef(null);
   const login                           = useAuthStore((s) => s.login);
 
   // ── Application status check ──
@@ -192,6 +193,9 @@ export default function LoginScreen({ navigation }) {
               autoCapitalize="none"
               onFocus={() => setFocusEmail(true)}
               onBlur={() => setFocusEmail(false)}
+              returnKeyType="next"
+              blurOnSubmit={false}
+              onSubmitEditing={() => passwordRef.current?.focus()}
             />
           </View>
 
@@ -207,6 +211,7 @@ export default function LoginScreen({ navigation }) {
               <Ionicons name="lock-closed" size={16} color={focusPass ? COLORS.primary : COLORS.muted} />
             </View>
             <TextInput
+              ref={passwordRef}
               style={styles.input}
               placeholder="Enter your password"
               placeholderTextColor={COLORS.muted}
@@ -215,6 +220,8 @@ export default function LoginScreen({ navigation }) {
               secureTextEntry={!showPassword}
               onFocus={() => setFocusPass(true)}
               onBlur={() => setFocusPass(false)}
+              returnKeyType="go"
+              onSubmitEditing={() => { if (!loading) handleLogin(); }}
             />
             <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn} activeOpacity={0.7}>
               <Ionicons name={showPassword ? 'eye' : 'eye-off'} size={18} color={COLORS.muted} />
@@ -237,7 +244,7 @@ export default function LoginScreen({ navigation }) {
                 <View style={styles.loginBtnInner}>
                   <Text style={styles.loginBtnText}>Log In</Text>
                   <View style={styles.arrowBadge}>
-                    <Ionicons name="arrow-forward" size={16} color={COLORS.primary} />
+                    <Ionicons name="arrow-forward" size={16} color={COLORS.white} />
                   </View>
                 </View>
               )}

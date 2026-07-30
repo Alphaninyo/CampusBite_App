@@ -419,6 +419,8 @@ export default function CartScreen({ navigation }) {
                   placeholderTextColor={COLORS.muted}
                   keyboardType="phone-pad"
                   maxLength={13}
+                  returnKeyType="go"
+                  onSubmitEditing={() => { if (vendorOpen && !checkingOut) openConfirm(); }}
                 />
               </View>
               <Text style={styles.paymentDetailHint}>STK push will be sent to this number</Text>
@@ -534,7 +536,7 @@ export default function CartScreen({ navigation }) {
                 </Text>
               </View>
               <View style={styles.checkoutArrow}>
-                <Ionicons name={vendorOpen ? 'arrow-forward' : 'time-outline'} size={18} color={COLORS.primary} />
+                <Ionicons name={vendorOpen ? 'arrow-forward' : 'time-outline'} size={18} color={COLORS.white} />
               </View>
             </>
           )}

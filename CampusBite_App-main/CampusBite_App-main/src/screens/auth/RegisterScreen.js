@@ -278,7 +278,7 @@ export default function RegisterScreen({ navigation }) {
                   <View style={styles.submitInner}>
                     <Text style={styles.submitText}>{needsVerification ? 'Continue' : 'Create Account'}</Text>
                     <View style={styles.arrowBadge}>
-                      <Ionicons name={needsVerification ? 'arrow-forward' : 'checkmark'} size={16} color={COLORS.primary} />
+                      <Ionicons name={needsVerification ? 'arrow-forward' : 'checkmark'} size={16} color={COLORS.white} />
                     </View>
                   </View>
                 )}
