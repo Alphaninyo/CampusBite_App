@@ -8,7 +8,6 @@ import { Ionicons } from '@expo/vector-icons';
 import HomeScreen          from '../screens/consumer/HomeScreen';
 import ExploreScreen       from '../screens/consumer/ExploreScreen';
 import VendorDetailScreen  from '../screens/consumer/VendorDetailScreen';
-import CheckoutScreen      from '../screens/consumer/CheckoutScreen';
 import PaymentStatusScreen from '../screens/consumer/PaymentStatusScreen';
 import CartScreen          from '../screens/consumer/CartScreen';
 import MyOrdersScreen      from '../screens/consumer/MyOrdersScreen';
@@ -71,8 +70,6 @@ function HomeStack() {
     <Stack.Navigator screenOptions={stackScreenOptions(COLORS)}>
       <Stack.Screen name="Home"          component={HomeScreen}          options={{ headerShown: false }} />
       <Stack.Screen name="VendorDetail"  component={VendorDetailScreen}  options={{ title: 'Menu' }} />
-      <Stack.Screen name="Checkout"      component={CheckoutScreen}      options={{ title: 'Checkout' }} />
-      <Stack.Screen name="PaymentStatus" component={PaymentStatusScreen} options={{ title: 'Payment', headerBackVisible: false }} />
     </Stack.Navigator>
   );
 }
@@ -83,8 +80,6 @@ function ExploreStack() {
     <Stack.Navigator screenOptions={stackScreenOptions(COLORS)}>
       <Stack.Screen name="ExploreMain"  component={ExploreScreen}      options={{ headerShown: false }} />
       <Stack.Screen name="VendorDetail" component={VendorDetailScreen} options={{ title: 'Menu' }} />
-      <Stack.Screen name="Checkout"     component={CheckoutScreen}     options={{ title: 'Checkout' }} />
-      <Stack.Screen name="PaymentStatus" component={PaymentStatusScreen} options={{ title: 'Payment', headerBackVisible: false }} />
     </Stack.Navigator>
   );
 }

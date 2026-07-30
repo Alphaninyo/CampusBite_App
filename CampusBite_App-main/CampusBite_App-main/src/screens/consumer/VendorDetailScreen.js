@@ -84,14 +84,13 @@ export default function VendorDetailScreen({ route, navigation }) {
     .reduce((s, i) => s + parseFloat(i.price) * cart[i.id], 0)
     .toFixed(2);
 
+  // Cart items are already synced to the shared cart store above (every time
+  // `cart` changes), so jumping to the Cart tab gives the exact same checkout
+  // flow — address picker, payment method choice, promo codes — as adding
+  // items from Home, instead of a separate, limited checkout screen.
   const goCheckout = () => {
     if (cartCount === 0) return;
-    const items = Object.entries(cart).map(([menu_item_id, quantity]) => {
-      const menuItem = menu.find((m) => m.id === menu_item_id);
-      return { menu_item_id, quantity, name: menuItem?.name };
-    });
-    const subtotal = parseFloat(cartTotal);
-    navigation.navigate('Checkout', { vendor, items, subtotal });
+    navigation.navigate('CartTab', { screen: 'CartMain' });
   };
 
   if (loading) return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}><ActivityIndicator size="large" color={COLORS.primary} /></View>;
