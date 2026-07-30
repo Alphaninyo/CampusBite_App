@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { api } from '../../api';
-import { COLORS } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function ForgotPasswordScreen({ navigation }) {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const [email, setEmail]   = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -41,11 +43,11 @@ export default function ForgotPasswordScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.backgroundAlt, padding: 24, justifyContent: 'center' },
   title:     { fontSize: 26, fontWeight: 'bold', marginBottom: 8, color: COLORS.text },
   subtitle:  { fontSize: 14, color: COLORS.subtext, marginBottom: 32 },
-  input:     { backgroundColor: COLORS.card, borderRadius: 10, padding: 14, marginBottom: 16, fontSize: 15, borderWidth: 1, borderColor: COLORS.border },
+  input:     { backgroundColor: COLORS.card, borderRadius: 10, padding: 14, marginBottom: 16, fontSize: 15, color: COLORS.text, borderWidth: 1, borderColor: COLORS.border },
   button:    { backgroundColor: COLORS.primary, borderRadius: 10, padding: 16, alignItems: 'center', marginBottom: 20 },
   buttonText:{ color: COLORS.white, fontWeight: 'bold', fontSize: 16 },
   link:      { color: COLORS.primary, textAlign: 'center', fontSize: 14 },

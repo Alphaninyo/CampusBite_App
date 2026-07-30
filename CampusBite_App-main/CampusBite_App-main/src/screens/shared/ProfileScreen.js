@@ -1197,21 +1197,19 @@ export default function ProfileScreen({ navigation }) {
           ))}
         </View>
 
-        {/* ── Preferences (consumer-only for now) ─────────────────────────── */}
-        {user?.role === 'consumer' && (
-          <View style={styles.section}>
-            <Text style={styles.accountLabel}>PREFERENCES</Text>
-            <TouchableOpacity style={styles.toggleRow} onPress={toggleTheme}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.menuLabel}>Dark Mode</Text>
-                <Text style={styles.menuSub}>Easier on the eyes at night</Text>
-              </View>
-              <View style={[styles.toggleSwitch, isDark && styles.toggleSwitchOn]}>
-                <View style={[styles.toggleKnob, isDark && styles.toggleKnobOn]} />
-              </View>
-            </TouchableOpacity>
-          </View>
-        )}
+        {/* ── Preferences ──────────────────────────────────────────────────── */}
+        <View style={styles.section}>
+          <Text style={styles.accountLabel}>PREFERENCES</Text>
+          <TouchableOpacity style={styles.toggleRow} onPress={toggleTheme}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.menuLabel}>Dark Mode</Text>
+              <Text style={styles.menuSub}>Easier on the eyes at night</Text>
+            </View>
+            <View style={[styles.toggleSwitch, isDark && styles.toggleSwitchOn]}>
+              <View style={[styles.toggleKnob, isDark && styles.toggleKnobOn]} />
+            </View>
+          </TouchableOpacity>
+        </View>
 
         {/* ── Logout ──────────────────────────────────────────────────────── */}
         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>

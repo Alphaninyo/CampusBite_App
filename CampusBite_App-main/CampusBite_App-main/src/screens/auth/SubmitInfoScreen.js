@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ActivityIndicator,
   Alert, ScrollView, Animated, Platform,
@@ -6,10 +6,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { api } from '../../api';
-import { COLORS } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 
 export default function SubmitInfoScreen({ navigation, route }) {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const { email, password, adminNote, role, requestedDocs: paramDocs, useAuthFlow } = route?.params || {};
 
   // Whether the admin explicitly specified which docs are needed
@@ -158,7 +160,7 @@ export default function SubmitInfoScreen({ navigation, route }) {
             onPress={() => navigation.navigate('Login')}
             activeOpacity={0.85}
           >
-            <Ionicons name="arrow-back" size={18} color={COLORS.card} />
+            <Ionicons name="arrow-back" size={18} color={COLORS.white} />
             <Text style={styles.successBtnText}>Back to Login</Text>
           </TouchableOpacity>
         </View>
@@ -181,7 +183,7 @@ export default function SubmitInfoScreen({ navigation, route }) {
         <View style={styles.header}>
           <View style={styles.logoRing}>
             <View style={styles.logoInner}>
-              <Ionicons name="cloud-upload" size={22} color={COLORS.card} />
+              <Ionicons name="cloud-upload" size={22} color={COLORS.white} />
             </View>
           </View>
         </View>
@@ -222,6 +224,8 @@ export default function SubmitInfoScreen({ navigation, route }) {
                 onCamera={() => pickFile(setSelfieFile, true)}
                 icon="person-circle-outline"
                 label="Upload your photo"
+                styles={styles}
+                COLORS={COLORS}
               />
             </>
           )}
@@ -238,6 +242,8 @@ export default function SubmitInfoScreen({ navigation, route }) {
                 onCamera={() => pickFile(setIdFile, true)}
                 icon="card-outline"
                 label="Upload your National ID"
+                styles={styles}
+                COLORS={COLORS}
               />
             </>
           )}
@@ -254,6 +260,8 @@ export default function SubmitInfoScreen({ navigation, route }) {
                 onCamera={() => pickFile(setIdFile, true)}
                 icon="book-outline"
                 label="Upload your Passport"
+                styles={styles}
+                COLORS={COLORS}
               />
             </>
           )}
@@ -285,10 +293,10 @@ export default function SubmitInfoScreen({ navigation, route }) {
               activeOpacity={1}
             >
               {uploading ? (
-                <ActivityIndicator color={COLORS.card} size="small" />
+                <ActivityIndicator color={COLORS.white} size="small" />
               ) : (
                 <View style={styles.submitInner}>
-                  <Ionicons name="cloud-upload" size={17} color={COLORS.card} style={{ marginRight: 8 }} />
+                  <Ionicons name="cloud-upload" size={17} color={COLORS.white} style={{ marginRight: 8 }} />
                   <Text style={styles.submitText}>Submit to Admin</Text>
                 </View>
               )}
@@ -316,7 +324,7 @@ export default function SubmitInfoScreen({ navigation, route }) {
 
 // ── File upload box helper ────────────────────────────────────────────────────
 
-function FileUploadBox({ file, onClear, onGallery, onCamera, icon, label }) {
+function FileUploadBox({ file, onClear, onGallery, onCamera, icon, label, styles, COLORS }) {
   if (file) {
     return (
       <View style={styles.previewBox}>
@@ -356,7 +364,7 @@ function FileUploadBox({ file, onClear, onGallery, onCamera, icon, label }) {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   root:   { flex: 1, backgroundColor: COLORS.backgroundAlt },
   scroll: { flexGrow: 1, alignItems: 'center', paddingHorizontal: 22, paddingTop: 50, paddingBottom: 48 },
 
@@ -434,9 +442,9 @@ const styles = StyleSheet.create({
   submitBtn:         { backgroundColor: COLORS.primary, borderRadius: 16, paddingVertical: 16, alignItems: 'center', justifyContent: 'center', shadowColor: COLORS.primary, shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 6 },
   submitBtnDisabled: { backgroundColor: COLORS.blob, shadowOpacity: 0 },
   submitInner:       { flexDirection: 'row', alignItems: 'center' },
-  submitText:        { color: COLORS.card, fontSize: 15, fontWeight: '800' },
+  submitText:        { color: COLORS.white, fontSize: 15, fontWeight: '800' },
 
-  submitErrorBox:  { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FEE2E2', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12, marginTop: 10 },
+  submitErrorBox:  { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: COLORS.dangerBg, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12, marginTop: 10 },
   submitErrorText: { flex: 1, fontSize: 13, color: COLORS.danger, fontWeight: '500' },
 
   // Back link
@@ -480,5 +488,5 @@ const styles = StyleSheet.create({
     paddingVertical: 15, paddingHorizontal: 32,
     shadowColor: COLORS.primary, shadowOpacity: 0.3, shadowRadius: 10, elevation: 5,
   },
-  successBtnText: { fontSize: 15, fontWeight: '800', color: COLORS.card },
+  successBtnText: { fontSize: 15, fontWeight: '800', color: COLORS.white },
 });

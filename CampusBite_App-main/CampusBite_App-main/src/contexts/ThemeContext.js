@@ -1,16 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS as LIGHT_COLORS, DARK_COLORS } from '../constants';
-import useAuthStore from '../stores/authStore';
 
 const STORAGE_KEY = 'campusbite_theme_mode';
 
-// Dark mode is currently a consumer-only feature — the toggle only appears
-// on the consumer's Profile screen. Gating here (not just hiding the UI)
-// means a preference saved during a consumer session can't leak into
-// another role's screens if a different account signs in on the same
-// device, since AsyncStorage is shared across accounts, not per-user.
-const DARK_MODE_ROLES = ['consumer'];
+// Dark mode now applies to every role (and the pre-login landing/auth
+// screens), so the preference is a single device-wide setting — there's no
+// per-role leak concern anymore since every screen respects it the same way.
 
 const ThemeContext = createContext({
   mode: 'light',
@@ -22,8 +18,6 @@ const ThemeContext = createContext({
 
 export function ThemeProvider({ children }) {
   const [mode, setMode] = useState('light');
-  const userRole = useAuthStore((s) => s.user?.role);
-  const allowDarkMode = DARK_MODE_ROLES.includes(userRole);
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY).then((saved) => {
@@ -44,15 +38,13 @@ export function ThemeProvider({ children }) {
     });
   }, []);
 
-  const effectiveMode = allowDarkMode ? mode : 'light';
-
   const value = useMemo(() => ({
-    mode: effectiveMode,
-    isDark: effectiveMode === 'dark',
-    colors: effectiveMode === 'dark' ? DARK_COLORS : LIGHT_COLORS,
+    mode,
+    isDark: mode === 'dark',
+    colors: mode === 'dark' ? DARK_COLORS : LIGHT_COLORS,
     toggleTheme,
     setThemeMode,
-  }), [effectiveMode, toggleTheme, setThemeMode]);
+  }), [mode, toggleTheme, setThemeMode]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

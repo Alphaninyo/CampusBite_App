@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
@@ -6,10 +6,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import useAuthStore from '../../stores/authStore';
-import { COLORS } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 import { api } from '../../api';
 
 export default function LoginScreen({ navigation }) {
+  const { colors: COLORS, isDark, toggleTheme } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const [email, setEmail]               = useState('');
   const [password, setPassword]         = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -93,10 +95,19 @@ export default function LoginScreen({ navigation }) {
           input:-webkit-autofill:hover,
           input:-webkit-autofill:focus,
           input:-webkit-autofill:active {
-            -webkit-box-shadow: 0 0 0 30px #FFFFFF inset !important;
+            -webkit-box-shadow: 0 0 0 30px ${COLORS.card} inset !important;
+            -webkit-text-fill-color: ${COLORS.text} !important;
           }
         `}} />
       )}
+      <TouchableOpacity
+        style={styles.themeToggleBtn}
+        onPress={toggleTheme}
+        activeOpacity={0.7}
+        accessibilityLabel={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      >
+        <Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={20} color={COLORS.primary} />
+      </TouchableOpacity>
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
@@ -110,7 +121,7 @@ export default function LoginScreen({ navigation }) {
         <View style={styles.brandSection}>
           <View style={styles.logoRing}>
             <View style={styles.logoInner}>
-              <Ionicons name="pizza" size={30} color={COLORS.card} />
+              <Ionicons name="pizza" size={30} color={COLORS.white} />
             </View>
           </View>
           <Text style={styles.brandName}>CampusBite</Text>
@@ -221,7 +232,7 @@ export default function LoginScreen({ navigation }) {
               activeOpacity={1}
             >
               {loading ? (
-                <ActivityIndicator color={COLORS.card} size="small" />
+                <ActivityIndicator color={COLORS.white} size="small" />
               ) : (
                 <View style={styles.loginBtnInner}>
                   <Text style={styles.loginBtnText}>Log In</Text>
@@ -252,7 +263,7 @@ export default function LoginScreen({ navigation }) {
             <TouchableOpacity style={styles.socialBtn} onPress={() => handleSocialLogin('Apple')} activeOpacity={0.8}>
               <Image 
                 source={{ uri: 'https://cdn-icons-png.flaticon.com/512/179/179309.png' }} 
-                style={[styles.socialIcon, { tintColor: '#000000' }]} 
+                style={[styles.socialIcon, { tintColor: COLORS.text }]} 
               />
               <Text style={styles.socialText}>Apple</Text>
             </TouchableOpacity>
@@ -326,7 +337,7 @@ export default function LoginScreen({ navigation }) {
                 activeOpacity={0.8}
               >
                 {statusLoading
-                  ? <ActivityIndicator color={COLORS.card} size="small" />
+                  ? <ActivityIndicator color={COLORS.white} size="small" />
                   : <Text style={styles.statusCheckBtnText}>Check Status</Text>
                 }
               </TouchableOpacity>
@@ -429,11 +440,19 @@ export default function LoginScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   root:  { flex: 1, backgroundColor: COLORS.backgroundAlt },
   scroll: { flexGrow: 1, alignItems: 'center', paddingHorizontal: 22, paddingTop: 56, paddingBottom: 48 },
 
   // ── Decorative blobs ──
+  themeToggleBtn: {
+    position: 'absolute', top: 16, right: 16, zIndex: 2,
+    width: 38, height: 38, borderRadius: 19,
+    backgroundColor: COLORS.card, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: COLORS.borderAccent,
+    shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 6, elevation: 3,
+  },
+
   blob1: { position: 'absolute', top: -50, right: -50, width: 180, height: 180, borderRadius: 90, backgroundColor: COLORS.blob, opacity: 0.45 },
   blob2: { position: 'absolute', top: 50,  left: -70,  width: 150, height: 150, borderRadius: 75, backgroundColor: COLORS.blob, opacity: 0.28 },
   blob3: { position: 'absolute', bottom: -60, right: -50, width: 160, height: 160, borderRadius: 80, backgroundColor: COLORS.blob, opacity: 0.25 },
@@ -497,7 +516,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 }, elevation: 7,
   },
   loginBtnInner: { flexDirection: 'row', alignItems: 'center' },
-  loginBtnText:  { color: COLORS.card, fontSize: 17, fontWeight: '800', marginRight: 10, letterSpacing: 0.2 },
+  loginBtnText:  { color: COLORS.white, fontSize: 17, fontWeight: '800', marginRight: 10, letterSpacing: 0.2 },
   arrowBadge:    { width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center' },
 
   // ── Divider ──
@@ -547,7 +566,7 @@ const styles = StyleSheet.create({
   },
   errorBannerLeft: {
     width: 32, height: 32, borderRadius: 8,
-    backgroundColor: '#FEE2E2', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: COLORS.dangerBorder, alignItems: 'center', justifyContent: 'center',
   },
   errorBannerText: { fontSize: 13, color: COLORS.danger, fontWeight: '600', lineHeight: 17 },
   contactSupportBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
@@ -593,7 +612,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary, borderRadius: 12, paddingVertical: 13,
     alignItems: 'center', marginTop: 4, marginBottom: 12,
   },
-  statusCheckBtnText: { color: COLORS.card, fontSize: 14, fontWeight: '800' },
+  statusCheckBtnText: { color: COLORS.white, fontSize: 14, fontWeight: '800' },
 
   statusResultCard: {
     borderRadius: 14, padding: 14,

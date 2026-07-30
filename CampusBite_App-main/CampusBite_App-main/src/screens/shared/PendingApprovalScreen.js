@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, Animated,
   Alert, ScrollView, ActivityIndicator, Platform,
@@ -6,9 +6,11 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
-import { COLORS } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function PendingApprovalScreen({ navigation }) {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const { user, logout, updateUser }    = useAuthStore();
   const [checking, setChecking]         = useState(false);
   const [verStatus, setVerStatus]       = useState(user?.verification_status || 'not_submitted');
@@ -121,7 +123,7 @@ export default function PendingApprovalScreen({ navigation }) {
         <Animated.View style={[styles.iconRingOuter, { transform: [{ scale: pulseAnim }] }]}>
           <View style={styles.iconRingMiddle}>
             <View style={styles.iconRingInner}>
-              <Ionicons name="time" size={36} color={COLORS.card} />
+              <Ionicons name="time" size={36} color={COLORS.white} />
             </View>
           </View>
         </Animated.View>
@@ -148,7 +150,7 @@ export default function PendingApprovalScreen({ navigation }) {
             <View key={i} style={styles.stepRow}>
               <View style={styles.stepLeft}>
                 <View style={[styles.stepIcon, { backgroundColor: step.done ? step.color : step.active ? COLORS.iconBg : COLORS.inputBg }]}>
-                  <Ionicons name={step.icon} size={18} color={step.done ? COLORS.card : step.active ? COLORS.primary : COLORS.muted} />
+                  <Ionicons name={step.icon} size={18} color={step.done ? COLORS.white : step.active ? COLORS.primary : COLORS.muted} />
                 </View>
                 {i < verificationSteps.length - 1 && (
                   <View style={[styles.stepConnector, step.done && styles.stepConnectorDone]} />
@@ -205,9 +207,9 @@ export default function PendingApprovalScreen({ navigation }) {
         {/* Check status button */}
         <TouchableOpacity style={styles.checkBtn} onPress={checkStatus} disabled={checking} activeOpacity={0.8}>
           {checking
-            ? <ActivityIndicator color={COLORS.card} size="small" />
+            ? <ActivityIndicator color={COLORS.white} size="small" />
             : <>
-                <Ionicons name="refresh" size={18} color={COLORS.card} style={{ marginRight: 8 }} />
+                <Ionicons name="refresh" size={18} color={COLORS.white} style={{ marginRight: 8 }} />
                 <Text style={styles.checkBtnText}>Check Approval Status</Text>
               </>
           }
@@ -277,7 +279,7 @@ export default function PendingApprovalScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   root:   { flex: 1, backgroundColor: COLORS.backgroundAlt },
   scroll: { flexGrow: 1, alignItems: 'center', paddingHorizontal: 22, paddingTop: 50, paddingBottom: 48 },
 
@@ -329,7 +331,7 @@ const styles = StyleSheet.create({
   docBadgeText: { fontSize: 13, fontWeight: '500', marginLeft: 8, flex: 1 },
 
   checkBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.primary, borderRadius: 16, paddingVertical: 16, width: '100%', marginBottom: 16, shadowColor: COLORS.primary, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
-  checkBtnText: { color: COLORS.card, fontSize: 16, fontWeight: '800' },
+  checkBtnText: { color: COLORS.white, fontSize: 16, fontWeight: '800' },
 
   tipsCard:   { width: '100%', backgroundColor: COLORS.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: COLORS.borderWarm },
   tipsTitle:  { fontSize: 13, fontWeight: '700', color: COLORS.text, marginBottom: 12 },
@@ -337,8 +339,8 @@ const styles = StyleSheet.create({
   tipText:    { fontSize: 12, color: COLORS.subtext, marginLeft: 8, flex: 1, lineHeight: 16 },
 
   statusBanner:       { flexDirection: 'row', alignItems: 'center', width: '100%', borderRadius: 12, padding: 12, marginBottom: 12, columnGap: 10 },
-  statusBannerGreen:  { backgroundColor: '#DCFCE7', borderWidth: 1, borderColor: '#86EFAC' },
+  statusBannerGreen:  { backgroundColor: COLORS.successBg, borderWidth: 1, borderColor: COLORS.successBorder },
   statusBannerOrange: { backgroundColor: COLORS.iconBg, borderWidth: 1, borderColor: COLORS.borderWarm },
-  statusBannerRed:    { backgroundColor: '#FEE2E2', borderWidth: 1, borderColor: '#FCA5A5' },
+  statusBannerRed:    { backgroundColor: COLORS.dangerBg, borderWidth: 1, borderColor: COLORS.dangerBorder },
   statusBannerText:   { flex: 1, fontSize: 13, fontWeight: '600' },
 });

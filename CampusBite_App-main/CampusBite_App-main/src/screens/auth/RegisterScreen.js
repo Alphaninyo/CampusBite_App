@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
@@ -9,7 +9,7 @@ import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
-import { COLORS } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const ROLES = [
   { key: 'consumer',     label: 'Consumer',     icon: 'person-outline',     desc: 'Order food'      },
@@ -17,10 +17,11 @@ const ROLES = [
   { key: 'food_courier', label: 'Food Courier',  icon: 'bicycle-outline',    desc: 'Deliver orders'  },
 ];
 
-function Field({ icon, placeholder, value, onChangeText, keyboardType, secureTextEntry, autoCapitalize }) {
+function Field({ icon, placeholder, value, onChangeText, keyboardType, secureTextEntry, autoCapitalize, COLORS }) {
   const [focused, setFocused] = useState(false);
   const [show, setShow]       = useState(false);
   const isSecure              = secureTextEntry;
+  const fStyles = useMemo(() => makeFieldStyles(COLORS), [COLORS]);
   return (
     <View style={[fStyles.wrap, focused && fStyles.focused]}>
       <View style={fStyles.iconBox}>
@@ -47,7 +48,7 @@ function Field({ icon, placeholder, value, onChangeText, keyboardType, secureTex
   );
 }
 
-const fStyles = StyleSheet.create({
+const makeFieldStyles = (COLORS) => StyleSheet.create({
   wrap: {
     flexDirection: 'row', alignItems: 'center',
     borderBottomWidth: 1.5, borderColor: COLORS.border,
@@ -65,6 +66,8 @@ const DOC_TYPES = [
 ];
 
 export default function RegisterScreen({ navigation }) {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const [form, setForm] = useState({
     name: '', email: '', phone: '', password: '',
     role: 'consumer', business_name: '', vendor_type: 'home_based', location: '',
@@ -172,7 +175,8 @@ export default function RegisterScreen({ navigation }) {
           input:-webkit-autofill:hover,
           input:-webkit-autofill:focus,
           input:-webkit-autofill:active {
-            -webkit-box-shadow: 0 0 0 30px #FFFFFF inset !important;
+            -webkit-box-shadow: 0 0 0 30px ${COLORS.card} inset !important;
+            -webkit-text-fill-color: ${COLORS.text} !important;
           }
         `}} />
       )}
@@ -188,7 +192,7 @@ export default function RegisterScreen({ navigation }) {
           </TouchableOpacity>
           <View style={styles.logoRing}>
             <View style={styles.logoInner}>
-              <Ionicons name="pizza" size={22} color={COLORS.card} />
+              <Ionicons name="pizza" size={22} color={COLORS.white} />
             </View>
           </View>
         </View>
@@ -200,7 +204,7 @@ export default function RegisterScreen({ navigation }) {
               <View key={label} style={styles.stepItem}>
                 <View style={[styles.stepDot, i + 1 === step && styles.stepDotActive, i + 1 < step && styles.stepDotDone]}>
                   {i + 1 < step
-                    ? <Ionicons name="checkmark" size={11} color={COLORS.card} />
+                    ? <Ionicons name="checkmark" size={11} color={COLORS.white} />
                     : <Text style={[styles.stepNum, i + 1 === step && styles.stepNumActive]}>{i + 1}</Text>
                   }
                 </View>
@@ -231,7 +235,7 @@ export default function RegisterScreen({ navigation }) {
             <View style={styles.roleRow}>
               {ROLES.map((r) => (
                 <TouchableOpacity key={r.key} style={[styles.roleBtn, form.role === r.key && styles.roleBtnActive]} onPress={() => set('role', r.key)} activeOpacity={0.8}>
-                  <Ionicons name={r.icon} size={20} color={form.role === r.key ? COLORS.card : COLORS.muted} />
+                  <Ionicons name={r.icon} size={20} color={form.role === r.key ? COLORS.white : COLORS.muted} />
                   <Text style={[styles.roleBtnLabel, form.role === r.key && styles.roleBtnLabelActive]}>{r.label}</Text>
                   <Text style={[styles.roleBtnDesc,  form.role === r.key && styles.roleBtnDescActive]}>{r.desc}</Text>
                 </TouchableOpacity>
@@ -239,21 +243,21 @@ export default function RegisterScreen({ navigation }) {
             </View>
 
             <Text style={styles.sectionLabel}>PERSONAL INFO</Text>
-            <Field icon="person-outline"      placeholder="Full Name"               value={form.name}     onChangeText={(v) => set('name', v)} />
-            <Field icon="mail-outline"        placeholder="Email address"           value={form.email}    onChangeText={(v) => set('email', v)}    keyboardType="email-address" autoCapitalize="none" />
-            <Field icon="call-outline"        placeholder="Phone (e.g. 0712345678)" value={form.phone}    onChangeText={(text) => { let v = text.replace(/[^0-9+]/g, ''); if (v.indexOf('+') > 0) v = v.replace(/\+/g, ''); if (v.length > 13) v = v.slice(0, 13); set('phone', v); }}    keyboardType="phone-pad" autoCapitalize="none" />
-            <Field icon="lock-closed-outline" placeholder="Password (min 6 chars)"  value={form.password} onChangeText={(v) => set('password', v)} secureTextEntry />
+            <Field COLORS={COLORS} icon="person-outline"      placeholder="Full Name"               value={form.name}     onChangeText={(v) => set('name', v)} />
+            <Field COLORS={COLORS} icon="mail-outline"        placeholder="Email address"           value={form.email}    onChangeText={(v) => set('email', v)}    keyboardType="email-address" autoCapitalize="none" />
+            <Field COLORS={COLORS} icon="call-outline"        placeholder="Phone (e.g. 0712345678)" value={form.phone}    onChangeText={(text) => { let v = text.replace(/[^0-9+]/g, ''); if (v.indexOf('+') > 0) v = v.replace(/\+/g, ''); if (v.length > 13) v = v.slice(0, 13); set('phone', v); }}    keyboardType="phone-pad" autoCapitalize="none" />
+            <Field COLORS={COLORS} icon="lock-closed-outline" placeholder="Password (min 6 chars)"  value={form.password} onChangeText={(v) => set('password', v)} secureTextEntry />
 
             {form.role === 'vendor' && (
               <View>
                 <Text style={styles.sectionLabel}>BUSINESS INFO</Text>
-                <Field icon="storefront-outline" placeholder="Business Name"       value={form.business_name} onChangeText={(v) => set('business_name', v)} />
-                <Field icon="location-outline"   placeholder="Location (optional)" value={form.location}      onChangeText={(v) => set('location', v)} />
+                <Field COLORS={COLORS} icon="storefront-outline" placeholder="Business Name"       value={form.business_name} onChangeText={(v) => set('business_name', v)} />
+                <Field COLORS={COLORS} icon="location-outline"   placeholder="Location (optional)" value={form.location}      onChangeText={(v) => set('location', v)} />
                 <Text style={styles.sectionLabel}>VENDOR TYPE</Text>
                 <View style={styles.typeRow}>
                   {[{ key: 'home_based', label: 'Home Based', icon: 'home-outline' }, { key: 'restaurant', label: 'Restaurant', icon: 'restaurant-outline' }].map((t) => (
                     <TouchableOpacity key={t.key} style={[styles.typeBtn, form.vendor_type === t.key && styles.typeBtnActive]} onPress={() => set('vendor_type', t.key)} activeOpacity={0.8}>
-                      <Ionicons name={t.icon} size={18} color={form.vendor_type === t.key ? COLORS.card : COLORS.muted} />
+                      <Ionicons name={t.icon} size={18} color={form.vendor_type === t.key ? COLORS.white : COLORS.muted} />
                       <Text style={[styles.typeBtnText, form.vendor_type === t.key && styles.typeBtnTextActive]}>{t.label}</Text>
                     </TouchableOpacity>
                   ))}
@@ -270,7 +274,7 @@ export default function RegisterScreen({ navigation }) {
 
             <Animated.View style={{ transform: [{ scale: btnScale }], marginTop: 8 }}>
               <TouchableOpacity style={[styles.submitBtn, loading && { opacity: 0.8 }]} onPress={handleStep1} onPressIn={pressIn} onPressOut={pressOut} disabled={loading} activeOpacity={1}>
-                {loading ? <ActivityIndicator color={COLORS.card} size="small" /> : (
+                {loading ? <ActivityIndicator color={COLORS.white} size="small" /> : (
                   <View style={styles.submitInner}>
                     <Text style={styles.submitText}>{needsVerification ? 'Continue' : 'Create Account'}</Text>
                     <View style={styles.arrowBadge}>
@@ -336,7 +340,7 @@ export default function RegisterScreen({ navigation }) {
             <View style={styles.docTypeRow}>
               {DOC_TYPES.map((d) => (
                 <TouchableOpacity key={d.key} style={[styles.docTypeBtn, docType === d.key && styles.docTypeBtnActive]} onPress={() => setDocType(d.key)} activeOpacity={0.8}>
-                  <Ionicons name={d.icon} size={22} color={docType === d.key ? COLORS.card : COLORS.muted} />
+                  <Ionicons name={d.icon} size={22} color={docType === d.key ? COLORS.white : COLORS.muted} />
                   <Text style={[styles.docTypeLabel, docType === d.key && styles.docTypeLabelActive]}>{d.label}</Text>
                   <Text style={[styles.docTypeDesc,  docType === d.key && styles.docTypeDescActive]} numberOfLines={2}>{d.desc}</Text>
                 </TouchableOpacity>
@@ -386,9 +390,9 @@ export default function RegisterScreen({ navigation }) {
 
             <Animated.View style={{ transform: [{ scale: btnScale }], marginTop: 8 }}>
               <TouchableOpacity style={[styles.submitBtn, loading && { opacity: 0.8 }]} onPress={() => handleStep2(false)} onPressIn={pressIn} onPressOut={pressOut} disabled={loading} activeOpacity={1}>
-                {loading ? <ActivityIndicator color={COLORS.card} size="small" /> : (
+                {loading ? <ActivityIndicator color={COLORS.white} size="small" /> : (
                   <View style={styles.submitInner}>
-                    <Ionicons name="cloud-upload" size={17} color={COLORS.card} style={{ marginRight: 8 }} />
+                    <Ionicons name="cloud-upload" size={17} color={COLORS.white} style={{ marginRight: 8 }} />
                     <Text style={styles.submitText}>{(pickedFile || selfieFile) ? 'Submit & Continue' : 'Continue without documents'}</Text>
                   </View>
                 )}
@@ -424,7 +428,7 @@ export default function RegisterScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   root:   { flex: 1, backgroundColor: COLORS.backgroundAlt },
   scroll: { flexGrow: 1, alignItems: 'center', paddingHorizontal: 22, paddingTop: 52, paddingBottom: 48 },
 
@@ -464,7 +468,7 @@ const styles = StyleSheet.create({
   },
   roleBtnActive:      { backgroundColor: COLORS.primary, borderColor: COLORS.primary, shadowColor: COLORS.primary, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
   roleBtnLabel:       { fontSize: 11, fontWeight: '700', color: COLORS.subtext, marginTop: 4 },
-  roleBtnLabelActive: { color: COLORS.card },
+  roleBtnLabelActive: { color: COLORS.white },
   roleBtnDesc:        { fontSize: 10, color: COLORS.muted, marginTop: 1 },
   roleBtnDescActive:  { color: 'rgba(255,255,255,0.8)' },
 
@@ -476,7 +480,7 @@ const styles = StyleSheet.create({
   },
   typeBtnActive:    { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   typeBtnText:      { fontSize: 13, fontWeight: '700', color: COLORS.subtext, marginLeft: 6 },
-  typeBtnTextActive:{ color: COLORS.card },
+  typeBtnTextActive:{ color: COLORS.white },
 
   // ── Submit ──
   submitBtn: {
@@ -485,7 +489,7 @@ const styles = StyleSheet.create({
     shadowColor: COLORS.primary, shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 6,
   },
   submitInner: { flexDirection: 'row', alignItems: 'center' },
-  submitText:  { color: COLORS.card, fontSize: 17, fontWeight: '800', marginRight: 10, letterSpacing: 0.2 },
+  submitText:  { color: COLORS.white, fontSize: 17, fontWeight: '800', marginRight: 10, letterSpacing: 0.2 },
   arrowBadge:  { width: 28, height: 28, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center' },
 
   // ── Login link ──
@@ -509,7 +513,7 @@ const styles = StyleSheet.create({
   stepDotActive:  { backgroundColor: COLORS.primary, shadowColor: COLORS.primary, shadowOpacity: 0.3, shadowRadius: 5, elevation: 3 },
   stepDotDone:    { backgroundColor: COLORS.success },
   stepNum:        { fontSize: 11, fontWeight: '700', color: COLORS.muted },
-  stepNumActive:  { color: COLORS.card },
+  stepNumActive:  { color: COLORS.white },
   stepLabel:      { fontSize: 11, color: COLORS.muted, fontWeight: '600', marginLeft: 6 },
   stepLabelActive:{ color: COLORS.primary, fontWeight: '700' },
   stepLine:       { width: 28, height: 2, backgroundColor: COLORS.border, marginHorizontal: 6 },
@@ -520,7 +524,7 @@ const styles = StyleSheet.create({
   docTypeBtn:          { flex: 1, alignItems: 'center', paddingVertical: 14, borderRadius: 14, borderWidth: 1.5, borderColor: COLORS.border, backgroundColor: COLORS.inputBg },
   docTypeBtnActive:    { backgroundColor: COLORS.primary, borderColor: COLORS.primary, shadowColor: COLORS.primary, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
   docTypeLabel:        { fontSize: 12, fontWeight: '700', color: COLORS.subtext, marginTop: 6, marginBottom: 2 },
-  docTypeLabelActive:  { color: COLORS.card },
+  docTypeLabelActive:  { color: COLORS.white },
   docTypeDesc:         { fontSize: 10, color: COLORS.muted, textAlign: 'center', paddingHorizontal: 4 },
   docTypeDescActive:   { color: 'rgba(255,255,255,0.8)' },
 
@@ -553,6 +557,6 @@ const styles = StyleSheet.create({
   skipText: { fontSize: 13, color: COLORS.muted, fontWeight: '500' },
 
   // ── Inline error ──
-  inlineError:     { flexDirection: 'row', alignItems: 'center', columnGap: 6, backgroundColor: '#FEE2E2', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12, marginTop: 10 },
+  inlineError:     { flexDirection: 'row', alignItems: 'center', columnGap: 6, backgroundColor: COLORS.dangerBg, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12, marginTop: 10 },
   inlineErrorText: { flex: 1, fontSize: 13, color: COLORS.danger, fontWeight: '500' },
 });

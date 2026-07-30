@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ActivityIndicator,
   Alert, ScrollView, Animated, Platform,
@@ -6,7 +6,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { api } from '../../api';
-import { COLORS } from '../../constants';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const DOC_TYPES = [
   { key: 'national_id', label: 'National ID', icon: 'card-outline',  desc: 'Front of your national identity card' },
@@ -14,6 +14,8 @@ const DOC_TYPES = [
 ];
 
 export default function VerificationScreen({ navigation, route }) {
+  const { colors: COLORS } = useTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const role = route?.params?.role || 'vendor';
 
   const [docType, setDocType]       = useState('national_id');
@@ -127,7 +129,7 @@ export default function VerificationScreen({ navigation, route }) {
         <View style={styles.header}>
           <View style={styles.logoRing}>
             <View style={styles.logoInner}>
-              <Ionicons name="shield-checkmark" size={24} color={COLORS.card} />
+              <Ionicons name="shield-checkmark" size={24} color={COLORS.white} />
             </View>
           </View>
         </View>
@@ -146,7 +148,7 @@ export default function VerificationScreen({ navigation, route }) {
             <View key={s} style={styles.stepItem}>
               <View style={[styles.stepDot, i === 1 && styles.stepDotActive, i < 1 && styles.stepDotDone]}>
                 {i < 1
-                  ? <Ionicons name="checkmark" size={12} color={COLORS.card} />
+                  ? <Ionicons name="checkmark" size={12} color={COLORS.white} />
                   : <Text style={[styles.stepNum, i === 1 && styles.stepNumActive]}>{i + 1}</Text>
                 }
               </View>
@@ -170,6 +172,8 @@ export default function VerificationScreen({ navigation, route }) {
             onCamera={() => pickFile(setSelfieFile, true)}
             icon="person-circle-outline"
             label="Upload your selfie"
+            styles={styles}
+            COLORS={COLORS}
           />
 
           {/* ── Section 2: ID document ── */}
@@ -183,7 +187,7 @@ export default function VerificationScreen({ navigation, route }) {
                 onPress={() => setDocType(d.key)}
                 activeOpacity={0.8}
               >
-                <Ionicons name={d.icon} size={20} color={docType === d.key ? COLORS.card : COLORS.muted} />
+                <Ionicons name={d.icon} size={20} color={docType === d.key ? COLORS.white : COLORS.muted} />
                 <Text style={[styles.docTypeLabel, docType === d.key && styles.docTypeLabelActive]}>{d.label}</Text>
                 <Text style={[styles.docTypeDesc,  docType === d.key && styles.docTypeDescActive]} numberOfLines={2}>{d.desc}</Text>
               </TouchableOpacity>
@@ -196,6 +200,8 @@ export default function VerificationScreen({ navigation, route }) {
             onCamera={() => pickFile(setIdFile, true)}
             icon="card-outline"
             label="Upload your ID document"
+            styles={styles}
+            COLORS={COLORS}
           />
 
           {/* Guidelines */}
@@ -225,10 +231,10 @@ export default function VerificationScreen({ navigation, route }) {
               activeOpacity={1}
             >
               {uploading ? (
-                <ActivityIndicator color={COLORS.card} size="small" />
+                <ActivityIndicator color={COLORS.white} size="small" />
               ) : (
                 <View style={styles.submitInner}>
-                  <Ionicons name="cloud-upload" size={18} color={COLORS.card} style={{ marginRight: 8 }} />
+                  <Ionicons name="cloud-upload" size={18} color={COLORS.white} style={{ marginRight: 8 }} />
                   <Text style={styles.submitText}>Submit for Verification</Text>
                 </View>
               )}
@@ -249,7 +255,7 @@ export default function VerificationScreen({ navigation, route }) {
 
 // ── File upload box ───────────────────────────────────────────────────────────
 
-function FileUploadBox({ file, onClear, onGallery, onCamera, icon, label }) {
+function FileUploadBox({ file, onClear, onGallery, onCamera, icon, label, styles, COLORS }) {
   if (file) {
     return (
       <View style={styles.previewBox}>
@@ -289,7 +295,7 @@ function FileUploadBox({ file, onClear, onGallery, onCamera, icon, label }) {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   root:   { flex: 1, backgroundColor: COLORS.backgroundAlt },
   scroll: { flexGrow: 1, alignItems: 'center', paddingHorizontal: 22, paddingTop: 50, paddingBottom: 48 },
 
@@ -312,7 +318,7 @@ const styles = StyleSheet.create({
   stepDotActive:   { backgroundColor: COLORS.primary, shadowColor: COLORS.primary, shadowOpacity: 0.3, shadowRadius: 6, elevation: 3 },
   stepDotDone:     { backgroundColor: COLORS.success },
   stepNum:         { fontSize: 11, fontWeight: '700', color: COLORS.muted },
-  stepNumActive:   { color: COLORS.card },
+  stepNumActive:   { color: COLORS.white },
   stepLabel:       { fontSize: 10, color: COLORS.muted, fontWeight: '600', marginLeft: 6 },
   stepLabelActive: { color: COLORS.primary, fontWeight: '700' },
   stepLine:        { width: 28, height: 2, backgroundColor: COLORS.border, marginHorizontal: 4 },
@@ -332,7 +338,7 @@ const styles = StyleSheet.create({
   docTypeBtn:         { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 14, borderWidth: 1.5, borderColor: COLORS.borderWarm, backgroundColor: COLORS.inputBg },
   docTypeBtnActive:   { backgroundColor: COLORS.primary, borderColor: COLORS.primary, shadowColor: COLORS.primary, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
   docTypeLabel:       { fontSize: 11, fontWeight: '700', color: COLORS.subtext, marginTop: 5, marginBottom: 2 },
-  docTypeLabelActive: { color: COLORS.card },
+  docTypeLabelActive: { color: COLORS.white },
   docTypeDesc:        { fontSize: 9, color: COLORS.muted, textAlign: 'center', paddingHorizontal: 4 },
   docTypeDescActive:  { color: 'rgba(255,255,255,0.8)' },
 
@@ -370,7 +376,7 @@ const styles = StyleSheet.create({
   submitBtn:         { backgroundColor: COLORS.primary, borderRadius: 16, paddingVertical: 17, alignItems: 'center', justifyContent: 'center', shadowColor: COLORS.primary, shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 6 },
   submitBtnDisabled: { backgroundColor: COLORS.blob, shadowOpacity: 0 },
   submitInner:       { flexDirection: 'row', alignItems: 'center' },
-  submitText:        { color: COLORS.card, fontSize: 16, fontWeight: '800', letterSpacing: 0.2 },
+  submitText:        { color: COLORS.white, fontSize: 16, fontWeight: '800', letterSpacing: 0.2 },
 
   skipRow:  { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
   skipText: { fontSize: 13, color: COLORS.muted, fontWeight: '500' },
