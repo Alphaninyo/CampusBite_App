@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import AvailableOrdersScreen       from '../screens/foodCourier/AvailableOrdersScreen';
+import ActiveDeliveryScreen        from '../screens/foodCourier/ActiveDeliveryScreen';
 import MyDeliveriesScreen          from '../screens/foodCourier/MyDeliveriesScreen';
 import FoodCourierOrderDetailScreen from '../screens/foodCourier/RiderOrderDetailScreen';
 import FoodCourierProfileScreen    from '../screens/foodCourier/FoodCourierProfileScreen';
@@ -31,6 +32,17 @@ function AvailableStack() {
   return (
     <Stack.Navigator screenOptions={stackScreenOptions(COLORS)}>
       <Stack.Screen name="AvailableOrders"      component={AvailableOrdersScreen}       options={{ headerShown: false }} />
+      <Stack.Screen name="FoodCourierOrderDetail" component={FoodCourierOrderDetailScreen} options={{ title: 'Order Detail' }} />
+      <Stack.Screen name="Notifications"        component={NotificationsScreen}        options={{ headerShown: false }} />
+    </Stack.Navigator>
+  );
+}
+
+function ActiveStack() {
+  const { colors: COLORS } = useTheme();
+  return (
+    <Stack.Navigator screenOptions={stackScreenOptions(COLORS)}>
+      <Stack.Screen name="ActiveDelivery"         component={ActiveDeliveryScreen}        options={{ headerShown: false }} />
       <Stack.Screen name="FoodCourierOrderDetail" component={FoodCourierOrderDetailScreen} options={{ title: 'Order Detail' }} />
       <Stack.Screen name="Notifications"        component={NotificationsScreen}        options={{ headerShown: false }} />
     </Stack.Navigator>
@@ -117,14 +129,23 @@ export default function FoodCourierNavigator() {
         }}
       />
       <Tab.Screen
+        name="ActiveTab"
+        component={ActiveStack}
+        listeners={{ tabPress: () => fetchCounts() }}
+        options={{
+          title: 'Active',
+          tabBarIcon: ({ color, size }) => <Ionicons name="navigate-outline" size={size} color={color} />,
+          tabBarBadge: deliveryBadge,
+          tabBarBadgeStyle: badgeStyle,
+        }}
+      />
+      <Tab.Screen
         name="DeliveriesTab"
         component={EarningsStack}
         listeners={{ tabPress: () => fetchCounts() }}
         options={{
           title: 'Earnings',
           tabBarIcon: ({ color, size }) => <Ionicons name="wallet-outline" size={size} color={color} />,
-          tabBarBadge: deliveryBadge,
-          tabBarBadgeStyle: badgeStyle,
         }}
       />
       <Tab.Screen name="ProfileTab" component={ProfileStack} options={{ title: 'Profile', tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} /> }} />
