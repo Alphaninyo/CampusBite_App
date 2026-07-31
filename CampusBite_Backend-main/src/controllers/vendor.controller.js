@@ -6,6 +6,7 @@ const { Op, literal }   = require('sequelize');
 const { Vendor, User, MenuItem, sequelize } = require('../models');
 const { uploadBufferToCloudinary } = require('../services/upload.service');
 const notify = require('../services/notification.service');
+const { isVendorOpenNow } = require('../services/vendorStatus.service');
 
 // ─── Multer Setup for Vendor Cover Images ─────────────────────────────────────
 // Files are kept in memory (never written to local disk) and uploaded straight
@@ -243,6 +244,9 @@ exports.toggleShopStatus = async (req, res) => {
  */
 exports.getAllVendors = async (req, res) => {
   try {
+    // is_open=false is always closed regardless of hours, so it's still a
+    // valid pre-filter here — the time-of-day check below only ever narrows
+    // this further, never widens it.
     const where = { approved_at: { [Op.ne]: null } };
     if (req.query.open_only === 'true') where.is_open = true;
 
@@ -252,7 +256,19 @@ exports.getAllVendors = async (req, res) => {
       order: [['business_name', 'ASC']],
     });
 
-    res.status(200).json({ success: true, count: vendors.length, vendors });
+    // Effective open status factors in opening_time/closing_time, so a vendor
+    // who leaves is_open=true still shows (and gates ordering) as closed
+    // outside their set hours without them touching the toggle daily.
+    let result = vendors.map((v) => {
+      const json = v.toJSON();
+      json.is_open = isVendorOpenNow(v);
+      return json;
+    });
+    if (req.query.open_only === 'true') {
+      result = result.filter((v) => v.is_open);
+    }
+
+    res.status(200).json({ success: true, count: result.length, vendors: result });
   } catch (error) {
     console.error('[VENDOR] getAllVendors error:', error);
     res.status(500).json({ success: false, message: 'Server error.' });
@@ -277,7 +293,10 @@ exports.getVendorById = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Vendor not found.' });
     }
 
-    res.status(200).json({ success: true, vendor });
+    const json = vendor.toJSON();
+    json.is_open = isVendorOpenNow(vendor);
+
+    res.status(200).json({ success: true, vendor: json });
   } catch (error) {
     console.error('[VENDOR] getVendorById error:', error);
     res.status(500).json({ success: false, message: 'Server error.' });

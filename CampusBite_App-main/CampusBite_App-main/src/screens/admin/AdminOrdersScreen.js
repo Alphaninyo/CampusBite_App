@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   ActivityIndicator, RefreshControl, ScrollView, TextInput,
-  Alert, Modal,
+  Alert, Modal, useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,6 +24,7 @@ export default function AdminOrdersScreen({ navigation, route }) {
   const { colors: COLORS } = useTheme();
   const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const insets = useSafeAreaInsets();
+  const { height: screenHeight } = useWindowDimensions();
   const [activeTab, setActiveTab] = useState('All');
   const [orders, setOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
@@ -303,15 +304,15 @@ export default function AdminOrdersScreen({ navigation, route }) {
       {/* Order Detail Modal */}
       <Modal visible={showDetailModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { maxHeight: screenHeight * 0.85 }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>ORDER DETAIL - #{selectedOrder?.id?.slice(0, 8)}</Text>
               <TouchableOpacity onPress={() => setShowDetailModal(false)}>
                 <Ionicons name="close" size={24} color={COLORS.text} />
               </TouchableOpacity>
             </View>
-            
-            <ScrollView style={styles.modalBody}>
+
+            <ScrollView style={[styles.modalBody, { maxHeight: screenHeight * 0.7 }]} showsVerticalScrollIndicator={true}>
               <View style={styles.detailSection}>
                 <Text style={styles.detailSectionTitle}>Order Information</Text>
                 <View style={styles.detailRow}>

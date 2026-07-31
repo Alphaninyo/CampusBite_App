@@ -81,10 +81,12 @@ export default function NotificationsScreen({ navigation }) {
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notifications</Text>
-        {unreadCount > 0 && (
+        {unreadCount > 0 ? (
           <TouchableOpacity onPress={markAllAsRead} style={styles.markAllBtn}>
             <Text style={styles.markAllText}>Mark all read</Text>
           </TouchableOpacity>
+        ) : (
+          <View style={{ width: 90 }} />
         )}
       </View>
 

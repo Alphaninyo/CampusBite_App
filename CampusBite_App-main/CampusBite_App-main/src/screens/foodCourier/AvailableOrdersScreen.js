@@ -3,16 +3,20 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
+import { resolveImageUrl } from '../../constants';
 import { useTheme } from '../../contexts/ThemeContext';
 
 const FILTERS = ['All Tasks', 'Closest', 'Highest Pay', 'Hot'];
 
-const RESTAURANT_IMAGES = [
-  'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&h=250&fit=crop',
-  'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&h=250&fit=crop',
-  'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=400&h=250&fit=crop',
-  'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=400&h=250&fit=crop',
-];
+function VendorImagePlaceholder({ name, styles }) {
+  const initials = name ? name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : '?';
+  const hue = name ? name.charCodeAt(0) % 360 : 0;
+  return (
+    <View style={[styles.restaurantImage, { backgroundColor: `hsl(${hue},55%,60%)`, alignItems: 'center', justifyContent: 'center' }]}>
+      <Text style={{ fontSize: 32, fontWeight: '700', color: '#fff' }}>{initials}</Text>
+    </View>
+  );
+}
 
 function getMockDistance(index) {
   const distances = [0.4, 0.8, 1.2, 0.2, 0.6, 1.0];
@@ -146,11 +150,11 @@ export default function AvailableOrdersScreen({ navigation }) {
               activeOpacity={0.8}
             >
               <View style={styles.activeHeader}>
-                <View>
-                  <Text style={styles.activeRestaurant}>{item.vendor?.business_name}</Text>
+                <View style={styles.activeHeaderInfo}>
+                  <Text style={styles.activeRestaurant} numberOfLines={1}>{item.vendor?.business_name}</Text>
                   <View style={styles.distanceRow}>
                     <Ionicons name="location-outline" size={14} color={COLORS.gray} />
-                    <Text style={styles.distanceText}>{item.delivery_address}</Text>
+                    <Text style={styles.distanceText} numberOfLines={1} ellipsizeMode="tail">{item.delivery_address}</Text>
                   </View>
                 </View>
                 <View style={[styles.statusBadge, { backgroundColor: COLORS.success }]}>
@@ -177,13 +181,15 @@ export default function AvailableOrdersScreen({ navigation }) {
           const badge = getMockBadge(index);
           const distance = getMockDistance(index);
           const earnings = getEarnings(item);
-          const imageUrl = RESTAURANT_IMAGES[index % RESTAURANT_IMAGES.length];
+          const imageUrl = resolveImageUrl(item.vendor?.image);
 
           return (
             <View style={styles.card}>
               {/* Image Section */}
               <View style={styles.imageContainer}>
-                <Image source={{ uri: imageUrl }} style={styles.restaurantImage} />
+                {imageUrl
+                  ? <Image source={{ uri: imageUrl }} style={styles.restaurantImage} />
+                  : <VendorImagePlaceholder name={item.vendor?.business_name} styles={styles} />}
                 {badge && (
                   <View style={[styles.badge, badge === 'Hot' && styles.badgeHot]}>
                     <Text style={styles.badgeText}>{badge}</Text>
@@ -390,6 +396,7 @@ const makeStyles = (COLORS) => StyleSheet.create({
     fontSize: 13,
     color: COLORS.gray,
     marginLeft: 4,
+    flexShrink: 1,
   },
   destinationBox: {
     marginHorizontal: 16,
@@ -492,10 +499,12 @@ const makeStyles = (COLORS) => StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 12,
   },
+  activeHeaderInfo: { flex: 1, marginRight: 8 },
   activeRestaurant: { fontSize: 16, fontWeight: 'bold', color: COLORS.text, marginBottom: 4 },
   statusBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 3,
     paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10,
+    flexShrink: 0,
   },
   statusBadgeText: { color: COLORS.white, fontSize: 10, fontWeight: 'bold' },
   activeFooter: {

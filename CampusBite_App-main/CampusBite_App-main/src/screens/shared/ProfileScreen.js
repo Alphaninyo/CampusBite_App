@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import QRCode from 'react-native-qrcode-svg';
 import * as Location from 'expo-location';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
 import { resolveImageUrl } from '../../constants';
@@ -72,8 +73,28 @@ export default function ProfileScreen({ navigation }) {
       fetchStats();
       fetchNotifications();
       fetchFavorites();
+      loadSavedAddresses();
     }
   }, [user]);
+
+  // Saved addresses have no backend endpoint (orders only store a one-off
+  // delivery_address string), so they're persisted per-user on-device —
+  // without this they were plain useState and vanished on every logout.
+  const loadSavedAddresses = async () => {
+    if (!user?.id) return;
+    try {
+      const stored = await AsyncStorage.getItem(`savedAddresses_${user.id}`);
+      setSavedAddresses(stored ? JSON.parse(stored) : []);
+    } catch (_) {}
+  };
+
+  const persistSavedAddresses = async (list) => {
+    setSavedAddresses(list);
+    if (!user?.id) return;
+    try {
+      await AsyncStorage.setItem(`savedAddresses_${user.id}`, JSON.stringify(list));
+    } catch (_) {}
+  };
 
   const fetchFavorites = async () => {
     try {
@@ -163,7 +184,7 @@ export default function ProfileScreen({ navigation }) {
       label: newAddressLabel,
       details: newAddressDetails,
     };
-    setSavedAddresses([...savedAddresses, newAddress]);
+    persistSavedAddresses([...savedAddresses, newAddress]);
     setNewAddressLabel('');
     setNewAddressDetails('');
     Alert.alert('Success', 'Address saved successfully');
@@ -232,7 +253,7 @@ export default function ProfileScreen({ navigation }) {
   };
 
   const handleDeleteAddress = (id) => {
-    setSavedAddresses(savedAddresses.filter(addr => addr.id !== id));
+    persistSavedAddresses(savedAddresses.filter(addr => addr.id !== id));
     Alert.alert('Success', 'Address deleted');
   };
 

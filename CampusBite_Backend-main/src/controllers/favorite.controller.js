@@ -1,4 +1,5 @@
 const { Favorite, MenuItem, Vendor } = require('../models');
+const { isVendorOpenNow } = require('../services/vendorStatus.service');
 
 // ─── Consumer: Toggle Favorite ────────────────────────────────────────────────
 
@@ -65,7 +66,11 @@ exports.getMyFavorites = async (req, res) => {
     });
 
     // Filter out any favorites whose menu item was deleted since being favorited
-    const items = favorites.filter((f) => f.menuItem).map((f) => f.menuItem);
+    const items = favorites.filter((f) => f.menuItem).map((f) => {
+      const item = f.menuItem.toJSON();
+      if (item.vendor) item.vendor.is_open = isVendorOpenNow(item.vendor);
+      return item;
+    });
 
     res.status(200).json({ success: true, count: items.length, items });
   } catch (error) {

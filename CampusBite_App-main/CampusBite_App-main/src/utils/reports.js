@@ -1,5 +1,10 @@
 import { Platform } from 'react-native';
-import * as FileSystem from 'expo-file-system';
+// expo-file-system's default export (SDK 54+) is the new File/Directory API,
+// which has no cacheDirectory/writeAsStringAsync — those only exist on the
+// /legacy subpath. Importing the default here silently no-ops every call
+// below and gets swallowed by the catch, producing "Download Failed" with
+// no clue why.
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 
 export const REPORT_PERIODS = ['Today', 'This Week', 'This Month', 'All Time'];
@@ -53,7 +58,8 @@ export async function downloadCSVReport(filename, csvText) {
       UTI: 'public.comma-separated-values-text',
     });
     return true;
-  } catch {
+  } catch (error) {
+    console.error('downloadCSVReport failed:', error);
     return false;
   }
 }

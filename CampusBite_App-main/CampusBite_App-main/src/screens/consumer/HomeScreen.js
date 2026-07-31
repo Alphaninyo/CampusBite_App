@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, TextInput, ScrollView, Image } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, TextInput, ScrollView, Image, Modal, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
@@ -66,8 +66,16 @@ function TrendingItemCard({ item, onPress, styles, COLORS }) {
   );
 }
 
+const NOTIF_TYPE_ICON = {
+  order_status: 'receipt-outline',
+  payment:      'card-outline',
+  delivery:     'bicycle-outline',
+  feedback:     'star-outline',
+};
+
 export default function HomeScreen({ navigation }) {
   const insets = useSafeAreaInsets();
+  const { height: screenHeight } = useWindowDimensions();
   const { colors: COLORS } = useTheme();
   const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const [vendors, setVendors]     = useState([]);
@@ -323,9 +331,9 @@ export default function HomeScreen({ navigation }) {
       </TouchableOpacity>
 
       {/* Notifications Modal */}
-      {showNotifications && (
+      <Modal visible={showNotifications} animationType="slide" transparent onRequestClose={() => setShowNotifications(false)}>
         <View style={styles.modalOverlay}>
-          <View style={styles.notificationModal}>
+          <View style={[styles.notificationModal, { maxHeight: screenHeight * 0.75 }]}>
             <View style={styles.notificationModalHeader}>
               <Text style={styles.notificationModalTitle}>Notifications</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
@@ -339,7 +347,7 @@ export default function HomeScreen({ navigation }) {
                 </TouchableOpacity>
               </View>
             </View>
-            <ScrollView style={styles.notificationList}>
+            <ScrollView style={[styles.notificationList, { maxHeight: screenHeight * 0.6 }]} showsVerticalScrollIndicator={true}>
               {notifications.length === 0 ? (
                 <View style={{ alignItems: 'center', paddingVertical: 40 }}>
                   <Ionicons name="notifications-off-outline" size={48} color={COLORS.gray} />
@@ -358,6 +366,13 @@ export default function HomeScreen({ navigation }) {
                       }
                     }}
                   >
+                    <View style={styles.notificationIconBox}>
+                      <Ionicons
+                        name={NOTIF_TYPE_ICON[notification.type] || 'information-circle-outline'}
+                        size={20}
+                        color="#fff"
+                      />
+                    </View>
                     <View style={styles.notificationContent}>
                       <Text style={styles.notificationTitle}>{notification.title}</Text>
                       <Text style={styles.notificationMessage}>{notification.body}</Text>
@@ -376,7 +391,7 @@ export default function HomeScreen({ navigation }) {
             </ScrollView>
           </View>
         </View>
-      )}
+      </Modal>
     </View>
   );
 }
@@ -680,10 +695,20 @@ const makeStyles = (COLORS) => StyleSheet.create({
   },
   notificationItem: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.borderWarm,
+  },
+  notificationIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    flexShrink: 0,
   },
   notificationContent: {
     flex: 1,

@@ -1,6 +1,7 @@
 const mpesaService  = require('../services/mpesa.service');
 const stripeService = require('../services/stripe.service');
 const notify        = require('../services/notification.service');
+const { isVendorOpenNow } = require('../services/vendorStatus.service');
 const { sequelize, Order, OrderItem, MenuItem, Vendor, User, Payment, PromoCode } = require('../models');
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -111,7 +112,7 @@ exports.notifyVendorNewOrder = async function notifyVendorNewOrder(order) {
     await notify.notifyUser(vendor.user_id, {
       type: 'order_status',
       title: 'New order received',
-      body:  `You have a new order for ${vendor.business_name}.`,
+      body:  `Order #${order.id.slice(0, 8)} — KES ${parseFloat(order.total_amount || 0).toFixed(0)} for ${vendor.business_name}.`,
       data:  { order_id: order.id },
     });
   } catch (err) {
@@ -186,7 +187,7 @@ exports.initiateCheckout = async (req, res) => {
     if (!vendor || !vendor.approved_at) {
       return res.status(404).json({ success: false, message: 'Vendor not found or not yet approved.' });
     }
-    if (!vendor.is_open) {
+    if (!isVendorOpenNow(vendor)) {
       return res.status(400).json({ success: false, message: `"${vendor.business_name}" is currently closed.` });
     }
 
@@ -585,7 +586,7 @@ exports.getMyOrders = async (req, res) => {
     const orders = await Order.findAll({
       where: { consumer_id: req.user.id },
       include: [
-        { model: Vendor,    as: 'vendor',  attributes: ['business_name', 'location'],
+        { model: Vendor,    as: 'vendor',  attributes: ['business_name', 'location', 'image'],
           include: [{ model: User, as: 'owner', attributes: ['phone'] }] },
         { model: OrderItem, as: 'items',
           include: [{ model: MenuItem, as: 'menuItem', attributes: ['name'] }] },
@@ -608,7 +609,7 @@ exports.getOrderById = async (req, res) => {
     const order = await Order.findByPk(req.params.id, {
       include: [
         { model: User,    as: 'consumer', attributes: ['name', 'phone'] },
-        { model: Vendor,  as: 'vendor',   attributes: ['business_name', 'location'],
+        { model: Vendor,  as: 'vendor',   attributes: ['business_name', 'location', 'image'],
           include: [{ model: User, as: 'owner', attributes: ['phone'] }] },
         { model: User,    as: 'rider',    attributes: ['name', 'phone'] },
         { model: OrderItem, as: 'items',
@@ -740,12 +741,13 @@ exports.updateOrderStatus = async (req, res) => {
     );
     await t.commit();
 
+    const orderTag = `Order #${order.id.slice(0, 8)}`;
     const CONSUMER_MESSAGES = {
-      'Preparing':  ['Being Prepared',  'Your order is being prepared.'],
-      'Ready':      ['Order Ready',     'Your order is ready and waiting for a rider.'],
-      'Collected':  ['Rider Collected', 'A rider has collected your order!'],
-      'In Transit': ['On the Way!',     'Your order is on its way to you.'],
-      'Delivered':  ['Delivered!',      'Your order has arrived. Enjoy your meal!'],
+      'Preparing':  ['Being Prepared',  `${orderTag} is being prepared.`],
+      'Ready':      ['Order Ready',     `${orderTag} is ready and waiting for a rider.`],
+      'Collected':  ['Rider Collected', `A rider has collected ${orderTag}!`],
+      'In Transit': ['On the Way!',     `${orderTag} is on its way to you.`],
+      'Delivered':  ['Delivered!',      `${orderTag} has arrived. Enjoy your meal!`],
     };
     const msg = CONSUMER_MESSAGES[transition.next];
     if (msg) {
@@ -762,7 +764,7 @@ exports.updateOrderStatus = async (req, res) => {
         notify.notifyAvailableCouriers({
           type: 'delivery',
           title: 'Order ready for pickup',
-          body:  `An order is ready for pickup at ${v.business_name}.`,
+          body:  `${orderTag} is ready for pickup at ${v.business_name} — KES ${parseFloat(order.delivery_fee || 0).toFixed(0)} delivery fee.`,
           data:  { order_id: order.id, vendor_id: order.vendor_id },
         });
       }).catch(console.error);
@@ -774,7 +776,7 @@ exports.updateOrderStatus = async (req, res) => {
           notify.notifyUser(v.user_id, {
             type: 'delivery',
             title: 'Order Collected',
-            body:  `${rider?.name ?? 'Rider'} has collected the order.`,
+            body:  `${rider?.name ?? 'Rider'} has collected ${orderTag}.`,
             data:  { order_id: order.id },
           });
         })
@@ -866,11 +868,12 @@ exports.cancelOrder = async (req, res) => {
 
     const { refund_status } = await refundDeclinedOrder(order);
 
+    const cancelledOrderTag = `Order #${order.id.slice(0, 8)}`;
     const CONSUMER_REFUND_MESSAGES = {
-      not_applicable: 'Your order was declined by the vendor.',
-      refunded:        'Your order was declined by the vendor and your card payment has been refunded.',
-      manual_required: 'Your order was declined by the vendor. Our team will process your M-Pesa refund manually — please allow some time.',
-      failed:          'Your order was declined by the vendor. There was an issue processing your refund — our support team has been notified.',
+      not_applicable: `${cancelledOrderTag} was declined by the vendor.`,
+      refunded:        `${cancelledOrderTag} was declined by the vendor and your card payment has been refunded.`,
+      manual_required: `${cancelledOrderTag} was declined by the vendor. Our team will process your M-Pesa refund manually — please allow some time.`,
+      failed:          `${cancelledOrderTag} was declined by the vendor. There was an issue processing your refund — our support team has been notified.`,
     };
 
     notify.notifyUser(order.consumer_id, {
@@ -951,7 +954,7 @@ exports.getAvailableOrders = async (req, res) => {
       where: { status: 'Ready', rider_id: null },
       attributes: { exclude: ['delivery_pin'] },
       include: [
-        { model: Vendor, as: 'vendor',   attributes: ['business_name', 'location'],
+        { model: Vendor, as: 'vendor',   attributes: ['business_name', 'location', 'image'],
           include: [{ model: User, as: 'owner', attributes: ['phone'] }] },
         { model: User,   as: 'consumer', attributes: ['name', 'phone'] },
         { model: OrderItem, as: 'items',
@@ -1016,7 +1019,7 @@ exports.getRiderOrders = async (req, res) => {
       where,
       attributes: { exclude: ['delivery_pin'] },
       include: [
-        { model: Vendor, as: 'vendor',   attributes: ['business_name', 'location'],
+        { model: Vendor, as: 'vendor',   attributes: ['business_name', 'location', 'image'],
           include: [{ model: User, as: 'owner', attributes: ['phone'] }] },
         { model: User,   as: 'consumer', attributes: ['name', 'phone'] },
       ],
@@ -1081,7 +1084,7 @@ exports.collectCash = async (req, res) => {
     notify.notifyUser(order.consumer_id, {
       type: 'payment',
       title: 'Cash Received',
-      body:  'The rider has confirmed your cash payment.',
+      body:  `The rider has confirmed your cash payment of KES ${parseFloat(order.total_amount || 0).toFixed(0)} for order #${order.id.slice(0, 8)}.`,
       data:  { order_id: order.id },
     }).catch(console.error);
 
