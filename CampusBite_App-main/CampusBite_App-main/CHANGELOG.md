@@ -516,6 +516,37 @@ Extending dark mode surfaced a long list of pre-existing bugs that were invisibl
 
 ---
 
+## [1.17.0] - 2026-07-31
+
+### 🐛 Bug Fixes
+A second real-device batch, found after re-testing the previous build:
+
+- **Saved addresses vanished after every logout** — they were plain in-memory `useState`, never written anywhere. Now persisted per-user via `AsyncStorage`.
+- **CSV report downloads failed with "Download Failed"** on native, silently — `expo-file-system`'s default export (SDK 54+) is the new File/Directory API, which dropped `cacheDirectory`/`writeAsStringAsync`; those now only exist under the `/legacy` subpath. Fixed the import.
+- **Consumer Home's notification bell panel showed nothing below the header** — it was a raw absolutely-positioned `View` with a `flex: 1` `ScrollView` and no bounded height, which collapses to zero on Android. Rebuilt as a real `Modal` with a pixel-bounded `maxHeight`, and gave each notification a type icon to match the other roles' format.
+- **Food Courier's "My Active Delivery" card clipped its status badge off the right edge of the screen** when the delivery address was long — the left-side info block had no `flex`/`flexShrink`, so it pushed the badge past the screen bounds instead of truncating.
+- **Food Courier's Notifications screen title snapped to the far right** when there was nothing to mark as read — missing the spacer `View` the other roles' equivalent screens use to keep the header balanced.
+- **Food Courier's available-tasks cards showed a hardcoded stock photo** (cycled by list index) instead of the vendor's own uploaded photo — the backend's order queries never selected `vendor.image`. Now shows the real photo, falling back to initials when none is set.
+- **Admin's order detail modal opened with just a header and no content** — same percentage-`maxHeight` + `flex: 1` `ScrollView` collapse as the notification panel above.
+- **Vendor open/closed status only reflected the manual toggle** — a vendor who forgot to flip it stayed "open" all night, or "closed" all day if forgotten in the morning. Status is now computed from `opening_time`/`closing_time` automatically; a manual close still always wins over the schedule.
+- **Order/payment notification text lacked any order reference** — e.g. "The rider has confirmed your cash payment" gave no way to tell which order it was about with several in flight. Notification bodies now include the order ID (and amount, where relevant).
+
+### 🔄 Modified files (key)
+| File | What changed |
+|---|---|
+| `src/screens/shared/ProfileScreen.js` | Saved addresses persisted via `AsyncStorage` |
+| `src/utils/reports.js` | Fixed `expo-file-system` import path (`/legacy`) |
+| `src/screens/consumer/HomeScreen.js` | Notification panel rebuilt as a bounded `Modal`, added type icons |
+| `src/screens/foodCourier/AvailableOrdersScreen.js` | Fixed status-badge overflow; real vendor photo instead of stock image |
+| `src/screens/foodCourier/NotificationsScreen.js` | Header spacer fix to match other roles |
+| `src/screens/admin/AdminOrdersScreen.js` | Order detail modal bounded height fix |
+| `CampusBite_Backend-main/src/controllers/order.controller.js` | Vendor `image` now selected on courier order queries; richer notification text; auto open/close gate on order creation |
+| `CampusBite_Backend-main/src/controllers/vendor.controller.js` | Effective open status computed on listing/detail endpoints |
+| `CampusBite_Backend-main/src/controllers/favorite.controller.js` | Same effective open status on favorited items' vendor |
+| `CampusBite_Backend-main/src/services/vendorStatus.service.js` | New — business-hours open/close calculation |
+
+---
+
 ## [1.16.0] - 2026-07-31
 
 ### 🐛 Bug Fixes
