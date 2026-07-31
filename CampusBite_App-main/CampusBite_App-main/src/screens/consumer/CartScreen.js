@@ -32,7 +32,7 @@ function buildTimeSlots() {
   return slots;
 }
 
-export default function CartScreen({ navigation }) {
+export default function CartScreen({ navigation, route }) {
   const { colors: COLORS } = useTheme();
   const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
   const {
@@ -125,14 +125,15 @@ export default function CartScreen({ navigation }) {
 
   // ── Promo code ────────────────────────────────────────────────────────────────
 
-  const handleApplyPromo = async () => {
-    if (!promoCode.trim() || !vendorId) return;
+  const handleApplyPromo = async (codeOverride) => {
+    const codeToApply = codeOverride ?? promoCode;
+    if (!codeToApply.trim() || !vendorId) return;
     setPromoLoading(true);
     setPromoError('');
     setAppliedPromo(null);
     try {
       const { data } = await api.promoCodes.validate({
-        code:       promoCode.trim().toUpperCase(),
+        code:       codeToApply.trim().toUpperCase(),
         vendor_id:  vendorId,
         cart_total: totalAmount,
       });
@@ -149,6 +150,17 @@ export default function CartScreen({ navigation }) {
     setPromoCode('');
     setPromoError('');
   };
+
+  // Arriving from a "New promo at <vendor>" notification tap or the vendor
+  // page's promo banner — pre-fill and auto-apply instead of making the
+  // consumer retype the code they just tapped on.
+  useEffect(() => {
+    const code = route?.params?.applyPromoCode;
+    if (!code || !vendorId) return;
+    setPromoCode(code);
+    handleApplyPromo(code);
+    navigation.setParams({ applyPromoCode: undefined });
+  }, [route?.params?.applyPromoCode, vendorId]);
 
   // ── Checkout ──────────────────────────────────────────────────────────────────
 

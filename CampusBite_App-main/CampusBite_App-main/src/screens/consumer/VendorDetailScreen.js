@@ -16,6 +16,7 @@ export default function VendorDetailScreen({ route, navigation }) {
   const [cart, setCart]       = useState({});
   const [loading, setLoading] = useState(true);
   const [favoriteIds, setFavoriteIds] = useState(new Set());
+  const [promoCodes, setPromoCodes] = useState([]);
   const menuLoaded = useRef(false);
 
   // Restore persisted cart for this vendor on mount
@@ -39,7 +40,17 @@ export default function VendorDetailScreen({ route, navigation }) {
     api.favorites.getIds()
       .then(({ data }) => setFavoriteIds(new Set(data.menu_item_ids || [])))
       .catch(() => {});
+
+    api.promoCodes.getForVendor(vendor.id)
+      .then(({ data }) => setPromoCodes(data.promo_codes || []))
+      .catch(() => {});
   }, []);
+
+  // Jump to Cart with this code pre-applied instead of making the consumer
+  // memorize and retype it.
+  const applyPromoAtCheckout = (code) => {
+    navigation.navigate('CartTab', { screen: 'CartMain', params: { applyPromoCode: code } });
+  };
 
   const toggleFavorite = (itemId) => {
     const wasFavorited = favoriteIds.has(itemId);
@@ -155,6 +166,33 @@ export default function VendorDetailScreen({ route, navigation }) {
                   </View>
                 ) : null}
               </View>
+
+              {promoCodes.length > 0 && (
+                <View style={styles.promoBannerList}>
+                  {promoCodes.map((promo) => (
+                    <TouchableOpacity
+                      key={promo.code}
+                      style={styles.promoBanner}
+                      activeOpacity={0.8}
+                      onPress={() => applyPromoAtCheckout(promo.code)}
+                    >
+                      <Ionicons name="pricetag" size={18} color={COLORS.primary} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.promoBannerCode}>{promo.code}</Text>
+                        <Text style={styles.promoBannerText}>
+                          {promo.discount_type === 'percent'
+                            ? `${parseFloat(promo.discount_value)}% off`
+                            : `KES ${parseFloat(promo.discount_value).toFixed(0)} off`}
+                          {parseFloat(promo.min_order_amount) > 0
+                            ? ` orders over KES ${parseFloat(promo.min_order_amount).toFixed(0)}`
+                            : ' your order'}
+                        </Text>
+                      </View>
+                      <Text style={styles.promoBannerCta}>Use at checkout</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </View>
 
             <View style={styles.menuDivider}>
@@ -252,6 +290,17 @@ const makeStyles = (COLORS) => StyleSheet.create({
   },
   pillText: { fontSize: 12, color: COLORS.subtext, fontWeight: '500' },
   statusDot: { width: 7, height: 7, borderRadius: 4 },
+
+  promoBannerList: { marginTop: 12, gap: 8 },
+  promoBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: COLORS.iconBg, borderRadius: 12,
+    paddingHorizontal: 12, paddingVertical: 10,
+    borderWidth: 1, borderColor: COLORS.primary + '30',
+  },
+  promoBannerCode: { fontSize: 14, fontWeight: 'bold', color: COLORS.primary, letterSpacing: 0.5 },
+  promoBannerText: { fontSize: 12, color: COLORS.subtext, marginTop: 1 },
+  promoBannerCta: { fontSize: 11, fontWeight: '600', color: COLORS.primary },
 
   menuDivider: { borderTopWidth: 1, borderColor: COLORS.border, paddingTop: 14, marginTop: 4 },
   menuTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text },

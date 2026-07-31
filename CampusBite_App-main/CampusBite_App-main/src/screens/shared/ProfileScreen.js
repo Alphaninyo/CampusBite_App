@@ -935,7 +935,7 @@ export default function ProfileScreen({ navigation }) {
                   >
                     <View style={styles.notificationIcon}>
                       <Ionicons
-                        name={notif.type === 'order_status' ? 'receipt-outline' : notif.type === 'delivery' ? 'bicycle-outline' : notif.type === 'payment' ? 'card-outline' : 'information-circle-outline'}
+                        name={notif.type === 'order_status' ? 'receipt-outline' : notif.type === 'delivery' ? 'bicycle-outline' : notif.type === 'payment' ? 'card-outline' : notif.type === 'promotion' ? 'pricetag-outline' : 'information-circle-outline'}
                         size={20}
                         color={COLORS.primary}
                       />

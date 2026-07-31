@@ -73,6 +73,7 @@ const NOTIF_TYPE_ICON = {
   payment:      'card-outline',
   delivery:     'bicycle-outline',
   feedback:     'star-outline',
+  promotion:    'pricetag-outline',
 };
 
 export default function HomeScreen({ navigation }) {

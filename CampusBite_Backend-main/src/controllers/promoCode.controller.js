@@ -1,4 +1,26 @@
-const { PromoCode, Vendor } = require('../models');
+const { Op, col } = require('sequelize');
+const { PromoCode, Vendor, Order } = require('../models');
+const notify = require('../services/notification.service');
+
+/** Notifies every consumer who has previously ordered from this vendor about a new promo code. Never throws. */
+async function notifyPastCustomers(vendor, promo) {
+  const pastOrders = await Order.findAll({
+    where: { vendor_id: vendor.id },
+    attributes: ['consumer_id'],
+    group: ['consumer_id'],
+  });
+
+  const discountLabel = promo.discount_type === 'percent'
+    ? `${parseFloat(promo.discount_value)}% off`
+    : `KES ${parseFloat(promo.discount_value).toFixed(0)} off`;
+
+  await Promise.all(pastOrders.map((o) => notify.notifyUser(o.consumer_id, {
+    type:  'promotion',
+    title: `New promo at ${vendor.business_name}`,
+    body:  `Use code ${promo.code} for ${discountLabel} your next order.`,
+    data:  { vendor_id: vendor.id, promo_code: promo.code },
+  })));
+}
 
 // ─── Consumer: Validate a promo code ─────────────────────────────────────────
 
@@ -62,6 +84,35 @@ exports.validatePromoCode = async (req, res) => {
   } catch (error) {
     console.error('[PROMO] validatePromoCode error:', error);
     res.status(500).json({ success: false, valid: false, message: 'Server error.' });
+  }
+};
+
+/**
+ * GET /api/promo-codes/vendor/:vendorId
+ * Protected — any authenticated role (consumer-facing discovery).
+ * Returns the vendor's currently usable promo codes — active, not expired,
+ * and not past their max_uses — so a consumer can see them before checkout
+ * instead of needing to already know the code from somewhere outside the app.
+ */
+exports.getActivePromoCodesForVendor = async (req, res) => {
+  try {
+    const codes = await PromoCode.findAll({
+      where: {
+        vendor_id: req.params.vendorId,
+        is_active: true,
+        [Op.and]: [
+          { [Op.or]: [{ expires_at: null }, { expires_at: { [Op.gt]: new Date() } }] },
+          { [Op.or]: [{ max_uses: null }, { uses_count: { [Op.lt]: col('max_uses') } }] },
+        ],
+      },
+      attributes: ['code', 'discount_type', 'discount_value', 'min_order_amount', 'expires_at'],
+      order: [['created_at', 'DESC']],
+    });
+
+    res.status(200).json({ success: true, count: codes.length, promo_codes: codes });
+  } catch (error) {
+    console.error('[PROMO] getActivePromoCodesForVendor error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
 
@@ -139,6 +190,11 @@ exports.createPromoCode = async (req, res) => {
       expires_at:       expires_at || null,
       is_active:        true,
     });
+
+    // Let past customers of this vendor know a new code is live — without
+    // this, a promo code only ever reaches consumers who happen to already
+    // know about it from outside the app.
+    notifyPastCustomers(vendor, promo).catch(console.error);
 
     res.status(201).json({ success: true, message: 'Promo code created.', promo_code: promo });
   } catch (error) {

@@ -5,7 +5,8 @@ const { protect, restrictTo } = require('../middleware/auth.middleware');
 const router = express.Router();
 
 // ── Consumer ──────────────────────────────────────────────────────────────────
-router.post('/validate', protect, restrictTo('consumer'), promoController.validatePromoCode);
+router.post('/validate',          protect, restrictTo('consumer'), promoController.validatePromoCode);
+router.get( '/vendor/:vendorId',  protect, restrictTo('consumer'), promoController.getActivePromoCodesForVendor);
 
 // ── Vendor ────────────────────────────────────────────────────────────────────
 router.get(   '/my',        protect, restrictTo('vendor'), promoController.getMyPromoCodes);

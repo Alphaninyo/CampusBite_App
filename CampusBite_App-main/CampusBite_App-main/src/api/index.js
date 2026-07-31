@@ -104,6 +104,7 @@ export const api = {
   // ─── Promo Codes ────────────────────────────────────────────────────────────
   promoCodes: {
     validate:   (data)   => client.post('/promo-codes/validate', data),
+    getForVendor: (vendorId) => client.get(`/promo-codes/vendor/${vendorId}`),
     getMy:      ()       => client.get('/promo-codes/my'),
     create:     (data)   => client.post('/promo-codes', data),
     toggle:     (id)     => client.patch(`/promo-codes/${id}/toggle`),
