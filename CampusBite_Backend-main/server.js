@@ -81,6 +81,14 @@ async function startServer() {
       `ALTER TABLE orders ADD COLUMN IF NOT EXISTS in_transit_at TIMESTAMP`,
       `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMP`,
       `ALTER TABLE orders ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMP`,
+      // Distance + time-of-day delivery pricing
+      `ALTER TABLE vendors ADD COLUMN IF NOT EXISTS latitude DECIMAL(10,7)`,
+      `ALTER TABLE vendors ADD COLUMN IF NOT EXISTS longitude DECIMAL(10,7)`,
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_distance_km DECIMAL(6,2)`,
+      `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname='enum_orders_delivery_time_tier') THEN CREATE TYPE "enum_orders_delivery_time_tier" AS ENUM ('normal', 'peak', 'after_hours'); END IF; END $$`,
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_time_tier "enum_orders_delivery_time_tier"`,
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_lat DECIMAL(10,7)`,
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_lng DECIMAL(10,7)`,
     ];
     for (const sql of migrations) {
       await sequelize.query(sql).catch((e) => console.warn('[MIGRATION]', sql.slice(0, 60), e.message));

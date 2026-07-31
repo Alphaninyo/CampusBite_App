@@ -27,6 +27,7 @@ async function reverseGeocode(lat, lng) {
 
 export default function MapAddressPicker({ visible, onConfirm, onClose }) {
   const [address,   setAddress]   = useState('');
+  const [coords,    setCoords]    = useState(null);
   const [locating,  setLocating]  = useState(false);
   const [geocoding, setGeocoding] = useState(false);
 
@@ -42,6 +43,7 @@ export default function MapAddressPicker({ visible, onConfirm, onClose }) {
       setGeocoding(true);
       const addr = await reverseGeocode(loc.coords.latitude, loc.coords.longitude);
       setAddress(addr);
+      setCoords({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
     } catch {
       Alert.alert('Error', 'Could not get your location. Please type your address manually.');
     } finally {
@@ -50,12 +52,19 @@ export default function MapAddressPicker({ visible, onConfirm, onClose }) {
     }
   };
 
+  // Typing over a GPS-detected address invalidates the coordinates that came
+  // with it — otherwise a manually-edited address could keep stale coords.
+  const handleAddressChange = (text) => {
+    setAddress(text);
+    setCoords(null);
+  };
+
   const handleConfirm = () => {
     if (!address.trim()) {
       Alert.alert('Address required', 'Please enter or detect your delivery address.');
       return;
     }
-    onConfirm(address.trim(), null);
+    onConfirm(address.trim(), coords);
   };
 
   return (
@@ -94,7 +103,7 @@ export default function MapAddressPicker({ visible, onConfirm, onClose }) {
               placeholder="e.g. Hostel B, Room 14 – Main Campus"
               placeholderTextColor={COLORS.muted}
               value={address}
-              onChangeText={setAddress}
+              onChangeText={handleAddressChange}
               multiline
             />
           </View>

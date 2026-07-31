@@ -83,6 +83,17 @@ const Order = sequelize.define(
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
       defaultValue: 0.00,
+      comment: 'distance_band_fee + time_surcharge. See delivery_distance_km/delivery_time_tier for the breakdown.',
+    },
+    delivery_distance_km: {
+      type: DataTypes.DECIMAL(6, 2),
+      allowNull: true,
+      comment: 'Straight-line vendor-to-drop-off distance used to price this delivery. NULL when either side lacked coordinates (flat fallback fee was used instead).',
+    },
+    delivery_time_tier: {
+      type: DataTypes.ENUM('normal', 'peak', 'after_hours'),
+      allowNull: true,
+      comment: 'Which time-of-day pricing tier applied at order time.',
     },
     total_amount: {
       type: DataTypes.DECIMAL(10, 2),
@@ -92,6 +103,15 @@ const Order = sequelize.define(
     delivery_address: {
       type: DataTypes.STRING(255),
       allowNull: false,
+    },
+    delivery_lat: {
+      type: DataTypes.DECIMAL(10, 7),
+      allowNull: true,
+      comment: 'Drop-off pin location, captured from the map picker. NULL if the consumer typed the address manually instead.',
+    },
+    delivery_lng: {
+      type: DataTypes.DECIMAL(10, 7),
+      allowNull: true,
     },
     special_instructions: {
       type: DataTypes.STRING(500),

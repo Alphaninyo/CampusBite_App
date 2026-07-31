@@ -11,8 +11,8 @@ import useCartStore from '../../stores/cartStore';
 import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
 import MapAddressPicker from '../../components/MapAddressPicker';
+import { previewDeliveryFee, TIME_TIER_LABEL } from '../../utils/deliveryFee';
 
-const DELIVERY_FEE = 50;
 const SERVICE_FEE = 5; // Platform service fee, added on top — mirrors SERVICE_FEE_CONSUMER on the backend.
 
 const PAYMENT_METHODS = [
@@ -42,6 +42,7 @@ export default function CartScreen({ navigation, route }) {
   } = useCartStore();
 
   const [address,             setAddress]             = useState('');
+  const [addressCoords,       setAddressCoords]       = useState(null); // { latitude, longitude } from the map picker — used for distance-based delivery fees
   const [paymentMethod,       setPaymentMethod]       = useState('mpesa');
   const [promoCode,           setPromoCode]           = useState('');
   const [appliedPromo,        setAppliedPromo]        = useState(null);
@@ -51,6 +52,7 @@ export default function CartScreen({ navigation, route }) {
   const [suggestions,         setSuggestions]         = useState([]);
   const [checkingOut,         setCheckingOut]         = useState(false);
   const [vendorOpen,          setVendorOpen]          = useState(true);
+  const [vendorCoords,        setVendorCoords]        = useState(null);
   const [timeSlots,           setTimeSlots]           = useState([]);
   const [selectedSlot,        setSelectedSlot]        = useState(null);
   const [selectedSlotLabel,   setSelectedSlotLabel]   = useState('ASAP (25–35 min)');
@@ -70,7 +72,14 @@ export default function CartScreen({ navigation, route }) {
     if (!vendorId) { setSuggestions([]); return; }
 
     api.vendors.getById(vendorId)
-      .then(({ data }) => setVendorOpen(data.vendor?.is_open ?? true))
+      .then(({ data }) => {
+        setVendorOpen(data.vendor?.is_open ?? true);
+        setVendorCoords(
+          data.vendor?.latitude != null && data.vendor?.longitude != null
+            ? { latitude: data.vendor.latitude, longitude: data.vendor.longitude }
+            : null
+        );
+      })
       .catch(() => {});
 
     api.menu.getVendorMenu(vendorId)
@@ -95,8 +104,16 @@ export default function CartScreen({ navigation, route }) {
       .catch(() => {});
   }, [vendorId]);
 
+  const deliveryPreview = useMemo(() => previewDeliveryFee({
+    vendorLat:   vendorCoords?.latitude,
+    vendorLng:   vendorCoords?.longitude,
+    deliveryLat: addressCoords?.latitude,
+    deliveryLng: addressCoords?.longitude,
+  }), [vendorCoords, addressCoords]);
+  const deliveryFee = deliveryPreview.delivery_fee;
+
   const discount = appliedPromo?.discount_amount || 0;
-  const total    = totalAmount + DELIVERY_FEE + SERVICE_FEE - discount;
+  const total    = totalAmount + deliveryFee + SERVICE_FEE - discount;
 
   // ── Cart actions ──────────────────────────────────────────────────────────────
 
@@ -193,6 +210,8 @@ export default function CartScreen({ navigation, route }) {
         vendor_id:            resolvedVendorId,
         items:                cartItems.map((i) => ({ menu_item_id: i.id, quantity: Math.round(Number(i.quantity)) })),
         delivery_address:     address.trim(),
+        delivery_lat:         addressCoords?.latitude ?? undefined,
+        delivery_lng:         addressCoords?.longitude ?? undefined,
         special_instructions: specialInstructions.trim() || undefined,
         payment_method:       paymentMethod,
         promo_code:           appliedPromo?.code || undefined,
@@ -495,9 +514,16 @@ export default function CartScreen({ navigation, route }) {
             <Text style={styles.summaryValue}>KES {totalAmount.toFixed(2)}</Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Delivery Fee</Text>
-            <Text style={styles.summaryValue}>KES {DELIVERY_FEE}.00</Text>
+            <Text style={styles.summaryLabel}>
+              Delivery Fee{deliveryPreview.distance_km != null ? ` (${deliveryPreview.distance_km.toFixed(1)} km)` : ''}
+            </Text>
+            <Text style={styles.summaryValue}>KES {deliveryFee}.00</Text>
           </View>
+          {deliveryPreview.time_tier !== 'normal' && (
+            <View style={styles.summaryRow}>
+              <Text style={[styles.summaryLabel, { color: COLORS.primary }]}>{TIME_TIER_LABEL[deliveryPreview.time_tier]} surcharge included</Text>
+            </View>
+          )}
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Service Fee</Text>
             <Text style={styles.summaryValue}>KES {SERVICE_FEE}.00</Text>
@@ -587,8 +613,10 @@ export default function CartScreen({ navigation, route }) {
 
             {/* Totals */}
             <View style={styles.confirmRow}>
-              <Text style={styles.confirmLabel}>Delivery fee</Text>
-              <Text style={styles.confirmValue}>KES {DELIVERY_FEE}.00</Text>
+              <Text style={styles.confirmLabel}>
+                Delivery fee{deliveryPreview.distance_km != null ? ` (${deliveryPreview.distance_km.toFixed(1)} km)` : ''}
+              </Text>
+              <Text style={styles.confirmValue}>KES {deliveryFee}.00</Text>
             </View>
             <View style={styles.confirmRow}>
               <Text style={styles.confirmLabel}>Service fee</Text>
@@ -638,7 +666,7 @@ export default function CartScreen({ navigation, route }) {
       {/* ── Map Address Picker ── */}
       <MapAddressPicker
         visible={showMapPicker}
-        onConfirm={(addr) => { setAddress(addr); setShowMapPicker(false); }}
+        onConfirm={(addr, coords) => { setAddress(addr); setAddressCoords(coords || null); setShowMapPicker(false); }}
         onClose={() => setShowMapPicker(false)}
       />
 

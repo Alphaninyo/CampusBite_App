@@ -2,11 +2,10 @@ const mpesaService  = require('../services/mpesa.service');
 const stripeService = require('../services/stripe.service');
 const notify        = require('../services/notification.service');
 const { isVendorOpenNow } = require('../services/vendorStatus.service');
+const { calculateDeliveryFee } = require('../services/deliveryFee.service');
 const { sequelize, Order, OrderItem, MenuItem, Vendor, User, Payment, PromoCode } = require('../models');
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
-const DELIVERY_FEE = 50.00;
 
 // Platform service fee — KES 5 each from consumer, vendor, and courier per
 // order (KES 15 total to the platform). Consumer's is added on top of their
@@ -79,9 +78,13 @@ exports.createOrderFromPayment = async (payment, t) => {
     vendor_id,
     items,
     delivery_address,
+    delivery_lat,
+    delivery_lng,
     special_instructions,
     food_subtotal,
     delivery_fee,
+    delivery_distance_km,
+    delivery_time_tier,
     discount_amount,
     service_fee_consumer,
     service_fee_vendor,
@@ -100,12 +103,16 @@ exports.createOrderFromPayment = async (payment, t) => {
       status:               'Received',
       food_subtotal,
       delivery_fee,
+      delivery_distance_km: delivery_distance_km ?? null,
+      delivery_time_tier:   delivery_time_tier ?? null,
       discount_amount:      discount_amount || 0,
       service_fee_consumer: service_fee_consumer ?? SERVICE_FEE_CONSUMER,
       service_fee_vendor:   service_fee_vendor ?? SERVICE_FEE_VENDOR,
       service_fee_courier:  service_fee_courier ?? SERVICE_FEE_COURIER,
       total_amount,
       delivery_address,
+      delivery_lat:         delivery_lat ?? null,
+      delivery_lng:         delivery_lng ?? null,
       special_instructions: special_instructions || null,
       promo_code:           promo_code || null,
       scheduled_time:       scheduled_time || null,
@@ -182,6 +189,8 @@ exports.initiateCheckout = async (req, res) => {
       vendor_id,
       items,
       delivery_address,
+      delivery_lat,
+      delivery_lng,
       special_instructions,
       payment_method   = 'mpesa',
       promo_code,
@@ -239,7 +248,14 @@ exports.initiateCheckout = async (req, res) => {
     }
 
     food_subtotal = parseFloat(food_subtotal.toFixed(2));
-    const delivery_fee = DELIVERY_FEE;
+
+    // ── Delivery fee: distance band + time-of-day surcharge ──────────────────
+    const { delivery_fee, distance_km, time_tier } = calculateDeliveryFee({
+      vendorLat:   vendor.latitude,
+      vendorLng:   vendor.longitude,
+      deliveryLat: delivery_lat,
+      deliveryLng: delivery_lng,
+    });
 
     // ── Apply promo code ──────────────────────────────────────────────────────
     const { promoRecord, discount_amount } = await _applyPromo(promo_code, vendor_id, food_subtotal);
@@ -253,9 +269,13 @@ exports.initiateCheckout = async (req, res) => {
       vendor_id,
       items:                cartItems,
       delivery_address:     delivery_address.trim(),
+      delivery_lat:         delivery_lat ?? null,
+      delivery_lng:         delivery_lng ?? null,
       special_instructions: special_instructions?.trim() || null,
       food_subtotal,
       delivery_fee,
+      delivery_distance_km: distance_km,
+      delivery_time_tier:   time_tier,
       discount_amount,
       service_fee_consumer: SERVICE_FEE_CONSUMER,
       service_fee_vendor:   SERVICE_FEE_VENDOR,
@@ -325,6 +345,8 @@ exports.initiateCheckout = async (req, res) => {
           items:            cartItems,
           food_subtotal,
           delivery_fee,
+          delivery_distance_km: distance_km,
+          delivery_time_tier:   time_tier,
           discount_amount,
           service_fee_consumer: SERVICE_FEE_CONSUMER,
           total_amount,
@@ -388,6 +410,8 @@ exports.initiateCheckout = async (req, res) => {
           items:            cartItems,
           food_subtotal,
           delivery_fee,
+          delivery_distance_km: distance_km,
+          delivery_time_tier:   time_tier,
           discount_amount,
           service_fee_consumer: SERVICE_FEE_CONSUMER,
           total_amount,
@@ -408,12 +432,16 @@ exports.initiateCheckout = async (req, res) => {
           status:               'Received',
           food_subtotal,
           delivery_fee,
+          delivery_distance_km: distance_km,
+          delivery_time_tier:   time_tier,
           discount_amount,
           service_fee_consumer: SERVICE_FEE_CONSUMER,
           service_fee_vendor:   SERVICE_FEE_VENDOR,
           service_fee_courier:  SERVICE_FEE_COURIER,
           total_amount,
           delivery_address:     delivery_address.trim(),
+          delivery_lat:         delivery_lat ?? null,
+          delivery_lng:         delivery_lng ?? null,
           special_instructions: special_instructions?.trim() || null,
           promo_code:           promoRecord ? promoRecord.code : null,
           scheduled_time:       scheduled_time || null,
@@ -466,6 +494,8 @@ exports.initiateCheckout = async (req, res) => {
           items:            cartItems,
           food_subtotal,
           delivery_fee,
+          delivery_distance_km: distance_km,
+          delivery_time_tier:   time_tier,
           discount_amount,
           service_fee_consumer: SERVICE_FEE_CONSUMER,
           total_amount,

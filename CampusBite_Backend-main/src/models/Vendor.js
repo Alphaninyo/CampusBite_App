@@ -86,6 +86,15 @@ const Vendor = sequelize.define(
       allowNull: true,
       comment: 'Estimated prep time label, e.g. "15-20 mins"',
     },
+    latitude: {
+      type: DataTypes.DECIMAL(10, 7),
+      allowNull: true,
+      comment: 'Shop pin location, set by the vendor. Used to compute distance-based delivery fees.',
+    },
+    longitude: {
+      type: DataTypes.DECIMAL(10, 7),
+      allowNull: true,
+    },
   },
   {
     tableName: 'vendors',

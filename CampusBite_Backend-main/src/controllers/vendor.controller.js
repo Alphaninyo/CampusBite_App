@@ -162,7 +162,7 @@ exports.updateMyProfile = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Vendor profile not found.' });
     }
 
-    const { business_name, vendor_type, location, description, opening_time, closing_time, prep_time, mpesa_phone, kra_pin } = req.body;
+    const { business_name, vendor_type, location, description, opening_time, closing_time, prep_time, mpesa_phone, kra_pin, latitude, longitude } = req.body;
 
     if (vendor_type && !['restaurant', 'home_based'].includes(vendor_type)) {
       return res.status(400).json({
@@ -189,6 +189,8 @@ exports.updateMyProfile = async (req, res) => {
       prep_time:      prep_time     !== undefined ? prep_time.trim()     : vendor.prep_time,
       mpesa_phone:    mpesa_phone   !== undefined ? mpesa_phone.trim()   : vendor.mpesa_phone,
       kra_pin:        kra_pin       !== undefined ? kra_pin.trim().toUpperCase() : vendor.kra_pin,
+      latitude:       latitude      !== undefined ? parseFloat(latitude)  : vendor.latitude,
+      longitude:      longitude     !== undefined ? parseFloat(longitude) : vendor.longitude,
       image:          imagePath,
     });
 

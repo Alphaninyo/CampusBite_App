@@ -232,9 +232,18 @@ export default function OrderDetailScreen({ route, navigation }) {
           <Text style={styles.summaryValue}>KES {subtotal.toFixed(2)}</Text>
         </View>
         <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Delivery Fee</Text>
+          <Text style={styles.summaryLabel}>
+            Delivery Fee{order.delivery_distance_km != null ? ` (${parseFloat(order.delivery_distance_km).toFixed(1)} km)` : ''}
+          </Text>
           <Text style={styles.summaryValue}>KES {parseFloat(order.delivery_fee || 0).toFixed(2)}</Text>
         </View>
+        {order.delivery_time_tier && order.delivery_time_tier !== 'normal' && (
+          <View style={styles.summaryRow}>
+            <Text style={[styles.summaryLabel, { color: COLORS.primary }]}>
+              {order.delivery_time_tier === 'peak' ? 'Peak hours' : 'After hours'} surcharge included
+            </Text>
+          </View>
+        )}
         <View style={styles.summaryRow}>
           <Text style={styles.summaryLabel}>Service Fee</Text>
           <Text style={styles.summaryValue}>KES {parseFloat(order.service_fee_consumer ?? 5).toFixed(2)}</Text>

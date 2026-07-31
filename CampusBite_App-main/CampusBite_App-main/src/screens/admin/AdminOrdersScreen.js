@@ -325,6 +325,20 @@ export default function AdminOrdersScreen({ navigation, route }) {
                   <Text style={styles.detailLabel}>Total Amount</Text>
                   <Text style={styles.detailValue}>KES {parseFloat(selectedOrder?.total_amount || 0).toFixed(2)}</Text>
                 </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>
+                    Delivery Fee{selectedOrder?.delivery_distance_km != null ? ` (${parseFloat(selectedOrder.delivery_distance_km).toFixed(1)} km)` : ''}
+                  </Text>
+                  <Text style={styles.detailValue}>KES {parseFloat(selectedOrder?.delivery_fee || 0).toFixed(2)}</Text>
+                </View>
+                {selectedOrder?.delivery_time_tier && selectedOrder.delivery_time_tier !== 'normal' && (
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Time Pricing Tier</Text>
+                    <Text style={[styles.detailValue, { color: COLORS.primary }]}>
+                      {selectedOrder.delivery_time_tier === 'peak' ? 'Peak Hours' : 'After Hours'}
+                    </Text>
+                  </View>
+                )}
                 {parseFloat(selectedOrder?.discount_amount || 0) > 0 && (
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>

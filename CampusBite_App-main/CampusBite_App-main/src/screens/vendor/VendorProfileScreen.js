@@ -10,6 +10,7 @@ import { resolveImageUrl } from '../../constants';
 import { useTheme } from '../../contexts/ThemeContext';
 import { REPORT_PERIODS, filterByPeriod, csvCell, downloadCSVReport, vendorNetAmount } from '../../utils/reports';
 import PasswordStrengthMeter from '../../components/PasswordStrengthMeter';
+import MapAddressPicker from '../../components/MapAddressPicker';
 
 // 24-hour time options: 00:00 to 23:30 in 30-min steps
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
@@ -210,6 +211,9 @@ export default function VendorProfileScreen({ navigation = {} }) {
   const [editCoverImage, setEditCoverImage] = useState(null);
   const [savingEdit, setSavingEdit]       = useState(false);
 
+  // Shop location pin (used to compute distance-based delivery fees)
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+
   // Security modal states
   const [showSecurityModal, setShowSecurityModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -359,6 +363,17 @@ export default function VendorProfileScreen({ navigation = {} }) {
       Alert.alert('Error', err?.response?.data?.message || err.message || 'Failed to update profile.');
     } finally {
       setSavingEdit(false);
+    }
+  };
+
+  const handleSetLocation = async (_address, coords) => {
+    try {
+      const { data } = await api.vendors.updateProfile({ latitude: coords.latitude, longitude: coords.longitude });
+      setVendor(data.vendor);
+      setShowLocationPicker(false);
+      Alert.alert('Success', "Shop location saved. Customers' delivery fees will now reflect real distance to your shop.");
+    } catch (err) {
+      Alert.alert('Error', err?.response?.data?.message || err.message || 'Failed to save location.');
     }
   };
 
@@ -694,6 +709,21 @@ export default function VendorProfileScreen({ navigation = {} }) {
                 {vendor?.opening_time && vendor?.closing_time
                   ? `${vendor.opening_time} – ${vendor.closing_time}`
                   : 'Tap to set hours'}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={COLORS.gray} />
+          </TouchableOpacity>
+
+          <View style={styles.settingDivider} />
+
+          <TouchableOpacity style={styles.settingRow} onPress={() => setShowLocationPicker(true)}>
+            <View style={[styles.settingIcon, { backgroundColor: COLORS.primary + '20' }]}>
+              <Ionicons name="location-outline" size={20} color={COLORS.primary} />
+            </View>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingLabel}>Shop Location</Text>
+              <Text style={styles.settingValue}>
+                {vendor?.latitude && vendor?.longitude ? 'Pin set — tap to update' : 'Tap to set your pin (for delivery fees)'}
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={COLORS.gray} />
@@ -1540,6 +1570,13 @@ export default function VendorProfileScreen({ navigation = {} }) {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* Shop Location Picker — sets vendor.latitude/longitude for distance-based delivery fees */}
+      <MapAddressPicker
+        visible={showLocationPicker}
+        onConfirm={handleSetLocation}
+        onClose={() => setShowLocationPicker(false)}
+      />
 
       {/* Security Modal */}
       <Modal visible={showSecurityModal} animationType="slide" transparent>
