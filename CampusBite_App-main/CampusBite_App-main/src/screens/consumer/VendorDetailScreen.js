@@ -132,9 +132,9 @@ export default function VendorDetailScreen({ route, navigation }) {
 
               <View style={styles.pillsRow}>
                 {/* Open / Closed status */}
-                <View style={[styles.pill, { backgroundColor: vendor.is_open ? COLORS.successBg : COLORS.inputBg }]}>
-                  <View style={[styles.statusDot, { backgroundColor: vendor.is_open ? COLORS.success : COLORS.gray }]} />
-                  <Text style={[styles.pillText, { color: vendor.is_open ? COLORS.success : COLORS.gray }]}>
+                <View style={[styles.pill, { backgroundColor: vendor.is_open ? COLORS.successBg : COLORS.dangerBg }]}>
+                  <View style={[styles.statusDot, { backgroundColor: vendor.is_open ? COLORS.success : COLORS.danger }]} />
+                  <Text style={[styles.pillText, { color: vendor.is_open ? COLORS.success : COLORS.danger }]}>
                     {vendor.is_open ? 'Open Now' : 'Closed'}
                   </Text>
                 </View>

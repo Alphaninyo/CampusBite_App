@@ -17,7 +17,7 @@ function VendorImagePlaceholder({ name, styles }) {
   );
 }
 
-function FeaturedVendorCard({ vendor, onPress, styles }) {
+function FeaturedVendorCard({ vendor, onPress, styles, COLORS }) {
   const vendorType = vendor.vendor_type === 'home_based' ? 'Home-based' : 'Restaurant';
   const imageUri = resolveImageUrl(vendor.image);
   return (
@@ -32,7 +32,9 @@ function FeaturedVendorCard({ vendor, onPress, styles }) {
       </View>
       <Text style={styles.vendorName}>{vendor.business_name}</Text>
       <Text style={styles.deliveryTime}>{vendor.location || 'Campus'}</Text>
-      <Text style={styles.freeDelivery}>{vendor.is_open ? 'Open Now' : 'Closed'}</Text>
+      <Text style={[styles.freeDelivery, { color: vendor.is_open ? COLORS.success : COLORS.danger }]}>
+        {vendor.is_open ? 'Open Now' : 'Closed'}
+      </Text>
     </TouchableOpacity>
   );
 }
@@ -283,6 +285,7 @@ export default function HomeScreen({ navigation }) {
                   key={vendor.id}
                   vendor={vendor}
                   styles={styles}
+                  COLORS={COLORS}
                   onPress={() => navigation.navigate('VendorDetail', { vendor })}
                 />
               ))
