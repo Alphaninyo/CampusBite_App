@@ -369,7 +369,7 @@ export default function CartScreen({ navigation, route }) {
                 <TouchableOpacity
                   style={[styles.applyBtn, (!promoCode.trim() || promoLoading) && styles.applyBtnDisabled]}
                   disabled={!promoCode.trim() || promoLoading}
-                  onPress={handleApplyPromo}
+                  onPress={() => handleApplyPromo()}
                 >
                   {promoLoading
                     ? <ActivityIndicator size="small" color={COLORS.white} />
