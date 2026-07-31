@@ -342,6 +342,40 @@ export default function AdminOrdersScreen({ navigation, route }) {
               </View>
 
               <View style={styles.detailSection}>
+                <Text style={styles.detailSectionTitle}>Order Timeline</Text>
+                {[
+                  ['Received',    selectedOrder?.created_at],
+                  ['Preparing',   selectedOrder?.preparing_at],
+                  ['Ready',       selectedOrder?.ready_at],
+                  ['Collected',   selectedOrder?.collected_at],
+                  ['In Transit',  selectedOrder?.in_transit_at],
+                  ['Delivered',   selectedOrder?.delivered_at],
+                  ['Cancelled',   selectedOrder?.cancelled_at],
+                ].filter(([, ts]) => !!ts).map(([label, ts]) => (
+                  <View key={label} style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>{label}</Text>
+                    <Text style={styles.detailValue}>{new Date(ts).toLocaleString()}</Text>
+                  </View>
+                ))}
+              </View>
+
+              <View style={styles.detailSection}>
+                <Text style={styles.detailSectionTitle}>Platform Service Fees</Text>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>From Consumer</Text>
+                  <Text style={styles.detailValue}>KES {parseFloat(selectedOrder?.service_fee_consumer ?? 5).toFixed(2)}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>From Vendor</Text>
+                  <Text style={styles.detailValue}>KES {parseFloat(selectedOrder?.service_fee_vendor ?? 5).toFixed(2)}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>From Courier</Text>
+                  <Text style={styles.detailValue}>KES {parseFloat(selectedOrder?.service_fee_courier ?? 5).toFixed(2)}</Text>
+                </View>
+              </View>
+
+              <View style={styles.detailSection}>
                 <Text style={styles.detailSectionTitle}>Customer</Text>
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Name</Text>

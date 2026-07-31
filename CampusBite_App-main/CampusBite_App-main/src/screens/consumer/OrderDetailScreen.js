@@ -10,6 +10,23 @@ import RiderMapView from '../../components/RiderMapView';
 
 const STEPS = ['Received', 'Preparing', 'Ready', 'Collected', 'In Transit', 'Delivered'];
 
+// Order field that records when each step was actually reached — 'Received'
+// has no dedicated column since order.created_at already is that moment.
+const STEP_TIMESTAMP_FIELD = {
+  Preparing:    'preparing_at',
+  Ready:        'ready_at',
+  Collected:    'collected_at',
+  'In Transit': 'in_transit_at',
+  Delivered:    'delivered_at',
+};
+
+function formatStepTime(value) {
+  if (!value) return null;
+  return new Date(value).toLocaleString('en-GB', {
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+  });
+}
+
 const ISSUE_REASONS = [
   { key: 'not_delivered', label: 'Order not delivered' },
   { key: 'wrong_items',   label: 'Wrong items' },
@@ -139,6 +156,9 @@ export default function OrderDetailScreen({ route, navigation }) {
           const isPast = index < stepIndex || (order.status === 'Delivered' && index === stepIndex);
           const isCurrent = index === stepIndex && order.status !== 'Delivered';
           const isLast = index === STEPS.length - 1;
+          const stepTime = step === 'Received'
+            ? formatStepTime(order.created_at)
+            : formatStepTime(order[STEP_TIMESTAMP_FIELD[step]]);
           return (
             <View key={step} style={styles.timelineRow}>
               <View style={styles.timelineLeft}>
@@ -163,7 +183,7 @@ export default function OrderDetailScreen({ route, navigation }) {
                   <Text style={styles.stepSubLabel}>In progress</Text>
                 )}
                 {isPast && (
-                  <Text style={styles.stepSubLabel}>Completed</Text>
+                  <Text style={styles.stepSubLabel}>{stepTime ? `Completed — ${stepTime}` : 'Completed'}</Text>
                 )}
               </View>
             </View>
@@ -214,6 +234,10 @@ export default function OrderDetailScreen({ route, navigation }) {
         <View style={styles.summaryRow}>
           <Text style={styles.summaryLabel}>Delivery Fee</Text>
           <Text style={styles.summaryValue}>KES {parseFloat(order.delivery_fee || 0).toFixed(2)}</Text>
+        </View>
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Service Fee</Text>
+          <Text style={styles.summaryValue}>KES {parseFloat(order.service_fee_consumer ?? 5).toFixed(2)}</Text>
         </View>
         {parseFloat(order.discount_amount || 0) > 0 && (
           <View style={styles.summaryRow}>

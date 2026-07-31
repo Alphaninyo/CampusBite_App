@@ -1,11 +1,74 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { View, Text, ActivityIndicator, TouchableOpacity, StyleSheet, Alert, Linking } from 'react-native';
+import { View, Text, ActivityIndicator, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { StripeProvider, CardField, useConfirmPayment } from '@stripe/stripe-react-native';
 import { api } from '../../api';
-import { API_BASE_URL } from '../../constants';
 import { useTheme } from '../../contexts/ThemeContext';
 import useCartStore from '../../stores/cartStore';
-import useAuthStore from '../../stores/authStore';
+
+// Native in-app card entry — replaces the old Linking.openURL(...) handoff to
+// a browser-hosted Stripe.js page. Must live inside a <StripeProvider>, which
+// is why this is its own component rather than inlined in the screen below.
+function CardPaymentForm({ clientSecret, paymentId, amount, onSuccess, styles, COLORS }) {
+  const { confirmPayment, loading } = useConfirmPayment();
+  const [cardComplete, setCardComplete] = useState(false);
+  const [error, setError] = useState('');
+
+  const handlePay = async () => {
+    setError('');
+    const { error: confirmError, paymentIntent } = await confirmPayment(clientSecret, {
+      paymentMethodType: 'Card',
+    });
+
+    if (confirmError) {
+      setError(confirmError.message);
+      return;
+    }
+
+    if (paymentIntent?.status?.toLowerCase() !== 'succeeded') {
+      setError(`Payment status: ${paymentIntent?.status || 'unknown'}`);
+      return;
+    }
+
+    try {
+      const { data } = await api.orders.confirmCardPayment(paymentId);
+      if (data.success) {
+        onSuccess(data.order_id);
+      } else {
+        setError(data.message || 'Payment succeeded, but the order could not be finalized. Please contact support.');
+      }
+    } catch (e) {
+      setError('Payment succeeded, but we could not reach the server to finalize your order. Please contact support.');
+    }
+  };
+
+  return (
+    <View style={{ width: '100%', alignItems: 'center' }}>
+      <Text style={styles.title}>Pay KES {amount}</Text>
+      <Text style={styles.subtitle}>Enter your card details below.</Text>
+      <CardField
+        postalCodeEnabled={false}
+        placeholders={{ number: '4242 4242 4242 4242' }}
+        cardStyle={{ backgroundColor: COLORS.card, textColor: COLORS.text, borderRadius: 10, borderWidth: 1, borderColor: COLORS.border }}
+        style={{ width: '100%', height: 50, marginBottom: 8 }}
+        onCardChange={(details) => setCardComplete(details.complete)}
+      />
+      {!!error && <Text style={{ color: COLORS.danger, marginTop: 8, textAlign: 'center' }}>{error}</Text>}
+      <TouchableOpacity
+        style={[styles.simulateBtn, (!cardComplete || loading) && { opacity: 0.6 }]}
+        onPress={handlePay}
+        disabled={!cardComplete || loading}
+      >
+        {loading
+          ? <ActivityIndicator color={COLORS.white} size="small" />
+          : <>
+              <Ionicons name="card-outline" size={20} color={COLORS.white} />
+              <Text style={styles.simulateBtnText}>Pay Now</Text>
+            </>}
+      </TouchableOpacity>
+    </View>
+  );
+}
 
 export default function PaymentStatusScreen({ route, navigation }) {
   const { colors: COLORS } = useTheme();
@@ -16,10 +79,10 @@ export default function PaymentStatusScreen({ route, navigation }) {
     orderId: initialOrderId,
     paymentMethod,
     devMode = false,      // true when M-Pesa/Stripe credentials are placeholder
-    paymentId,            // card only — used to build the Stripe checkout URL
-    clientSecret,          // card only
-    publishableKey,        // card only
-    amount,                // card only — shown on the checkout page
+    paymentId,            // card only — passed to confirm-card-payment after confirmPayment succeeds
+    clientSecret,          // card only — passed to Stripe's native confirmPayment
+    publishableKey,        // card only — used to init the local StripeProvider below
+    amount,                // card only — shown above the card field
   } = route.params;
 
   const [status,      setStatus]      = useState(initialStatus || 'pending');
@@ -28,16 +91,10 @@ export default function PaymentStatusScreen({ route, navigation }) {
   const intervalRef = useRef(null);
   const isCardMethod = paymentMethod === 'card';
 
-  const openCardCheckout = () => {
-    const token = useAuthStore.getState().token;
-    const params = new URLSearchParams({
-      client_secret:   clientSecret,
-      publishable_key: publishableKey,
-      payment_id:      paymentId,
-      amount:          String(amount || ''),
-      token,
-    });
-    Linking.openURL(`${API_BASE_URL}/checkout/card?${params.toString()}`);
+  const handleCardPaymentSuccess = (newOrderId) => {
+    setOrderId(newOrderId);
+    setStatus('confirmed');
+    useCartStore.getState().clearCart();
   };
 
   useEffect(() => {
@@ -152,6 +209,26 @@ export default function PaymentStatusScreen({ route, navigation }) {
     );
   }
 
+  // Real (non-devMode) card payment renders its own header/spinner inside
+  // CardPaymentForm, since it's a materially different UI (a form, not a
+  // waiting state) — skip the generic waiting-screen chrome below for it.
+  if (isCardMethod && !devMode) {
+    return (
+      <View style={styles.container}>
+        <StripeProvider publishableKey={publishableKey}>
+          <CardPaymentForm
+            clientSecret={clientSecret}
+            paymentId={paymentId}
+            amount={amount}
+            onSuccess={handleCardPaymentSuccess}
+            styles={styles}
+            COLORS={COLORS}
+          />
+        </StripeProvider>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       {devMode ? (
@@ -163,13 +240,11 @@ export default function PaymentStatusScreen({ route, navigation }) {
 
       <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: devMode ? 16 : 0 }} />
       <Text style={styles.title}>
-        {devMode ? 'Order Ready to Confirm' : isCardMethod ? 'Complete Card Payment' : 'Waiting for M-Pesa...'}
+        {devMode ? 'Order Ready to Confirm' : 'Waiting for M-Pesa...'}
       </Text>
       <Text style={styles.subtitle}>
         {devMode
           ? `No ${isCardMethod ? 'Stripe' : 'M-Pesa'} credentials configured. Tap the button below to simulate a successful payment.`
-          : isCardMethod
-          ? 'Tap below to enter your card details on a secure Stripe checkout page.'
           : 'Enter your PIN on your phone to confirm payment.'}
       </Text>
 
@@ -185,11 +260,6 @@ export default function PaymentStatusScreen({ route, navigation }) {
                 <Ionicons name="checkmark-circle-outline" size={20} color={COLORS.white} />
                 <Text style={styles.simulateBtnText}>Simulate {isCardMethod ? 'Card' : 'M-Pesa'} Payment</Text>
               </>}
-        </TouchableOpacity>
-      ) : isCardMethod ? (
-        <TouchableOpacity style={styles.simulateBtn} onPress={openCardCheckout}>
-          <Ionicons name="card-outline" size={20} color={COLORS.white} />
-          <Text style={styles.simulateBtnText}>Enter Card Details</Text>
         </TouchableOpacity>
       ) : (
         <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel}>

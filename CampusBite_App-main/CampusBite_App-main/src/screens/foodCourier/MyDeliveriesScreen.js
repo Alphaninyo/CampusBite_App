@@ -1,18 +1,19 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, ScrollView, Dimensions, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
 import { STATUS_COLORS } from '../../constants';
 import { useTheme } from '../../contexts/ThemeContext';
-import { csvCell, downloadCSVReport } from '../../utils/reports';
+import { csvCell, downloadCSVReport, courierNetAmount } from '../../utils/reports';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const PERIODS = ['Today', 'This Week', 'This Month', 'All Time'];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 function getEarnings(order) {
-  return parseFloat(order.delivery_fee || 0);
+  return courierNetAmount(order);
 }
 
 function getStatusBgColor(status, COLORS) {
@@ -94,7 +95,11 @@ export default function EarningsScreen({ navigation }) {
     }
   }, []);
 
-  useEffect(() => { fetchUnreadCount(); }, [fetchUnreadCount]);
+  // Bottom-tab screens stay mounted in the background when you switch tabs,
+  // so a plain mount-only useEffect here only ever checks once for the whole
+  // session — the badge goes stale (and can appear to vanish) the moment a
+  // new notification arrives while this tab isn't the active one.
+  useFocusEffect(useCallback(() => { fetchUnreadCount(); }, [fetchUnreadCount]));
 
   const filterByPeriod = (allOrders) => {
     const now = new Date();
@@ -133,6 +138,7 @@ export default function EarningsScreen({ navigation }) {
     const rows = [
       `CampusBite Courier Earnings Report — ${activePeriod}`,
       `Generated: ${new Date().toLocaleString()}`,
+      `Note: amounts are net of the KES 5 platform service fee per delivery.`,
       '',
       'SUMMARY',
       'Metric,Value',
@@ -169,7 +175,9 @@ export default function EarningsScreen({ navigation }) {
       <View style={styles.summaryCard}>
         <Text style={styles.summaryLabel}>TOTAL EARNINGS</Text>
         <Text style={styles.summaryAmount}>KES {totalEarnings.toLocaleString()}</Text>
-        <Text style={styles.summaryPeriod}>{activePeriod === 'All Time' ? 'All time earnings' : activePeriod}</Text>
+        <Text style={styles.summaryPeriod}>
+          {activePeriod === 'All Time' ? 'All time earnings' : activePeriod} · net of KES 5 service fee/delivery
+        </Text>
         <View style={styles.periodRow}>
           {PERIODS.map((p) => (
             <TouchableOpacity key={p} style={[styles.periodChip, activePeriod === p && styles.periodChipActive]} onPress={() => setActivePeriod(p)}>

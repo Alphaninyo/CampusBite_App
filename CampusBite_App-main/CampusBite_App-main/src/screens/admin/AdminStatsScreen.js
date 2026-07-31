@@ -131,6 +131,8 @@ export default function AdminStatsScreen({ navigation }) {
   const fulfilment     = stats?.orders?.fulfilment_rate ?? 0;
   const revenue        = parseFloat(stats?.revenue?.confirmed_total || 0).toFixed(0);
   const todayRevenue   = parseFloat(stats?.revenue?.today_total || 0).toFixed(0);
+  const platformFeeTotal = parseFloat(stats?.revenue?.platform_fee_total || 0).toFixed(0);
+  const platformFeeToday = parseFloat(stats?.revenue?.platform_fee_today || 0).toFixed(0);
   const consumers      = stats?.users?.consumers ?? 0;
   const activeVendors  = stats?.users?.vendors ?? 0;
   const pendingVendors = stats?.users?.pending_vendors ?? 0;
@@ -323,6 +325,13 @@ export default function AdminStatsScreen({ navigation }) {
             badge={Number(todayRevenue) > 0 ? `+${todayRevenue} today` : 'All time'} badgeColor={COLORS.success}
             icon="cash-outline" iconColor={COLORS.success} valueColor={COLORS.primary}
             subtext={Number(todayRevenue) > 0 ? `↑ KES ${todayRevenue} earned today` : '— No revenue today'}
+            styles={styles}
+          />
+          <StatCard
+            label="Platform Fees (KES)" value={platformFeeTotal}
+            badge={Number(platformFeeToday) > 0 ? `+${platformFeeToday} today` : 'All time'} badgeColor="#0EA5E9"
+            icon="wallet-outline" iconColor="#0EA5E9"
+            subtext="KES 5 each from consumer, vendor & courier per order"
             styles={styles}
           />
           <StatCard

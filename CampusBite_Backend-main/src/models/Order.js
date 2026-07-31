@@ -44,6 +44,36 @@ const Order = sequelize.define(
       allowNull: false,
       defaultValue: 'Received',
     },
+    preparing_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'When the vendor moved this order to Preparing. NULL until then.',
+    },
+    ready_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'When the vendor marked this order Ready for pickup. NULL until then.',
+    },
+    collected_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'When the courier collected this order from the vendor. NULL until then.',
+    },
+    in_transit_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'When the courier set out for delivery. NULL until then.',
+    },
+    delivered_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'When the courier confirmed delivery (PIN or admin override). NULL until then.',
+    },
+    cancelled_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'When the vendor declined this order. NULL unless Cancelled.',
+    },
     food_subtotal: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
@@ -57,7 +87,7 @@ const Order = sequelize.define(
     total_amount: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
-      comment: 'food_subtotal + delivery_fee. This is the exact amount charged via M-Pesa.',
+      comment: 'food_subtotal + delivery_fee + service_fee_consumer - discount_amount. This is the exact amount charged via M-Pesa.',
     },
     delivery_address: {
       type: DataTypes.STRING(255),
@@ -76,6 +106,24 @@ const Order = sequelize.define(
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
       defaultValue: 0,
+    },
+    service_fee_consumer: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      defaultValue: 5.00,
+      comment: 'Platform service fee added to the consumer\'s total. Stored per-order so historical orders keep the fee that applied at the time.',
+    },
+    service_fee_vendor: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      defaultValue: 5.00,
+      comment: 'Platform service fee deducted from the vendor\'s payout for this order.',
+    },
+    service_fee_courier: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      defaultValue: 5.00,
+      comment: 'Platform service fee deducted from the food courier\'s delivery earnings for this order.',
     },
     promo_code: {
       type: DataTypes.STRING(50),

@@ -13,6 +13,15 @@ exports.getStats = async (req, res) => {
   try {
     const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
 
+    // Platform fee revenue excludes Cancelled orders — a decline refunds the
+    // full total_amount (fees included) back to the consumer, so the
+    // platform never actually keeps its cut on those.
+    const platformFeeSum = (extraWhere = {}) => Order.findOne({
+      where: { status: { [Op.ne]: 'Cancelled' }, ...extraWhere },
+      attributes: [[sequelize.fn('SUM', sequelize.literal('service_fee_consumer + service_fee_vendor + service_fee_courier')), 'total']],
+      raw: true,
+    }).catch(() => null);
+
     const [
       totalOrders,
       ordersByStatus,
@@ -26,6 +35,8 @@ exports.getStats = async (req, res) => {
       pendingVendors,
       totalReviews,
       avgDeliveryRow,
+      platformFeeTotalRow,
+      platformFeeTodayRow,
     ] = await Promise.all([
       Order.count(),
       Order.findAll({
@@ -47,7 +58,12 @@ exports.getStats = async (req, res) => {
         attributes: [[sequelize.literal("AVG(EXTRACT(EPOCH FROM (updated_at - created_at))/60)"), 'avg_minutes']],
         raw: true,
       }).catch(() => null),
+      platformFeeSum(),
+      platformFeeSum({ created_at: { [Op.gte]: todayStart } }),
     ]);
+
+    const platformFeeTotal = parseFloat(platformFeeTotalRow?.total || 0);
+    const platformFeeToday = parseFloat(platformFeeTodayRow?.total || 0);
 
     const fulfilmentRate = totalOrders > 0
       ? Math.round((deliveredCount / totalOrders) * 100)
@@ -66,6 +82,8 @@ exports.getStats = async (req, res) => {
         revenue: {
           confirmed_total: parseFloat(confirmedRevenue || 0).toFixed(2),
           today_total:     parseFloat(todayRevenue     || 0).toFixed(2),
+          platform_fee_total: platformFeeTotal.toFixed(2),
+          platform_fee_today: platformFeeToday.toFixed(2),
         },
         users: {
           consumers:       totalConsumers,
@@ -313,6 +331,7 @@ exports.forceCompleteOrder = async (req, res) => {
       status: 'Delivered',
       delivery_pin_verified: false,
       admin_override_reason: reason.trim(),
+      delivered_at: order.delivered_at || new Date(),
     });
 
     notify.notifyUser(order.consumer_id, {

@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { api } from '../../api';
 import { useTheme } from '../../contexts/ThemeContext';
+import { vendorNetAmount } from '../../utils/reports';
 
 const ACTIVE_STATUSES = ['Received', 'Preparing', 'Ready'];
 
@@ -152,7 +153,7 @@ export default function VendorDashboardScreen({ navigation }) {
       const today = new Date().toDateString();
       return new Date(o.created_at).toDateString() === today;
     })
-    .reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+    .reduce((sum, o) => sum + vendorNetAmount(o), 0);
 
   const avgRating = allReviews.length > 0
     ? (allReviews.reduce((s, r) => s + (r.vendor_rating || 0), 0) / allReviews.length).toFixed(1)

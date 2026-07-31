@@ -8,7 +8,7 @@ import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
 import { resolveImageUrl } from '../../constants';
 import { useTheme } from '../../contexts/ThemeContext';
-import { REPORT_PERIODS, filterByPeriod, csvCell, downloadCSVReport } from '../../utils/reports';
+import { REPORT_PERIODS, filterByPeriod, csvCell, downloadCSVReport, vendorNetAmount } from '../../utils/reports';
 
 // 24-hour time options: 00:00 to 23:30 in 30-min steps
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
@@ -86,7 +86,7 @@ function computeWeeklyAnalytics(orders) {
 
   delivered.forEach(o => {
     const d = new Date(o.updated_at || o.created_at);
-    const amount = parseFloat(o.total_amount || 0);
+    const amount = vendorNetAmount(o);
 
     const key = d.toDateString();
     if (key in dayIndexByKey) {
@@ -475,14 +475,15 @@ export default function VendorProfileScreen({ navigation = {} }) {
     const periodOrders   = filterByPeriod(reportOrders, reportPeriod);
     const delivered       = periodOrders.filter(o => o.status === 'Delivered');
     const cancelled       = periodOrders.filter(o => o.status === 'Cancelled');
-    const revenue         = delivered.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+    const revenue         = delivered.reduce((sum, o) => sum + vendorNetAmount(o), 0);
     const avgOrderValue   = periodOrders.length > 0
-      ? periodOrders.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0) / periodOrders.length
+      ? periodOrders.reduce((sum, o) => sum + vendorNetAmount(o), 0) / periodOrders.length
       : 0;
 
     const rows = [
       `CampusBite Vendor Sales Report — ${reportPeriod}`,
       `Generated: ${new Date().toLocaleString()}`,
+      `Note: amounts are net of the KES 5 platform service fee per order.`,
       '',
       'SUMMARY',
       'Metric,Value',
@@ -493,12 +494,12 @@ export default function VendorProfileScreen({ navigation = {} }) {
       `Avg Order Value (KES),${avgOrderValue.toFixed(0)}`,
       '',
       'ORDER DETAIL',
-      'Order ID,Date,Customer,Total (KES),Status',
+      'Order ID,Date,Customer,Net Earnings (KES),Status',
       ...periodOrders.map(o => [
         csvCell(o.id?.slice(0, 8)),
         csvCell(new Date(o.created_at).toLocaleString()),
         csvCell(o.consumer?.name || 'N/A'),
-        parseFloat(o.total_amount || 0).toFixed(0),
+        vendorNetAmount(o).toFixed(0),
         csvCell(o.status),
       ].join(',')),
     ].join('\n');
@@ -1087,9 +1088,10 @@ export default function VendorProfileScreen({ navigation = {} }) {
                 <View style={styles.payoutTotal}>
                   <Text style={styles.payoutTotalLabel}>Total Earnings</Text>
                   <Text style={styles.payoutTotalValue}>
-                    KES {payouts.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0).toFixed(2)}
+                    KES {payouts.reduce((sum, o) => sum + vendorNetAmount(o), 0).toFixed(2)}
                   </Text>
                 </View>
+                <Text style={styles.payoutFeeNote}>Amounts shown are net of the KES 5 platform service fee per order.</Text>
                 <ScrollView showsVerticalScrollIndicator={false}>
                   {payouts.map(order => (
                     <View key={order.id} style={styles.payoutRow}>
@@ -1097,7 +1099,7 @@ export default function VendorProfileScreen({ navigation = {} }) {
                         <Text style={styles.payoutOrderId}>Order #{order.id.slice(-6).toUpperCase()}</Text>
                         <Text style={styles.payoutDate}>{new Date(order.updated_at || order.created_at).toLocaleDateString()}</Text>
                       </View>
-                      <Text style={styles.payoutAmount}>KES {parseFloat(order.total_amount || 0).toFixed(2)}</Text>
+                      <Text style={styles.payoutAmount}>KES {vendorNetAmount(order).toFixed(2)}</Text>
                     </View>
                   ))}
                   <View style={{ height: 20 }} />
@@ -1128,7 +1130,7 @@ export default function VendorProfileScreen({ navigation = {} }) {
             ) : (() => {
               const periodOrders = filterByPeriod(reportOrders, reportPeriod);
               const delivered    = periodOrders.filter(o => o.status === 'Delivered');
-              const revenue      = delivered.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+              const revenue      = delivered.reduce((sum, o) => sum + vendorNetAmount(o), 0);
               return (
                 <ScrollView showsVerticalScrollIndicator={false}>
                   <View style={styles.reportPeriodRow}>
@@ -1147,6 +1149,7 @@ export default function VendorProfileScreen({ navigation = {} }) {
                     <Text style={styles.payoutTotalLabel}>Revenue — {reportPeriod}</Text>
                     <Text style={styles.payoutTotalValue}>KES {revenue.toFixed(2)}</Text>
                   </View>
+                  <Text style={styles.payoutFeeNote}>Net of the KES 5 platform service fee per order.</Text>
 
                   <View style={styles.reportSummaryRow}>
                     <View style={styles.reportSummaryItem}>
@@ -1176,7 +1179,7 @@ export default function VendorProfileScreen({ navigation = {} }) {
                           <Text style={styles.payoutOrderId}>Order #{order.id.slice(-6).toUpperCase()}</Text>
                           <Text style={styles.payoutDate}>{new Date(order.created_at).toLocaleDateString()} · {order.status}</Text>
                         </View>
-                        <Text style={styles.payoutAmount}>KES {parseFloat(order.total_amount || 0).toFixed(2)}</Text>
+                        <Text style={styles.payoutAmount}>KES {vendorNetAmount(order).toFixed(2)}</Text>
                       </View>
                     ))
                   )}
@@ -2229,6 +2232,7 @@ const makeStyles = (COLORS) => StyleSheet.create({
   },
   payoutTotalLabel: { fontSize: 14, fontWeight: '600', color: COLORS.primary },
   payoutTotalValue: { fontSize: 18, fontWeight: '800', color: COLORS.primary },
+  payoutFeeNote: { fontSize: 11, color: COLORS.gray, marginTop: 6, marginBottom: 4 },
 
   payoutRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',

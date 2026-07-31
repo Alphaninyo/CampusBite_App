@@ -25,6 +25,26 @@ export function filterByPeriod(items, period, dateField = 'created_at') {
   });
 }
 
+// What the vendor actually nets on this order, after CampusBite's platform
+// service fee. total_amount already includes the consumer's own service fee
+// (which is the platform's money, not the vendor's), so that's backed out
+// too — this intentionally leaves the pre-existing total_amount definition
+// (food_subtotal + delivery_fee - discount_amount) otherwise untouched, and
+// only reflects the new deduction being added on top of it.
+export function vendorNetAmount(order) {
+  const total       = parseFloat(order.total_amount || 0);
+  const consumerFee = parseFloat(order.service_fee_consumer ?? 5);
+  const vendorFee   = parseFloat(order.service_fee_vendor ?? 5);
+  return total - consumerFee - vendorFee;
+}
+
+// What the food courier actually nets per delivery, after their service fee.
+export function courierNetAmount(order) {
+  const deliveryFee = parseFloat(order.delivery_fee || 0);
+  const courierFee  = parseFloat(order.service_fee_courier ?? 5);
+  return deliveryFee - courierFee;
+}
+
 export function csvCell(value) {
   const str = String(value ?? '');
   return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;

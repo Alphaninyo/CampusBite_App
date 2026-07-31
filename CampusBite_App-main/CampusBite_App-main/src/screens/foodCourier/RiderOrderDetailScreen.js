@@ -5,9 +5,24 @@ import * as Location from 'expo-location';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { api } from '../../api';
 import { useTheme } from '../../contexts/ThemeContext';
+import { courierNetAmount } from '../../utils/reports';
 import RiderMapView from '../../components/RiderMapView';
 
 const STATUS_STEPS = ['Ready', 'Collected', 'In Transit', 'Delivered'];
+
+const STEP_TIMESTAMP_FIELD = {
+  Ready:        'ready_at',
+  Collected:    'collected_at',
+  'In Transit': 'in_transit_at',
+  Delivered:    'delivered_at',
+};
+
+function formatStepTime(value) {
+  if (!value) return null;
+  return new Date(value).toLocaleString('en-GB', {
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+  });
+}
 
 const NEXT_STATUS = {
   Ready:        'Collected',
@@ -215,7 +230,7 @@ export default function RiderOrderDetailScreen({ route }) {
 
   const nextStatus      = NEXT_STATUS[order.status];
   const isDelivered     = order.status === 'Delivered';
-  const deliveryFee     = parseFloat(order.delivery_fee || 0);
+  const deliveryFee     = courierNetAmount(order);
   const currentStep     = STATUS_STEPS.indexOf(order.status);
   const needsCashCollect = order.status === 'In Transit'
     && order.payment_method !== 'mpesa'
@@ -249,6 +264,7 @@ export default function RiderOrderDetailScreen({ route }) {
             const isPast = index < currentStep || (order.status === 'Delivered' && index === currentStep);
             const isCurrent = index === currentStep && order.status !== 'Delivered';
             const isFuture = index > currentStep;
+            const stepTime = formatStepTime(order[STEP_TIMESTAMP_FIELD[step]]);
             return (
               <View key={step} style={styles.timelineStep}>
                 <View style={[styles.stepDot, isPast && styles.stepDotDone, isCurrent && styles.stepDotCurrent]}>
@@ -257,6 +273,7 @@ export default function RiderOrderDetailScreen({ route }) {
                 <Text style={[styles.stepLabel, isPast && styles.stepLabelDone, isCurrent && styles.stepLabelCurrent]}>
                   {step}
                 </Text>
+                {isPast && stepTime && <Text style={styles.stepTimeLabel}>{stepTime}</Text>}
                 {index < STATUS_STEPS.length - 1 && <View style={[styles.stepLine, isPast && styles.stepLineDone]} />}
               </View>
             );
@@ -520,6 +537,7 @@ const makeStyles = (COLORS) => StyleSheet.create({
   stepLabel: { fontSize: 11, color: COLORS.gray, textAlign: 'center' },
   stepLabelDone: { color: COLORS.success, fontWeight: '600' },
   stepLabelCurrent: { color: COLORS.primary, fontWeight: 'bold' },
+  stepTimeLabel: { fontSize: 9, color: COLORS.gray, textAlign: 'center', marginTop: 2 },
   stepLine: {
     position: 'absolute',
     top: 12,

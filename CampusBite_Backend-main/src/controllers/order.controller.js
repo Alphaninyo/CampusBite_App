@@ -8,12 +8,29 @@ const { sequelize, Order, OrderItem, MenuItem, Vendor, User, Payment, PromoCode 
 
 const DELIVERY_FEE = 50.00;
 
+// Platform service fee — KES 5 each from consumer, vendor, and courier per
+// order (KES 15 total to the platform). Consumer's is added on top of their
+// total; vendor's and courier's are deducted from what they're paid out.
+const SERVICE_FEE_CONSUMER = 5.00;
+const SERVICE_FEE_VENDOR   = 5.00;
+const SERVICE_FEE_COURIER  = 5.00;
+
 const TRANSITIONS = {
   'Received':   { next: 'Preparing',  role: 'vendor' },
   'Preparing':  { next: 'Ready',      role: 'vendor' },
   'Ready':      { next: 'Collected',  role: 'food_courier'  },
   'Collected':  { next: 'In Transit', role: 'food_courier'  },
   'In Transit': { next: 'Delivered',  role: 'food_courier'  },
+};
+
+// Which Order column records the moment each status was reached — read by
+// the Consumer/Courier/Admin timeline UIs to show progress date & time.
+const STATUS_TIMESTAMP_FIELD = {
+  'Preparing':  'preparing_at',
+  'Ready':      'ready_at',
+  'Collected':  'collected_at',
+  'In Transit': 'in_transit_at',
+  'Delivered':  'delivered_at',
 };
 
 const ISSUE_REASONS = ['not_delivered', 'wrong_items', 'missing_items', 'poor_quality', 'other'];
@@ -66,6 +83,9 @@ exports.createOrderFromPayment = async (payment, t) => {
     food_subtotal,
     delivery_fee,
     discount_amount,
+    service_fee_consumer,
+    service_fee_vendor,
+    service_fee_courier,
     total_amount,
     promo_code,
     scheduled_time,
@@ -81,6 +101,9 @@ exports.createOrderFromPayment = async (payment, t) => {
       food_subtotal,
       delivery_fee,
       discount_amount:      discount_amount || 0,
+      service_fee_consumer: service_fee_consumer ?? SERVICE_FEE_CONSUMER,
+      service_fee_vendor:   service_fee_vendor ?? SERVICE_FEE_VENDOR,
+      service_fee_courier:  service_fee_courier ?? SERVICE_FEE_COURIER,
       total_amount,
       delivery_address,
       special_instructions: special_instructions || null,
@@ -220,7 +243,9 @@ exports.initiateCheckout = async (req, res) => {
 
     // ── Apply promo code ──────────────────────────────────────────────────────
     const { promoRecord, discount_amount } = await _applyPromo(promo_code, vendor_id, food_subtotal);
-    const total_amount = parseFloat((food_subtotal + delivery_fee - discount_amount).toFixed(2));
+    const total_amount = parseFloat(
+      (food_subtotal + delivery_fee + SERVICE_FEE_CONSUMER - discount_amount).toFixed(2)
+    );
 
     // Cart snapshot — shared across all payment paths
     const cartSnapshot = {
@@ -232,6 +257,9 @@ exports.initiateCheckout = async (req, res) => {
       food_subtotal,
       delivery_fee,
       discount_amount,
+      service_fee_consumer: SERVICE_FEE_CONSUMER,
+      service_fee_vendor:   SERVICE_FEE_VENDOR,
+      service_fee_courier:  SERVICE_FEE_COURIER,
       total_amount,
       promo_code:           promoRecord ? promoRecord.code : null,
       scheduled_time:       scheduled_time || null,
@@ -298,6 +326,7 @@ exports.initiateCheckout = async (req, res) => {
           food_subtotal,
           delivery_fee,
           discount_amount,
+          service_fee_consumer: SERVICE_FEE_CONSUMER,
           total_amount,
           delivery_address: delivery_address.trim(),
           scheduled_time:   scheduled_time || null,
@@ -360,6 +389,7 @@ exports.initiateCheckout = async (req, res) => {
           food_subtotal,
           delivery_fee,
           discount_amount,
+          service_fee_consumer: SERVICE_FEE_CONSUMER,
           total_amount,
           delivery_address: delivery_address.trim(),
           scheduled_time:   scheduled_time || null,
@@ -379,6 +409,9 @@ exports.initiateCheckout = async (req, res) => {
           food_subtotal,
           delivery_fee,
           discount_amount,
+          service_fee_consumer: SERVICE_FEE_CONSUMER,
+          service_fee_vendor:   SERVICE_FEE_VENDOR,
+          service_fee_courier:  SERVICE_FEE_COURIER,
           total_amount,
           delivery_address:     delivery_address.trim(),
           special_instructions: special_instructions?.trim() || null,
@@ -434,6 +467,7 @@ exports.initiateCheckout = async (req, res) => {
           food_subtotal,
           delivery_fee,
           discount_amount,
+          service_fee_consumer: SERVICE_FEE_CONSUMER,
           total_amount,
           delivery_address: delivery_address.trim(),
           scheduled_time:   scheduled_time || null,
@@ -732,10 +766,12 @@ exports.updateOrderStatus = async (req, res) => {
     }
 
     const previousStatus = order.status;
+    const timestampField = STATUS_TIMESTAMP_FIELD[transition.next];
     await order.update(
       {
         status: transition.next,
         ...(transition.next === 'Delivered' ? { delivery_pin_verified: true } : {}),
+        ...(timestampField ? { [timestampField]: new Date() } : {}),
       },
       { transaction: t }
     );
@@ -863,7 +899,7 @@ exports.cancelOrder = async (req, res) => {
       });
     }
 
-    await order.update({ status: 'Cancelled' }, { transaction: t });
+    await order.update({ status: 'Cancelled', cancelled_at: new Date() }, { transaction: t });
     await t.commit();
 
     const { refund_status } = await refundDeclinedOrder(order);

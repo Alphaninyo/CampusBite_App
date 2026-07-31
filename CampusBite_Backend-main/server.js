@@ -70,6 +70,17 @@ async function startServer() {
       `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_pin VARCHAR(4)`,
       `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_pin_verified BOOLEAN NOT NULL DEFAULT false`,
       `ALTER TABLE orders ADD COLUMN IF NOT EXISTS admin_override_reason TEXT`,
+      // Platform service fee — KES 5 each from consumer, vendor, and courier per order
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS service_fee_consumer DECIMAL(10,2) NOT NULL DEFAULT 5.00`,
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS service_fee_vendor DECIMAL(10,2) NOT NULL DEFAULT 5.00`,
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS service_fee_courier DECIMAL(10,2) NOT NULL DEFAULT 5.00`,
+      // Per-status timestamps — so order progress can show when each stage happened
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS preparing_at TIMESTAMP`,
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS ready_at TIMESTAMP`,
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS collected_at TIMESTAMP`,
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS in_transit_at TIMESTAMP`,
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMP`,
+      `ALTER TABLE orders ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMP`,
     ];
     for (const sql of migrations) {
       await sequelize.query(sql).catch((e) => console.warn('[MIGRATION]', sql.slice(0, 60), e.message));

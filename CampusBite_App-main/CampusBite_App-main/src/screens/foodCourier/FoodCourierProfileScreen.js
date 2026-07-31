@@ -5,6 +5,7 @@ import {
   TextInput, Modal, KeyboardAvoidingView, useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import QRCode from 'react-native-qrcode-svg';
@@ -84,7 +85,11 @@ export default function FoodCourierProfileScreen({ navigation, route }) {
     }
   }, []);
 
-  useEffect(() => { fetchUnreadCount(); }, [fetchUnreadCount]);
+  // Bottom-tab screens stay mounted in the background when you switch tabs,
+  // so a plain mount-only useEffect here only ever checks once for the whole
+  // session — the badge goes stale (and can appear to vanish) the moment a
+  // new notification arrives while this tab isn't the active one.
+  useFocusEffect(useCallback(() => { fetchUnreadCount(); }, [fetchUnreadCount]));
 
   const _uploadAvatar = async (uri) => {
     setSaving(true);

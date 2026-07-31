@@ -1,10 +1,12 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Alert, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '../../api';
 import { resolveImageUrl } from '../../constants';
 import { useTheme } from '../../contexts/ThemeContext';
+import { courierNetAmount } from '../../utils/reports';
 
 const FILTERS = ['All Tasks', 'Closest', 'Highest Pay', 'Hot'];
 
@@ -24,7 +26,7 @@ function getMockDistance(index) {
 }
 
 function getEarnings(order) {
-  return parseFloat(order.delivery_fee || 0);
+  return courierNetAmount(order);
 }
 
 function getMockBadge(index) {
@@ -71,7 +73,11 @@ export default function AvailableOrdersScreen({ navigation }) {
     }
   }, []);
 
-  useEffect(() => { fetchUnreadCount(); }, [fetchUnreadCount]);
+  // Bottom-tab screens stay mounted in the background when you switch tabs,
+  // so a plain mount-only useEffect here only ever checks once for the whole
+  // session — the badge goes stale (and can appear to vanish) the moment a
+  // new notification arrives while this tab isn't the active one.
+  useFocusEffect(useCallback(() => { fetchUnreadCount(); }, [fetchUnreadCount]));
 
   const accept = async (orderId) => {
     setAccepting(orderId);

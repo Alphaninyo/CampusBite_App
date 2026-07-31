@@ -13,6 +13,7 @@ import { api } from '../../api';
 import MapAddressPicker from '../../components/MapAddressPicker';
 
 const DELIVERY_FEE = 50;
+const SERVICE_FEE = 5; // Platform service fee, added on top — mirrors SERVICE_FEE_CONSUMER on the backend.
 
 const PAYMENT_METHODS = [
   { id: 'mpesa', label: 'M-Pesa',             subtitle: 'STK push to your phone',      icon: 'phone-portrait-outline', iconBg: '#E8F5E9', iconColor: '#2E7D32', badge: 'Popular' },
@@ -95,7 +96,7 @@ export default function CartScreen({ navigation, route }) {
   }, [vendorId]);
 
   const discount = appliedPromo?.discount_amount || 0;
-  const total    = totalAmount + DELIVERY_FEE - discount;
+  const total    = totalAmount + DELIVERY_FEE + SERVICE_FEE - discount;
 
   // ── Cart actions ──────────────────────────────────────────────────────────────
 
@@ -497,6 +498,10 @@ export default function CartScreen({ navigation, route }) {
             <Text style={styles.summaryLabel}>Delivery Fee</Text>
             <Text style={styles.summaryValue}>KES {DELIVERY_FEE}.00</Text>
           </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Service Fee</Text>
+            <Text style={styles.summaryValue}>KES {SERVICE_FEE}.00</Text>
+          </View>
           {discount > 0 && (
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Promo Discount</Text>
@@ -584,6 +589,10 @@ export default function CartScreen({ navigation, route }) {
             <View style={styles.confirmRow}>
               <Text style={styles.confirmLabel}>Delivery fee</Text>
               <Text style={styles.confirmValue}>KES {DELIVERY_FEE}.00</Text>
+            </View>
+            <View style={styles.confirmRow}>
+              <Text style={styles.confirmLabel}>Service fee</Text>
+              <Text style={styles.confirmValue}>KES {SERVICE_FEE}.00</Text>
             </View>
             {(appliedPromo?.discount_amount || 0) > 0 && (
               <View style={styles.confirmRow}>
