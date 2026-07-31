@@ -15,6 +15,7 @@ import { api } from '../../api';
 import { resolveImageUrl } from '../../constants';
 import { useTheme } from '../../contexts/ThemeContext';
 import { REPORT_PERIODS, filterByPeriod, csvCell, downloadCSVReport } from '../../utils/reports';
+import PasswordStrengthMeter from '../../components/PasswordStrengthMeter';
 
 
 export default function ProfileScreen({ navigation }) {
@@ -618,6 +619,7 @@ export default function ProfileScreen({ navigation }) {
               placeholder="Min 6 characters"
               placeholderTextColor={COLORS.muted}
             />
+            <PasswordStrengthMeter password={newPw} COLORS={COLORS} />
 
             <Text style={styles.modalLabel}>Confirm New Password</Text>
             <TextInput

@@ -10,6 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
 import { useTheme } from '../../contexts/ThemeContext';
+import PasswordStrengthMeter from '../../components/PasswordStrengthMeter';
 
 const ROLES = [
   { key: 'consumer',     label: 'Consumer',     icon: 'person-outline',     desc: 'Order food'      },
@@ -247,6 +248,7 @@ export default function RegisterScreen({ navigation }) {
             <Field COLORS={COLORS} icon="mail-outline"        placeholder="Email address"           value={form.email}    onChangeText={(v) => set('email', v)}    keyboardType="email-address" autoCapitalize="none" />
             <Field COLORS={COLORS} icon="call-outline"        placeholder="Phone (e.g. 0712345678)" value={form.phone}    onChangeText={(text) => { let v = text.replace(/[^0-9+]/g, ''); if (v.indexOf('+') > 0) v = v.replace(/\+/g, ''); if (v.length > 13) v = v.slice(0, 13); set('phone', v); }}    keyboardType="phone-pad" autoCapitalize="none" />
             <Field COLORS={COLORS} icon="lock-closed-outline" placeholder="Password (min 6 chars)"  value={form.password} onChangeText={(v) => set('password', v)} secureTextEntry />
+            <PasswordStrengthMeter password={form.password} COLORS={COLORS} />
 
             {form.role === 'vendor' && (
               <View>

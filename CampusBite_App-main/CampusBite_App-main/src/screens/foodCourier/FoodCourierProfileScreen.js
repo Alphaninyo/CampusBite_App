@@ -13,6 +13,7 @@ import useAuthStore from '../../stores/authStore';
 import { api } from '../../api';
 import { resolveImageUrl } from '../../constants';
 import { useTheme } from '../../contexts/ThemeContext';
+import PasswordStrengthMeter from '../../components/PasswordStrengthMeter';
 
 const VEHICLE_TYPES = ['Electric Bicycle', 'Bicycle', 'Motorcycle', 'Walking'];
 
@@ -708,6 +709,7 @@ export default function FoodCourierProfileScreen({ navigation, route }) {
               placeholder="Min 6 characters"
               placeholderTextColor={COLORS.gray}
             />
+            <PasswordStrengthMeter password={newPw} COLORS={COLORS} />
 
             <Text style={styles.modalLabel}>Confirm New Password</Text>
             <TextInput

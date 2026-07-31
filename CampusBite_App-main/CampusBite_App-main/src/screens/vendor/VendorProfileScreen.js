@@ -9,6 +9,7 @@ import { api } from '../../api';
 import { resolveImageUrl } from '../../constants';
 import { useTheme } from '../../contexts/ThemeContext';
 import { REPORT_PERIODS, filterByPeriod, csvCell, downloadCSVReport, vendorNetAmount } from '../../utils/reports';
+import PasswordStrengthMeter from '../../components/PasswordStrengthMeter';
 
 // 24-hour time options: 00:00 to 23:30 in 30-min steps
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
@@ -1766,6 +1767,7 @@ export default function VendorProfileScreen({ navigation = {} }) {
               placeholder="Min 6 characters"
               placeholderTextColor={COLORS.muted}
             />
+            <PasswordStrengthMeter password={newPw} COLORS={COLORS} />
 
             <Text style={styles.modalLabel}>Confirm New Password</Text>
             <TextInput

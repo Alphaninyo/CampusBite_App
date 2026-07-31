@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { api } from '../../api';
 import { useTheme } from '../../contexts/ThemeContext';
+import PasswordStrengthMeter from '../../components/PasswordStrengthMeter';
 
 export default function ResetPasswordScreen({ navigation, route }) {
   const { colors: COLORS } = useTheme();
@@ -36,8 +37,9 @@ export default function ResetPasswordScreen({ navigation, route }) {
         value={otp} onChangeText={setOtp} keyboardType="number-pad" maxLength={6} />
       <TextInput style={styles.input} placeholder="New password" placeholderTextColor={COLORS.gray}
         value={newPassword} onChangeText={setNewPassword} secureTextEntry />
+      <PasswordStrengthMeter password={newPassword} COLORS={COLORS} />
 
-      <TouchableOpacity style={styles.button} onPress={handleReset} disabled={loading}>
+      <TouchableOpacity style={[styles.button, { marginTop: 8 }]} onPress={handleReset} disabled={loading}>
         {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Reset Password</Text>}
       </TouchableOpacity>
     </View>
