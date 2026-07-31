@@ -698,7 +698,9 @@ const makeStyles = (COLORS) => StyleSheet.create({
     color: COLORS.text,
   },
   modalBody: {
-    flex: 1,
+    // No flex:1 here on purpose — inside a maxHeight-bounded (not fixed-height)
+    // parent, flex:1 resolves to a 0 basis on Android and the ScrollView
+    // collapses to nothing even with an explicit maxHeight applied alongside it.
   },
   detailSection: {
     marginBottom: 20,
