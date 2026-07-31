@@ -21,7 +21,7 @@ export default function VendorDetailScreen({ route, navigation }) {
 
   // Restore persisted cart for this vendor on mount
   useEffect(() => {
-    api.menu.getVendorMenu(vendor.id)
+    api.menu.getVendorMenu(vendor.id, { all: true }) // include out-of-stock items so they can show as such, not just vanish
       .then(({ data }) => {
         const items = data.items || data.menu_items || [];
         setMenu(items);
@@ -81,7 +81,11 @@ export default function VendorDetailScreen({ route, navigation }) {
     useCartStore.getState().saveCart(items, vendor.id, vendor.business_name);
   }, [cart]);
 
-  const addToCart = (id) => setCart((c) => ({ ...c, [id]: (c[id] || 0) + 1 }));
+  const addToCart = (id) => {
+    const item = menu.find((m) => m.id === id);
+    if (item && !item.is_available) return; // Out of stock — vendor disabled it since the menu was loaded
+    setCart((c) => ({ ...c, [id]: (c[id] || 0) + 1 }));
+  };
   const removeFromCart = (id) => setCart((c) => {
     const updated = { ...c };
     if (updated[id] > 1) updated[id]--;
@@ -109,7 +113,7 @@ export default function VendorDetailScreen({ route, navigation }) {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <FlatList
-        data={menu.filter((i) => i.is_available)}
+        data={menu}
         keyExtractor={(i) => i.id}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
@@ -200,15 +204,22 @@ export default function VendorDetailScreen({ route, navigation }) {
             </View>
           </View>
         }
-        renderItem={({ item }) => (
-          <View style={styles.item}>
+        renderItem={({ item }) => {
+          const outOfStock = !item.is_available;
+          return (
+          <View style={[styles.item, outOfStock && styles.itemOutOfStock]}>
             <View>
               {item.image
-                ? <Image source={{ uri: resolveImageUrl(item.image) }} style={styles.itemImage} resizeMode="cover" />
-                : <View style={[styles.itemImage, styles.itemImagePlaceholder]}>
+                ? <Image source={{ uri: resolveImageUrl(item.image) }} style={[styles.itemImage, outOfStock && styles.itemImageOutOfStock]} resizeMode="cover" />
+                : <View style={[styles.itemImage, styles.itemImagePlaceholder, outOfStock && styles.itemImageOutOfStock]}>
                     <Ionicons name="fast-food-outline" size={24} color={COLORS.primary} />
                   </View>
               }
+              {outOfStock && (
+                <View style={styles.outOfStockBadge}>
+                  <Text style={styles.outOfStockBadgeText}>OUT OF STOCK</Text>
+                </View>
+              )}
               <TouchableOpacity
                 style={styles.favoriteBtn}
                 onPress={() => toggleFavorite(item.id)}
@@ -222,21 +233,33 @@ export default function VendorDetailScreen({ route, navigation }) {
               </TouchableOpacity>
             </View>
             <View style={styles.itemInfo}>
-              <Text style={styles.itemName}>{item.name}</Text>
+              <Text style={[styles.itemName, outOfStock && styles.itemNameOutOfStock]}>{item.name}</Text>
               {item.description && <Text style={styles.itemDesc}>{item.description}</Text>}
-              <Text style={styles.itemPrice}>KES {parseFloat(item.price).toFixed(2)}</Text>
+              <Text style={[styles.itemPrice, outOfStock && styles.itemNameOutOfStock]}>KES {parseFloat(item.price).toFixed(2)}</Text>
             </View>
-            <View style={styles.qtyRow}>
-              <TouchableOpacity style={styles.qtyBtn} onPress={() => removeFromCart(item.id)}>
-                <Ionicons name="remove-outline" size={16} color={COLORS.primary} />
-              </TouchableOpacity>
-              <Text style={styles.qty}>{cart[item.id] || 0}</Text>
-              <TouchableOpacity style={[styles.qtyBtn, styles.qtyBtnAdd]} onPress={() => addToCart(item.id)}>
-                <Ionicons name="add-outline" size={16} color={COLORS.card} />
-              </TouchableOpacity>
-            </View>
+            {outOfStock ? (
+              cart[item.id] > 0 ? (
+                <View style={styles.qtyRow}>
+                  <TouchableOpacity style={styles.qtyBtn} onPress={() => removeFromCart(item.id)}>
+                    <Ionicons name="remove-outline" size={16} color={COLORS.primary} />
+                  </TouchableOpacity>
+                  <Text style={styles.qty}>{cart[item.id]}</Text>
+                </View>
+              ) : null
+            ) : (
+              <View style={styles.qtyRow}>
+                <TouchableOpacity style={styles.qtyBtn} onPress={() => removeFromCart(item.id)}>
+                  <Ionicons name="remove-outline" size={16} color={COLORS.primary} />
+                </TouchableOpacity>
+                <Text style={styles.qty}>{cart[item.id] || 0}</Text>
+                <TouchableOpacity style={[styles.qtyBtn, styles.qtyBtnAdd]} onPress={() => addToCart(item.id)}>
+                  <Ionicons name="add-outline" size={16} color={COLORS.card} />
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
-        )}
+          );
+        }}
         ListEmptyComponent={
           <View style={{ alignItems: 'center', paddingVertical: 40 }}>
             <Ionicons name="restaurant-outline" size={48} color={COLORS.gray} />
@@ -315,14 +338,23 @@ const makeStyles = (COLORS) => StyleSheet.create({
     borderColor: COLORS.borderWarm,
     gap: 12,
   },
+  itemOutOfStock: { opacity: 0.6 },
   itemImage: {
     width: 64, height: 64,
     borderRadius: 10, flexShrink: 0,
   },
+  itemImageOutOfStock: { opacity: 0.5 },
   itemImagePlaceholder: {
     backgroundColor: COLORS.primary + '12',
     alignItems: 'center', justifyContent: 'center',
   },
+  outOfStockBadge: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    paddingVertical: 3, borderBottomLeftRadius: 10, borderBottomRightRadius: 10,
+    alignItems: 'center',
+  },
+  outOfStockBadgeText: { color: '#fff', fontSize: 8, fontWeight: '800', letterSpacing: 0.5 },
   favoriteBtn: {
     position: 'absolute', top: -4, right: -4,
     width: 26, height: 26, borderRadius: 13,
@@ -331,6 +363,7 @@ const makeStyles = (COLORS) => StyleSheet.create({
   },
   itemInfo: { flex: 1 },
   itemName: { fontSize: 15, fontWeight: 'bold', color: COLORS.text },
+  itemNameOutOfStock: { color: COLORS.gray },
   itemDesc: { fontSize: 12, color: COLORS.gray, marginTop: 2 },
   itemPrice: { fontSize: 14, color: COLORS.primary, fontWeight: 'bold', marginTop: 6 },
   qtyRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
