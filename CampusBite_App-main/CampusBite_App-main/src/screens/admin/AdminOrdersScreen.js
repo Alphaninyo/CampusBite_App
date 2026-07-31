@@ -325,6 +325,16 @@ export default function AdminOrdersScreen({ navigation, route }) {
                   <Text style={styles.detailLabel}>Total Amount</Text>
                   <Text style={styles.detailValue}>KES {parseFloat(selectedOrder?.total_amount || 0).toFixed(2)}</Text>
                 </View>
+                {parseFloat(selectedOrder?.discount_amount || 0) > 0 && (
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>
+                      Promo Discount{selectedOrder?.promo_code ? ` (${selectedOrder.promo_code})` : ''}
+                    </Text>
+                    <Text style={[styles.detailValue, { color: COLORS.success }]}>
+                      - KES {parseFloat(selectedOrder.discount_amount).toFixed(2)}
+                    </Text>
+                  </View>
+                )}
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Order Date</Text>
                   <Text style={styles.detailValue}>{selectedOrder?.created_at ? new Date(selectedOrder.created_at).toLocaleString() : 'N/A'}</Text>

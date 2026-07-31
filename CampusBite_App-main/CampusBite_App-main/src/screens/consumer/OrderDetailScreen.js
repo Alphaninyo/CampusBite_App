@@ -215,6 +215,16 @@ export default function OrderDetailScreen({ route, navigation }) {
           <Text style={styles.summaryLabel}>Delivery Fee</Text>
           <Text style={styles.summaryValue}>KES {parseFloat(order.delivery_fee || 0).toFixed(2)}</Text>
         </View>
+        {parseFloat(order.discount_amount || 0) > 0 && (
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>
+              Promo Discount{order.promo_code ? ` (${order.promo_code})` : ''}
+            </Text>
+            <Text style={[styles.summaryValue, { color: COLORS.success }]}>
+              - KES {parseFloat(order.discount_amount).toFixed(2)}
+            </Text>
+          </View>
+        )}
         <View style={styles.totalDivider} />
         <View style={styles.summaryRow}>
           <Text style={[styles.summaryLabel, { fontWeight: 'bold', color: COLORS.text }]}>Total</Text>
