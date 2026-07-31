@@ -416,6 +416,8 @@ CampusBite is your ultimate food delivery companion for campus life. Order from 
 3. Tap the delete icon
 4. Confirm deletion
 ```
+Saved addresses are stored per-account on your device, so they're
+still there the next time you log back in on the same device.
 
 ---
 
@@ -523,6 +525,9 @@ A: Go to Orders tab to view all platform orders,
 - Notification settings
 - Push notification controls
 ```
+Order and payment notifications include the order ID (and amount,
+where relevant) so you can tell which order a notification is about
+when you have more than one in progress.
 
 ---
 
@@ -598,6 +603,26 @@ A: Go to Orders tab to view all platform orders,
 2. Tap the trash icon
 3. Confirm the deletion in the dialog
 4. The item is permanently removed from the menu
+```
+
+### **Business Hours & Shop Status**
+```javascript
+// Setting Your Hours
+1. Go to Profile → Edit Profile
+2. Set an Opening Time and Closing Time (e.g. "8:00 AM" / "10:00 PM")
+   — overnight ranges like "6:00 PM" to "2:00 AM" are supported
+3. Save
+
+// How "Open"/"Closed" is decided
+- Whenever your open toggle is ON, your shop shows and behaves as
+  OPEN only during the hours you've set — it auto-closes to
+  consumers outside those hours and auto-reopens within them,
+  with no need to toggle it yourself every day
+- Manually switching your shop to CLOSED always wins over the
+  schedule — it stays closed (even during your set hours) until
+  you switch it back to OPEN
+- Consumers can't place an order at your shop while it shows Closed,
+  whichever reason it's closed for
 ```
 
 ---

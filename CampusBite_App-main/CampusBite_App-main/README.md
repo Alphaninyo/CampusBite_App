@@ -27,7 +27,7 @@ For detailed instructions, see [QUICK_START.md](./QUICK_START.md)
 - **👤 User Profile** - Account management with photo upload for all roles
 - **🔔 Push Notifications** - Order updates delivered via Expo push notifications; vendor bell icon shows live unread count badge
 - **🔐 Security** - Two-Factor Authentication (2FA) and password management
-- **📍 Saved Addresses** - Manage delivery locations with current location support
+- **📍 Saved Addresses** - Manage delivery locations with current location support; persisted per-user on-device so they survive logout
 - **❤️ Favourite Items** - Consumers can heart menu items on a vendor's page for quick reordering from their Profile
 - **❓ Help & Support** - Role-based support and accordion FAQ system
 - **📸 Vendor Cover Images** - Vendors can upload a banner photo shown on their store page
@@ -35,7 +35,7 @@ For detailed instructions, see [QUICK_START.md](./QUICK_START.md)
 - **📦 Active Delivery Tab** - Food couriers have a dedicated "Active" tab (between Tasks and Earnings) listing every delivery they've currently accepted, with a badge count and one tap through to the full order detail
 - **🌙 Dark Mode** - A persisted light/dark theme toggle available to all four roles (Consumer/Admin via Profile → Preferences, Vendor via Profile → Preferences, Food Courier via Profile → App Settings → Appearance), plus a toggle on the pre-login landing page itself
 - **📊 Downloadable Reports** - Every role can generate a CSV report (Today / This Week / This Month / All Time): Admin gets a clearly-labeled "Reports" section at the top of Stats with full order-level detail and per-vendor breakdown; Vendors get "Sales Reports" under Profile → Finance & Payouts; Food Couriers get a "Download Report" button on the Earnings tab; Consumers get "My Reports" under Profile → Account
-- **⏰ Business Hours** - Vendors set opening/closing times (24-hour format, HH:MM); visible to consumers
+- **⏰ Business Hours** - Vendors set an opening/closing time (e.g. "8:00 AM" / "10:00 PM"); the shop's open/closed status is computed automatically from these hours (handling overnight ranges too) and updates live for consumers — a manual "Close" from the vendor's own toggle always overrides the schedule and stays closed until they reopen it
 - **⏱️ Estimated Prep Time** - Vendors set a prep time range; visible to consumers on vendor detail
 - **💰 Finance & Payouts** - Vendors save M-Pesa number, view earnings from delivered orders, save KRA PIN for tax
 - **⭐ Live Ratings** - Vendor dashboard shows real average rating calculated from actual customer reviews
