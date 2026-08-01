@@ -516,6 +516,38 @@ Extending dark mode surfaced a long list of pre-existing bugs that were invisibl
 
 ---
 
+## [1.18.0] - 2026-08-01
+
+### ✨ New Features
+
+- **Platform Service Fee** — CampusBite now takes a KES 5 cut from each of the consumer, vendor, and food courier per order (KES 15 total). The consumer sees it as a "Service Fee" line at checkout; the vendor and courier see every earnings/payout figure (Dashboard, Payout History, Sales Reports, Earnings tab) already net of their KES 5, with a note explaining the deduction. Admin gets a new "Platform Fees" stat tile showing total collected (excludes cancelled/refunded orders).
+- **Distance-Based + Time-of-Day Delivery Pricing** — the flat KES 50 delivery fee is now `distance band + time-of-day surcharge`: 0–1km KES 40, 1–3km KES 60, 3km+ KES 90 (straight-line vendor-to-drop-off), plus Peak hours (12–2pm & 6–8pm) +KES 15 or After Hours (10pm–6am) +KES 25 — Normal hours has no surcharge. Vendors set their shop's pin location from a new "Shop Location" row in their profile; falls back to a flat KES 60 if either side hasn't set coordinates yet. Cart shows a live preview before checkout; Consumer and Admin order detail show the same breakdown afterward.
+- **In-App Card Payment** — paying by card used to hand off to the phone's browser (a Stripe-hosted page opened via `Linking.openURL`). Now uses Stripe's native React Native SDK (`CardField`) so card entry happens directly in the app with no redirect. Web still uses the browser-hosted page, since Stripe's native SDK can't run there and a redirect is the normal pattern for web checkout anyway.
+- **In-App Promo Code Discovery** — a vendor's active promo code(s) now show as a tappable banner on their page; tapping one jumps to Cart with the code pre-filled and auto-applied. Creating a new promo code also notifies every past customer of that vendor. Previously a consumer could only use a code if the vendor advertised it somewhere outside the app.
+- **Order Progress Timestamps** — Consumer Order Detail, Food Courier's delivery timeline, and Admin's order detail now show the actual date/time each status (Preparing, Ready, Collected, In Transit, Delivered) was reached, instead of just "Completed" with no time.
+- **Password Strength Indicator** — Sign Up, Reset Password, and every role's Change Password form now show a Weak/Medium/Strong meter (5-segment bar + label) as soon as you start typing, scored on length, case mixing, digits, and special characters.
+
+### 🐛 Bug Fixes
+
+- **Out-of-stock menu items vanished entirely for consumers** instead of showing as unavailable — both because the app filtered them out client-side and because the backend's menu endpoint only returns available items by default. Now shown grayed out with an "OUT OF STOCK" badge and no add-to-cart controls, matching the vendor's own menu screen convention.
+- **The promo code Apply button did nothing** (regression introduced while building the discovery banner above) — a press-event object was being passed where a promo code string was expected, so the tap silently failed before it could even check validity. Fixed for both valid and invalid codes.
+- **The applied promo discount never showed on the receipt** — it was correctly calculated and charged, but Order Detail only ever displayed Subtotal/Delivery/Total with no discount line. Added a "Promo Discount (CODE)" row (Consumer + Admin).
+- **Vendor "Closed" status displayed in green** on the Home screen's Featured Vendors card (same style as "Open Now") and gray on Vendor Detail, making a closed vendor easy to mistake for open at a glance. Both now show red for Closed, matching Explore's existing convention.
+- **Food Courier's notification badge** went through two rounds of fixes this cycle: first the color/sizing didn't match Vendor's (orange instead of red, and a bad height + font-padding combination clipped the count down to a stray "!"); then a deeper bug — all 4 tab screens (Tasks/Active/Earnings/Profile) checked the unread count only once on mount instead of on every return to that tab, so the badge could go stale and disappear after a new notification arrived while a different tab was open. All 4 now match Vendor's `useFocusEffect` pattern.
+
+### 🔄 Modified files (key)
+| Area | Files |
+|---|---|
+| Service fee | `CampusBite_Backend-main/src/models/Order.js`, `order.controller.js`, `src/utils/reports.js`, `CartScreen.js`, `VendorDashboardScreen.js`, `VendorProfileScreen.js`, `AdminStatsScreen.js` |
+| Delivery pricing | `CampusBite_Backend-main/src/services/deliveryFee.service.js` (new), `src/models/Vendor.js`, `order.controller.js`, `vendor.controller.js`, `src/utils/deliveryFee.js` (new), `CartScreen.js`, `MapAddressPicker.web.js` |
+| Card payment | `PaymentStatusScreen.native.js` (new), `PaymentStatusScreen.web.js` (renamed from the old shared file) |
+| Promo discovery | `CampusBite_Backend-main/src/controllers/promoCode.controller.js`, `src/api/index.js`, `VendorDetailScreen.js`, `CartScreen.js` |
+| Order timeline | `CampusBite_Backend-main/src/models/Order.js`, `order.controller.js`, `admin.controller.js`, `OrderDetailScreen.js`, `RiderOrderDetailScreen.js`, `AdminOrdersScreen.js` |
+| Password strength | `src/utils/passwordStrength.js` (new), `src/components/PasswordStrengthMeter.js` (new), `RegisterScreen.js`, `ResetPasswordScreen.js`, `ProfileScreen.js`, `VendorProfileScreen.js`, `FoodCourierProfileScreen.js` |
+| Out-of-stock fix | `VendorDetailScreen.js` |
+
+---
+
 ## [1.17.0] - 2026-07-31
 
 ### 🐛 Bug Fixes

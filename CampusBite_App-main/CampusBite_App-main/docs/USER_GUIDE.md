@@ -209,6 +209,9 @@ CampusBite is your ultimate food delivery companion for campus life. Order from 
 - Collected: Driver picked up order
 - In Transit: On the way to you
 - Delivered: Order delivered successfully
+
+// Each step in the tracker shows the date & time it was actually reached
+// once your order has passed it — not just a "Completed" label.
 ```
 
 ### **Delivery PIN & QR Code (Proof of Delivery)**
@@ -334,6 +337,9 @@ CampusBite is your ultimate food delivery companion for campus life. Order from 
 5. Confirm your new password
 6. Tap "Update Password"
 ```
+As you type a new password (here, on Sign Up, and on Reset Password), a
+Weak / Medium / Strong meter appears underneath the field — it scores
+length, mixed case, digits, and special characters.
 
 ### **Security Tips**
 ```javascript
@@ -597,6 +603,8 @@ when you have more than one in progress.
 2. Toggle the switch next to the item
 3. When OFF, the item shows "OUT OF STOCK" and cannot be ordered
 4. When ON, the item is available for consumers to order
+5. Consumers still see the item on your menu when it's OFF — grayed out
+   with an "OUT OF STOCK" badge — rather than it just disappearing
 
 // Deleting a Menu Item
 1. Find the item in the menu list
@@ -688,13 +696,28 @@ when you have more than one in progress.
 
 💳 Debit/Credit Card
   - Visa, Mastercard, and other cards supported via Stripe
-  - You enter your card on a secure Stripe checkout page —
-    CampusBite never sees or stores your card number
+  - On the phone app (iOS/Android): enter your card right in the app —
+    no redirect to a browser. On the web app: you're taken to a secure
+    Stripe checkout page instead, since that's the only way it works
+    in a browser
+  - CampusBite never sees or stores your card number either way
   - Test mode: use 4242 4242 4242 4242, any future expiry, any CVC
     (no real charge is made)
 
 💵 Cash on Delivery
   - Pay the food courier when your order arrives
+```
+
+### **What You're Charged**
+```javascript
+// Every order total breaks down as:
+Food Subtotal        - sum of your items
++ Delivery Fee       - distance band (0-1km / 1-3km / 3km+) plus a
+                        Peak-hours (12-2pm, 6-8pm) or After-hours
+                        (10pm-6am) surcharge, if applicable
++ Service Fee (KES 5) - a small platform fee, shown as its own line
+- Promo Discount      - if you applied a code
+= Total
 ```
 
 ### **Checkout Process**
@@ -703,7 +726,9 @@ when you have more than one in progress.
 1. 📦 Review Cart
    - Confirm items and quantities
    - Add special instructions
-   - Apply promo codes
+   - Apply promo codes — type one you already know, or tap the banner
+     on the vendor's page (if they have an active code) to have it
+     pre-filled and applied automatically
 
 2. 📍 Delivery Information
    - Select delivery address

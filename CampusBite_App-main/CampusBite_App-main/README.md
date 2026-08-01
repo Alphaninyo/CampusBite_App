@@ -23,15 +23,18 @@ For detailed instructions, see [QUICK_START.md](./QUICK_START.md)
 - **🛒 Shopping Cart** - Add/remove items with real-time updates
 - **📋 Order Management** - Track order history and status
 - **💳 M-Pesa STK Push** - Seamless mobile payments via Safaricom Daraja API
-- **💳 Card Payments (Stripe)** - Real Stripe test-mode card checkout via a secure hosted payment page; dev-mode simulation when live keys aren't configured
+- **💳 Card Payments (Stripe)** - Native in-app card entry on iOS/Android via Stripe's React Native SDK (no browser redirect); web uses a secure hosted payment page instead, since Stripe's native SDK can't run there. Dev-mode simulation when live keys aren't configured.
 - **👤 User Profile** - Account management with photo upload for all roles
 - **🔔 Push Notifications** - Order updates delivered via Expo push notifications; vendor bell icon shows live unread count badge
-- **🔐 Security** - Two-Factor Authentication (2FA) and password management
+- **🔐 Security** - Two-Factor Authentication (2FA) and password management, with a live Weak/Medium/Strong strength meter shown on Sign Up, Reset Password, and every role's Change Password form
 - **📍 Saved Addresses** - Manage delivery locations with current location support; persisted per-user on-device so they survive logout
 - **❤️ Favourite Items** - Consumers can heart menu items on a vendor's page for quick reordering from their Profile
 - **❓ Help & Support** - Role-based support and accordion FAQ system
 - **📸 Vendor Cover Images** - Vendors can upload a banner photo shown on their store page
-- **🗑️ Menu Item Delete & Disable** - Vendors can delete menu items with confirmation and toggle availability to mark items out of stock
+- **🗑️ Menu Item Delete & Disable** - Vendors can delete menu items with confirmation and toggle availability to mark items out of stock; consumers see disabled items grayed out with an "OUT OF STOCK" badge on the vendor's menu rather than the item just disappearing
+- **🏷️ Promo Codes** - Vendors create discount codes (percent or fixed KES off, with a minimum order amount, optional usage cap and expiry). Active codes show as a tappable banner on the vendor's page for consumers to discover — tapping one jumps to Cart with the code pre-filled and applied — and every past customer of that vendor is notified when a new code goes live.
+- **💰 Platform Service Fee** - CampusBite takes a flat KES 5 from each of the consumer, vendor, and food courier per order (KES 15 total). Shown as its own "Service Fee" line at consumer checkout; vendor/courier earnings screens already show the net amount with an explanatory note. Admin's Stats screen has a "Platform Fees" tile showing the running total.
+- **🚴 Distance + Time-of-Day Delivery Pricing** - delivery fee is a distance band (0–1km / 1–3km / 3km+, based on real vendor-to-drop-off distance) plus a Peak-hours or After-hours surcharge on top of Normal-hours pricing. Vendors set their shop's pin from Profile → Shop Location; falls back to a flat fee if either side hasn't set coordinates.
 - **📦 Active Delivery Tab** - Food couriers have a dedicated "Active" tab (between Tasks and Earnings) listing every delivery they've currently accepted, with a badge count and one tap through to the full order detail
 - **🌙 Dark Mode** - A persisted light/dark theme toggle available to all four roles (Consumer/Admin via Profile → Preferences, Vendor via Profile → Preferences, Food Courier via Profile → App Settings → Appearance), plus a toggle on the pre-login landing page itself
 - **📊 Downloadable Reports** - Every role can generate a CSV report (Today / This Week / This Month / All Time): Admin gets a clearly-labeled "Reports" section at the top of Stats with full order-level detail and per-vendor breakdown; Vendors get "Sales Reports" under Profile → Finance & Payouts; Food Couriers get a "Download Report" button on the Earnings tab; Consumers get "My Reports" under Profile → Account
@@ -42,6 +45,7 @@ For detailed instructions, see [QUICK_START.md](./QUICK_START.md)
 - **📊 Real-time Dashboard** - Revenue, active orders, and rating auto-refresh every 30 seconds
 - **🔔 In-App Notification Center** - Real, persisted notifications (not just push) for all four roles, with unread badges, mark-as-read/mark-all-as-read, and tap-through to the relevant order
 - **🔑 Delivery PIN / QR Proof-of-Delivery** - A 4-digit PIN (also shown as a QR code) is generated per order and required from the courier before an order can be marked "Delivered"; the courier can type the PIN or scan the customer's QR code with the in-app camera. Admins can see PIN-verified status and force-complete disputed orders with a logged reason.
+- **🕐 Order Progress Timestamps** - Consumer Order Detail, the Food Courier delivery timeline, and Admin's order detail all show the actual date/time each status (Preparing, Ready, Collected, In Transit, Delivered) was reached, not just a "Completed" label with no time.
 
 ### **🎨 User Experience**
 - **📱 Cross-Platform** - Web, iOS, and Android support
