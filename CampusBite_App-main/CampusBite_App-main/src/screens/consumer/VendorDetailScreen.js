@@ -17,10 +17,26 @@ export default function VendorDetailScreen({ route, navigation }) {
   const [loading, setLoading] = useState(true);
   const [favoriteIds, setFavoriteIds] = useState(new Set());
   const [promoCodes, setPromoCodes] = useState([]);
+  // vendor from route.params is a snapshot from whenever the list was last
+  // fetched (Home/Explore) — refresh is_open/hours live so a shop that
+  // closed (or reopened) since then isn't shown stale here.
+  const [liveStatus, setLiveStatus] = useState({
+    is_open: vendor.is_open,
+    opening_time: vendor.opening_time,
+    closing_time: vendor.closing_time,
+  });
   const menuLoaded = useRef(false);
 
   // Restore persisted cart for this vendor on mount
   useEffect(() => {
+    api.vendors.getById(vendor.id)
+      .then(({ data }) => setLiveStatus({
+        is_open: data.vendor?.is_open ?? vendor.is_open,
+        opening_time: data.vendor?.opening_time ?? vendor.opening_time,
+        closing_time: data.vendor?.closing_time ?? vendor.closing_time,
+      }))
+      .catch(() => {});
+
     api.menu.getVendorMenu(vendor.id, { all: true }) // include out-of-stock items so they can show as such, not just vanish
       .then(({ data }) => {
         const items = data.items || data.menu_items || [];
@@ -82,6 +98,7 @@ export default function VendorDetailScreen({ route, navigation }) {
   }, [cart]);
 
   const addToCart = (id) => {
+    if (!liveStatus.is_open) return; // Shop is closed — nothing can be added until it reopens
     const item = menu.find((m) => m.id === id);
     if (item && !item.is_available) return; // Out of stock — vendor disabled it since the menu was loaded
     setCart((c) => ({ ...c, [id]: (c[id] || 0) + 1 }));
@@ -147,18 +164,18 @@ export default function VendorDetailScreen({ route, navigation }) {
 
               <View style={styles.pillsRow}>
                 {/* Open / Closed status */}
-                <View style={[styles.pill, { backgroundColor: vendor.is_open ? COLORS.successBg : COLORS.dangerBg }]}>
-                  <View style={[styles.statusDot, { backgroundColor: vendor.is_open ? COLORS.success : COLORS.danger }]} />
-                  <Text style={[styles.pillText, { color: vendor.is_open ? COLORS.success : COLORS.danger }]}>
-                    {vendor.is_open ? 'Open Now' : 'Closed'}
+                <View style={[styles.pill, { backgroundColor: liveStatus.is_open ? COLORS.successBg : COLORS.dangerBg }]}>
+                  <View style={[styles.statusDot, { backgroundColor: liveStatus.is_open ? COLORS.success : COLORS.danger }]} />
+                  <Text style={[styles.pillText, { color: liveStatus.is_open ? COLORS.success : COLORS.danger }]}>
+                    {liveStatus.is_open ? 'Open Now' : 'Closed'}
                   </Text>
                 </View>
 
                 {/* Business hours */}
-                {vendor.opening_time && vendor.closing_time ? (
+                {liveStatus.opening_time && liveStatus.closing_time ? (
                   <View style={styles.pill}>
                     <Ionicons name="time-outline" size={13} color={COLORS.subtext} />
-                    <Text style={styles.pillText}>{vendor.opening_time} – {vendor.closing_time}</Text>
+                    <Text style={styles.pillText}>{liveStatus.opening_time} – {liveStatus.closing_time}</Text>
                   </View>
                 ) : null}
 
@@ -170,6 +187,17 @@ export default function VendorDetailScreen({ route, navigation }) {
                   </View>
                 ) : null}
               </View>
+
+              {!liveStatus.is_open && (
+                <View style={styles.closedBanner}>
+                  <Ionicons name="time-outline" size={16} color={COLORS.danger} />
+                  <Text style={styles.closedBannerText}>
+                    {liveStatus.opening_time
+                      ? `Closed right now — opens at ${liveStatus.opening_time}. Ordering is disabled until then.`
+                      : 'Closed right now. Ordering is disabled until the vendor reopens.'}
+                  </Text>
+                </View>
+              )}
 
               {promoCodes.length > 0 && (
                 <View style={styles.promoBannerList}>
@@ -206,8 +234,10 @@ export default function VendorDetailScreen({ route, navigation }) {
         }
         renderItem={({ item }) => {
           const outOfStock = !item.is_available;
+          const shopClosed = !liveStatus.is_open;
+          const disabledForOrder = outOfStock || shopClosed;
           return (
-          <View style={[styles.item, outOfStock && styles.itemOutOfStock]}>
+          <View style={[styles.item, disabledForOrder && styles.itemOutOfStock]}>
             <View>
               {item.image
                 ? <Image source={{ uri: resolveImageUrl(item.image) }} style={[styles.itemImage, outOfStock && styles.itemImageOutOfStock]} resizeMode="cover" />
@@ -233,11 +263,11 @@ export default function VendorDetailScreen({ route, navigation }) {
               </TouchableOpacity>
             </View>
             <View style={styles.itemInfo}>
-              <Text style={[styles.itemName, outOfStock && styles.itemNameOutOfStock]}>{item.name}</Text>
+              <Text style={[styles.itemName, disabledForOrder && styles.itemNameOutOfStock]}>{item.name}</Text>
               {item.description && <Text style={styles.itemDesc}>{item.description}</Text>}
-              <Text style={[styles.itemPrice, outOfStock && styles.itemNameOutOfStock]}>KES {parseFloat(item.price).toFixed(2)}</Text>
+              <Text style={[styles.itemPrice, disabledForOrder && styles.itemNameOutOfStock]}>KES {parseFloat(item.price).toFixed(2)}</Text>
             </View>
-            {outOfStock ? (
+            {disabledForOrder ? (
               cart[item.id] > 0 ? (
                 <View style={styles.qtyRow}>
                   <TouchableOpacity style={styles.qtyBtn} onPress={() => removeFromCart(item.id)}>
@@ -315,6 +345,13 @@ const makeStyles = (COLORS) => StyleSheet.create({
   statusDot: { width: 7, height: 7, borderRadius: 4 },
 
   promoBannerList: { marginTop: 12, gap: 8 },
+  closedBanner: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 8,
+    backgroundColor: COLORS.dangerBg, borderRadius: 12,
+    paddingHorizontal: 12, paddingVertical: 10, marginTop: 12,
+    borderWidth: 1, borderColor: COLORS.danger + '30',
+  },
+  closedBannerText: { flex: 1, fontSize: 12, color: COLORS.danger, fontWeight: '600', lineHeight: 17 },
   promoBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     backgroundColor: COLORS.iconBg, borderRadius: 12,

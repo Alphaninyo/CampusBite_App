@@ -52,6 +52,7 @@ export default function CartScreen({ navigation, route }) {
   const [suggestions,         setSuggestions]         = useState([]);
   const [checkingOut,         setCheckingOut]         = useState(false);
   const [vendorOpen,          setVendorOpen]          = useState(true);
+  const [vendorOpeningTime,   setVendorOpeningTime]   = useState(null);
   const [vendorCoords,        setVendorCoords]        = useState(null);
   const [timeSlots,           setTimeSlots]           = useState([]);
   const [selectedSlot,        setSelectedSlot]        = useState(null);
@@ -74,6 +75,7 @@ export default function CartScreen({ navigation, route }) {
     api.vendors.getById(vendorId)
       .then(({ data }) => {
         setVendorOpen(data.vendor?.is_open ?? true);
+        setVendorOpeningTime(data.vendor?.opening_time || null);
         setVendorCoords(
           data.vendor?.latitude != null && data.vendor?.longitude != null
             ? { latitude: data.vendor.latitude, longitude: data.vendor.longitude }
@@ -185,7 +187,12 @@ export default function CartScreen({ navigation, route }) {
   const openConfirm = () => {
     if (cartItems.length === 0) return;
     if (!vendorOpen) {
-      Alert.alert('Vendor Closed', `${vendorName || 'This vendor'} is currently closed.`);
+      Alert.alert(
+        'Vendor Closed',
+        vendorOpeningTime
+          ? `${vendorName || 'This vendor'} is closed right now. They open at ${vendorOpeningTime}.`
+          : `${vendorName || 'This vendor'} is currently closed.`
+      );
       return;
     }
     if (!address.trim()) {
@@ -278,7 +285,9 @@ export default function CartScreen({ navigation, route }) {
           <View style={styles.closedBanner}>
             <Ionicons name="alert-circle-outline" size={18} color={COLORS.warningText} />
             <Text style={styles.closedBannerText}>
-              {vendorName || 'This vendor'} is currently closed.
+              {vendorOpeningTime
+                ? `${vendorName || 'This vendor'} is closed right now — opens at ${vendorOpeningTime}. Checkout is disabled until then.`
+                : `${vendorName || 'This vendor'} is currently closed. Checkout is disabled until they reopen.`}
             </Text>
           </View>
         )}
