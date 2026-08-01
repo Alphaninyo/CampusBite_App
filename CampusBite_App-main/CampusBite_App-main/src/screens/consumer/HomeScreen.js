@@ -51,16 +51,26 @@ function MenuImagePlaceholder({ name, styles }) {
 
 function TrendingItemCard({ item, onPress, styles, COLORS }) {
   const imageUri = resolveImageUrl(item.image);
+  const outOfStock = !item.is_available;
+  const vendorClosed = !item.vendor_is_open;
+  const disabled = outOfStock || vendorClosed;
   return (
-    <TouchableOpacity style={styles.trendingCard} onPress={onPress}>
-      {imageUri
-        ? <Image source={{ uri: imageUri }} style={styles.trendingImage} />
-        : <MenuImagePlaceholder name={item.name} styles={styles} />}
+    <TouchableOpacity style={[styles.trendingCard, disabled && styles.trendingCardDisabled]} onPress={disabled ? undefined : onPress} activeOpacity={disabled ? 1 : 0.7}>
+      <View>
+        {imageUri
+          ? <Image source={{ uri: imageUri }} style={[styles.trendingImage, disabled && styles.trendingImageDisabled]} />
+          : <MenuImagePlaceholder name={item.name} styles={styles} />}
+        {(outOfStock || vendorClosed) && (
+          <View style={styles.trendingBadge}>
+            <Text style={styles.trendingBadgeText}>{outOfStock ? 'OUT OF STOCK' : 'CLOSED'}</Text>
+          </View>
+        )}
+      </View>
       <Text style={styles.itemVendor}>{item.vendor_name}</Text>
-      <Text style={styles.itemName}>{item.name}</Text>
+      <Text style={[styles.itemName, disabled && styles.itemNameDisabled]}>{item.name}</Text>
       <View style={styles.priceContainer}>
-        <Text style={styles.itemPrice}>KES {item.price}</Text>
-        <TouchableOpacity style={styles.addButton} onPress={onPress}>
+        <Text style={[styles.itemPrice, disabled && styles.itemNameDisabled]}>KES {item.price}</Text>
+        <TouchableOpacity style={[styles.addButton, disabled && styles.addButtonDisabled]} onPress={disabled ? undefined : onPress} disabled={disabled}>
           <Ionicons name="add" size={16} color={COLORS.white} />
         </TouchableOpacity>
       </View>
@@ -166,10 +176,9 @@ export default function HomeScreen({ navigation }) {
       // Fetch menu items for each vendor and flatten into trending items
       const menuPromises = vendorList.map(async (vendor) => {
         try {
-          const { data: menuData } = await api.menu.getVendorMenu(vendor.id);
+          const { data: menuData } = await api.menu.getVendorMenu(vendor.id, { all: true });
           const items = menuData.items || menuData.menu_items || [];
           return items
-            .filter(item => item.is_available)
             .map(item => ({
               id: item.id,
               vendor_name: vendor.business_name,
@@ -178,6 +187,9 @@ export default function HomeScreen({ navigation }) {
               price: parseFloat(item.price).toFixed(2),
               image: resolveImageUrl(item.image),
               _vendor_type: vendor.vendor_type,
+              is_available: item.is_available,
+              vendor_is_open: vendor.is_open,
+              vendor_opening_time: vendor.opening_time,
             }));
         } catch {
           return [];
@@ -627,6 +639,16 @@ const makeStyles = (COLORS) => StyleSheet.create({
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
   },
+  trendingCardDisabled: { opacity: 0.6 },
+  trendingImageDisabled: { opacity: 0.5 },
+  trendingBadge: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    paddingVertical: 4, borderBottomLeftRadius: 12, borderBottomRightRadius: 12,
+    alignItems: 'center',
+  },
+  trendingBadgeText: { color: '#fff', fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
+  itemNameDisabled: { color: COLORS.gray },
   itemVendor: {
     fontSize: 14,
     color: COLORS.gray,
@@ -659,6 +681,7 @@ const makeStyles = (COLORS) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  addButtonDisabled: { backgroundColor: COLORS.gray },
   addButtonText: {
     color: COLORS.white,
     fontSize: 16,
