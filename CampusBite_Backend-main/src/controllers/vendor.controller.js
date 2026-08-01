@@ -94,7 +94,6 @@ exports.createProfile = async (req, res) => {
       business_name: business_name.trim(),
       vendor_type,
       location:      location ? location.trim() : null,
-      is_open:       false,
       approved_at:   null,
     });
 
@@ -140,7 +139,13 @@ exports.getMyProfile = async (req, res) => {
       });
     }
 
-    res.status(200).json({ success: true, vendor });
+    // accepting_orders is the raw manual pause toggle; is_open is the actual
+    // effective status once the opening_time/closing_time schedule is applied.
+    const json = vendor.toJSON();
+    json.accepting_orders = vendor.is_open;
+    json.is_open = isVendorOpenNow(vendor);
+
+    res.status(200).json({ success: true, vendor: json });
   } catch (error) {
     console.error('[VENDOR] getMyProfile error:', error);
     res.status(500).json({ success: false, message: 'Server error.' });
@@ -195,7 +200,10 @@ exports.updateMyProfile = async (req, res) => {
     });
 
     console.log('[VENDOR] Profile updated successfully, image path:', imagePath);
-    res.status(200).json({ success: true, message: 'Profile updated.', vendor });
+    const json = vendor.toJSON();
+    json.accepting_orders = vendor.is_open;
+    json.is_open = isVendorOpenNow(vendor);
+    res.status(200).json({ success: true, message: 'Profile updated.', vendor: json });
   } catch (error) {
     console.error('[VENDOR] updateMyProfile error:', error);
     res.status(500).json({ success: false, message: 'Server error.' });
@@ -205,7 +213,9 @@ exports.updateMyProfile = async (req, res) => {
 /**
  * PATCH /api/vendors/profile/me/toggle
  * Protected — vendor role only.
- * Toggles the shop between OPEN and CLOSED.
+ * Toggles the manual pause override. When on (accepting_orders=true), the
+ * shop's actual open/closed state automatically follows opening_time/closing_time.
+ * When off, the shop is force-closed regardless of the schedule.
  * Blocked if the vendor has not yet been approved by admin.
  */
 exports.toggleShopStatus = async (req, res) => {
@@ -227,8 +237,11 @@ exports.toggleShopStatus = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message:  `Your shop is now ${newStatus ? 'OPEN' : 'CLOSED'}.`,
-      is_open:  newStatus,
+      message: newStatus
+        ? 'Your shop will now automatically open and close based on your set hours.'
+        : 'Orders paused — your shop is closed until you turn this back on.',
+      accepting_orders: newStatus,
+      is_open: isVendorOpenNow(vendor),
     });
   } catch (error) {
     console.error('[VENDOR] toggleShopStatus error:', error);

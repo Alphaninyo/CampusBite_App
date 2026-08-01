@@ -20,6 +20,16 @@ function parseTimeToMinutes(timeStr) {
   return hours * 60 + minutes;
 }
 
+// Africa/Nairobi (EAT) is a fixed UTC+3 offset with no DST. Vendors set their
+// hours in local Kenya time, so "now" must be computed from that offset, not
+// the host machine's own clock/timezone (Render's servers run in UTC).
+const NAIROBI_UTC_OFFSET_MINUTES = 180;
+
+function nowMinutesInNairobi(now) {
+  const utcMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+  return (utcMinutes + NAIROBI_UTC_OFFSET_MINUTES) % 1440;
+}
+
 function isWithinBusinessHours(openingTime, closingTime, now = new Date()) {
   const openMin = parseTimeToMinutes(openingTime);
   const closeMin = parseTimeToMinutes(closingTime);
@@ -27,7 +37,7 @@ function isWithinBusinessHours(openingTime, closingTime, now = new Date()) {
   // Hours not configured yet — don't impose a time restriction.
   if (openMin === null || closeMin === null || openMin === closeMin) return true;
 
-  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const nowMin = nowMinutesInNairobi(now);
 
   if (openMin < closeMin) {
     return nowMin >= openMin && nowMin < closeMin;

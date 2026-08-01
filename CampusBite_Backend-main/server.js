@@ -89,6 +89,9 @@ async function startServer() {
       `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_time_tier "enum_orders_delivery_time_tier"`,
       `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_lat DECIMAL(10,7)`,
       `ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_lng DECIMAL(10,7)`,
+      // is_open is now a manual pause override (default true) — the vendor's
+      // opening_time/closing_time schedule is the primary driver of open/closed status.
+      `ALTER TABLE vendors ALTER COLUMN is_open SET DEFAULT true`,
     ];
     for (const sql of migrations) {
       await sequelize.query(sql).catch((e) => console.warn('[MIGRATION]', sql.slice(0, 60), e.message));

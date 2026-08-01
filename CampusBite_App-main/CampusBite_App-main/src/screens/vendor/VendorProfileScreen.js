@@ -250,14 +250,16 @@ export default function VendorProfileScreen({ navigation = {} }) {
 
   const toggleStoreStatus = async () => {
     if (toggling) return;
-    const previous = vendor?.is_open;
-    setVendor(v => ({ ...v, is_open: !v?.is_open })); // optimistic update
+    const previous = vendor?.accepting_orders ?? vendor?.is_open;
+    setVendor(v => ({ ...v, accepting_orders: !previous })); // optimistic update
     setToggling(true);
     try {
       const { data } = await api.vendors.updateStatus();
-      setVendor(v => ({ ...v, is_open: data.is_open })); // confirm with server value
+      // confirm with server values: accepting_orders (raw pause override) and
+      // is_open (effective status once the business-hours schedule is applied)
+      setVendor(v => ({ ...v, accepting_orders: data.accepting_orders, is_open: data.is_open }));
     } catch (err) {
-      setVendor(v => ({ ...v, is_open: previous })); // revert on error
+      setVendor(v => ({ ...v, accepting_orders: previous })); // revert on error
       Alert.alert('Error', err?.response?.data?.message || err.message || 'Failed to update store status.');
     } finally {
       setToggling(false);
@@ -708,9 +710,14 @@ export default function VendorProfileScreen({ navigation = {} }) {
               <Text style={styles.settingValue}>
                 {vendor?.opening_time && vendor?.closing_time
                   ? `${vendor.opening_time} – ${vendor.closing_time}`
-                  : 'Tap to set hours'}
+                  : 'Tap to set hours — your shop opens and closes automatically at these times'}
               </Text>
             </View>
+            {vendor?.opening_time && vendor?.closing_time && (
+              <Text style={[styles.hoursLiveStatus, { color: vendor?.is_open ? COLORS.success : COLORS.danger }]}>
+                {vendor?.is_open ? 'Open now' : 'Closed now'}
+              </Text>
+            )}
             <Ionicons name="chevron-forward" size={18} color={COLORS.gray} />
           </TouchableOpacity>
 
@@ -749,16 +756,18 @@ export default function VendorProfileScreen({ navigation = {} }) {
               <Ionicons name="radio-outline" size={20} color={COLORS.primary} />
             </View>
             <View style={styles.settingInfo}>
-              <Text style={styles.settingLabel}>Store Status</Text>
+              <Text style={styles.settingLabel}>Pause Orders</Text>
               <Text style={styles.settingValue}>
-                {vendor?.is_open ? 'Accepting Orders' : 'Closed'}
+                {(vendor?.accepting_orders ?? vendor?.is_open)
+                  ? 'Off — shop follows your Business Hours automatically'
+                  : 'On — no orders will come in until you turn this off'}
               </Text>
             </View>
             <Switch
-              value={!!vendor?.is_open}
+              value={!(vendor?.accepting_orders ?? vendor?.is_open)}
               onValueChange={toggleStoreStatus}
               disabled={toggling}
-              trackColor={{ false: '#ddd', true: COLORS.primary }}
+              trackColor={{ false: '#ddd', true: COLORS.danger }}
               thumbColor={COLORS.white}
             />
           </View>
@@ -1918,6 +1927,7 @@ const makeStyles = (COLORS) => StyleSheet.create({
   settingInfo: { flex: 1 },
   settingLabel: { fontSize: 14, fontWeight: '600', color: COLORS.text },
   settingValue: { fontSize: 12, color: COLORS.primary, marginTop: 2 },
+  hoursLiveStatus: { fontSize: 12, fontWeight: '700', marginRight: 8 },
   settingDivider: { height: 1, backgroundColor: COLORS.borderWarm, marginLeft: 64 },
 
   // Analytics

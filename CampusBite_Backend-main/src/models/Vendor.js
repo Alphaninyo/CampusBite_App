@@ -39,8 +39,8 @@ const Vendor = sequelize.define(
     is_open: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
-      defaultValue: false,
-      comment: 'Vendor toggles this to accept or pause incoming orders.',
+      defaultValue: true,
+      comment: 'Manual pause override. True = follow the opening_time/closing_time schedule; false = force-closed regardless of schedule (vendor paused orders).',
     },
     approved_at: {
       type: DataTypes.DATE,
