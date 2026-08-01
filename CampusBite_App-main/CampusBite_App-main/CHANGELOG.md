@@ -516,6 +516,30 @@ Extending dark mode surfaced a long list of pre-existing bugs that were invisibl
 
 ---
 
+## [1.19.0] - 2026-08-01
+
+### ✨ New Features
+
+- **Automatic Business Hours** — a vendor's shop now opens and closes on its own at the times they've set, computed correctly in Nairobi time (Africa/Nairobi, UTC+3) regardless of the server's own clock. The old "Accepting Orders" switch is now a "Pause Orders" override for going offline early (e.g. running out of food) — it defaults on, so a newly configured vendor doesn't need to touch it at all for their hours to take effect. Vendor Profile now shows a live "Open now"/"Closed now" indicator next to the Business Hours row.
+- **Ordering Blocked While a Shop Is Closed** — Vendor Detail and Cart now check the vendor's live open/closed status (not a possibly-stale snapshot) and block adding to cart / checking out while closed, showing "Closed right now — opens at HH:MM" instead of only failing at the very last step.
+
+### 🐛 Bug Fixes
+
+- **Business hours had no effect at all** — setting opening/closing time did nothing while the separate manual toggle was off, and that toggle defaulted off for every vendor. Setting the times alone looked broken because a second, unrelated switch was silently gating it.
+- **Business hours checked against the wrong timezone** — the comparison used the server's own clock (Render runs in UTC), not Kenya local time, so hours like 11:00–21:00 were being checked against UTC and could show "closed" for the first few hours of what should have been an open window.
+- **Out-of-stock and closed-vendor items disappeared from the Home screen's "Trending Now"** — the same issue fixed on the vendor menu page in 1.18.0 was still present here: items were filtered out client-side and fetched without the flag needed to include unavailable ones server-side, and the section never checked vendor open/closed status at all. Now shown grayed out with an "OUT OF STOCK" or "CLOSED" badge and a disabled add button, matching the vendor menu page.
+- **Status bar icons could become invisible** — `StatusBar style="auto"` follows the phone's system-wide dark/light setting, not the app's own theme toggle. When the two disagreed (e.g. phone in dark mode, app in light mode), the status bar's clock/battery/wifi icons rendered the same color as the app's background. Now bound directly to the app's own theme.
+
+### 🔄 Modified files (key)
+| Area | Files |
+|---|---|
+| Automatic business hours | `CampusBite_Backend-main/src/services/vendorStatus.service.js`, `src/models/Vendor.js`, `vendor.controller.js`, `server.js`, `VendorProfileScreen.js` |
+| Closed-shop ordering block | `VendorDetailScreen.js`, `CartScreen.js` |
+| Trending Now out-of-stock fix | `HomeScreen.js` |
+| Status bar fix | `App.js` |
+
+---
+
 ## [1.18.0] - 2026-08-01
 
 ### ✨ New Features

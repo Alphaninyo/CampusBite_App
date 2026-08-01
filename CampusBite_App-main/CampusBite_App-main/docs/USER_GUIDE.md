@@ -603,8 +603,9 @@ when you have more than one in progress.
 2. Toggle the switch next to the item
 3. When OFF, the item shows "OUT OF STOCK" and cannot be ordered
 4. When ON, the item is available for consumers to order
-5. Consumers still see the item on your menu when it's OFF — grayed out
-   with an "OUT OF STOCK" badge — rather than it just disappearing
+5. Consumers still see the item when it's OFF — on your menu page and
+   the Home screen's "Trending Now" — grayed out with an "OUT OF STOCK"
+   badge, rather than it just disappearing
 
 // Deleting a Menu Item
 1. Find the item in the menu list
@@ -616,21 +617,24 @@ when you have more than one in progress.
 ### **Business Hours & Shop Status**
 ```javascript
 // Setting Your Hours
-1. Go to Profile → Edit Profile
-2. Set an Opening Time and Closing Time (e.g. "8:00 AM" / "10:00 PM")
-   — overnight ranges like "6:00 PM" to "2:00 AM" are supported
-3. Save
+1. Go to Profile → Business Hours
+2. Set an Opening Time and Closing Time (24-hour, e.g. "11:00" / "21:00")
+   — overnight ranges like "18:00" to "02:00" are supported
+3. Save — your shop starts following this schedule immediately,
+   no extra step needed
 
 // How "Open"/"Closed" is decided
-- Whenever your open toggle is ON, your shop shows and behaves as
-  OPEN only during the hours you've set — it auto-closes to
-  consumers outside those hours and auto-reopens within them,
-  with no need to toggle it yourself every day
-- Manually switching your shop to CLOSED always wins over the
-  schedule — it stays closed (even during your set hours) until
-  you switch it back to OPEN
-- Consumers can't place an order at your shop while it shows Closed,
-  whichever reason it's closed for
+- Your shop opens and closes automatically at the times you set,
+  computed in Nairobi time no matter where the server itself runs
+- The "Pause Orders" switch on the same screen defaults OFF (meaning
+  orders are NOT paused) so a freshly-set schedule works right away.
+  Turn it ON to force-close early — e.g. you've run out of food for
+  the day — and your shop stays closed regardless of your hours
+  until you turn it back OFF
+- A live "Open now" / "Closed now" indicator next to your hours shows
+  the shop's actual current status at a glance
+- Consumers can't add items to cart or check out while your shop
+  shows Closed — they see "Closed right now — opens at HH:MM" instead
 ```
 
 ---
